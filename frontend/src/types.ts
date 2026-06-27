@@ -178,7 +178,7 @@ export interface FileTableProps {
   onInspect: (id: string) => void;
   onChunkView: (name: string) => void;
   handleGenerateGraph: () => void;
-  onRetry: (id: string) => void;
+  onRetry: (fileName: string) => void;
 }
 
 export interface CustomModalProps {

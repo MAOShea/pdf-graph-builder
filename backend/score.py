@@ -723,12 +723,23 @@ async def delete_document_and_entities(
         gc.collect()
 
 @app.get('/document_status/{file_name}')
-async def get_document_status(file_name, url, userName, password, database):
+async def get_document_status(
+    file_name: str,
+    url: str | None = None,
+    userName: str | None = None,
+    password: str | None = None,
+    database: str | None = None,
+):
     """Get the status of a document in the graph database."""
-    decoded_password = decode_password(password)
-   
+    if password is not None and password != "null":
+        decoded_password = decode_password(password)
+    else:
+        decoded_password = None
+    if url and " " in url:
+        url = url.replace(" ", "+")
+
     try:
-        credentials= Neo4jCredentials(uri=url, userName=userName, password=decoded_password, database=database)
+        credentials = Neo4jCredentials(uri=url, userName=userName, password=decoded_password, database=database)
         graph = create_graph_database_connection(credentials)
         graphDb_data_Access = graphDBdataAccess(graph)
         result = graphDb_data_Access.get_current_status_document_node(file_name)

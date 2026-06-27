@@ -62,7 +62,7 @@ import { AxiosError } from 'axios';
 import { XMarkIconOutline } from '@neo4j-ndl/react/icons';
 import cancelAPI from '../services/CancelAPI';
 import { IconButtonWithToolTip } from './UI/IconButtonToolTip';
-import { batchSize, largeFileSize, llms } from '../utils/Constants';
+import { batchSize, largeFileSize, llms, SKIP_AUTH } from '../utils/Constants';
 import { showErrorToast, showNormalToast } from '../utils/Toasts';
 import { ThemeWrapperContext } from '../context/ThemeWrapper';
 import BreakDownPopOver from './BreakDownPopOver';
@@ -193,7 +193,10 @@ const FileTable: ForwardRefRenderFunction<ChildRef, FileTableProps> = (props, re
                         size='small'
                         label='Ready to Reprocess'
                         clean
-                        onClick={() => onRetry(info?.row?.id as string)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRetry(info?.row?.original?.name as string);
+                        }}
                       >
                         <ArrowPathIconSolid className='n-size-token-4' />
                       </IconButtonWithToolTip>
@@ -1138,16 +1141,27 @@ const FileTable: ForwardRefRenderFunction<ChildRef, FileTableProps> = (props, re
                 />
               ),
               TableResults: () => {
-                if (connectionStatus && !isAuthenticated && !isLoading && filesData.length === 0) {
+                if (connectionStatus && !isLoading && filesData.length === 0) {
+                  if (!SKIP_AUTH && !isAuthenticated) {
+                    return (
+                      <DataGridComponents.TableResults>
+                        <Flex flexDirection='row' gap='0' alignItems='center'>
+                          <span>
+                            <InformationCircleIconOutline className='n-size-token-6' />
+                          </span>
+                          {` It seems like you haven't ingested any data yet. To begin building your knowledge graph, you'll need to log
+            in to the main application.`}
+                        </Flex>
+                      </DataGridComponents.TableResults>
+                    );
+                  }
                   return (
                     <DataGridComponents.TableResults>
                       <Flex flexDirection='row' gap='0' alignItems='center'>
                         <span>
                           <InformationCircleIconOutline className='n-size-token-6' />
                         </span>
-                        {` It seems like you haven't ingested any data yet. To begin building your knowledge graph, you'll need to log
-            in to the main application.`}
-                        <span></span>
+                        Upload a PDF from the left panel, then click Generate Graph.
                       </Flex>
                     </DataGridComponents.TableResults>
                   );

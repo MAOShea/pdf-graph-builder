@@ -83,9 +83,9 @@ const Content: React.FC<ContentProps> = ({
   const [extractLoading, setIsExtractLoading] = useState<boolean>(false);
   const { setUserCredentials, userCredentials, setConnectionStatus, isGdsActive, isReadOnlyUser, isGCSActive } =
     useCredentials();
-  const [retryFile, setRetryFile] = useState<string>('');
+  const [retryFileName, setRetryFileName] = useState<string>('');
   const [retryLoading, setRetryLoading] = useState<boolean>(false);
-  const [showRetryPopup, toggleRetryPopup] = useReducer((state) => !state, false);
+  const [showRetryPopup, setShowRetryPopup] = useState<boolean>(false);
   const [showChunkPopup, toggleChunkPopup] = useReducer((state) => !state, false);
   const [chunksLoading, toggleChunksLoading] = useReducer((state) => !state, false);
   const [currentPage, setCurrentPage] = useState<number>(0);
@@ -832,14 +832,14 @@ const Content: React.FC<ContentProps> = ({
   };
 
   const retryOnclose = useCallback(() => {
-    setRetryFile('');
+    setRetryFileName('');
     setAlertStateForRetry({
       showAlert: false,
       alertMessage: '',
       alertType: 'neutral',
     });
     setRetryLoading(false);
-    toggleRetryPopup();
+    setShowRetryPopup(false);
   }, []);
 
   const onBannerClose = useCallback(() => {
@@ -860,7 +860,7 @@ const Content: React.FC<ContentProps> = ({
       <RetryConfirmationDialog
         retryLoading={retryLoading}
         retryHandler={retryHandler}
-        fileId={retryFile}
+        fileName={retryFileName}
         onClose={retryOnclose}
         open={showRetryPopup}
         onBannerClose={onBannerClose}
@@ -1019,9 +1019,24 @@ const Content: React.FC<ContentProps> = ({
             setOpenGraphView(true);
             setViewPoint('tableView');
           }, [])}
-          onRetry={useCallback((id) => {
-            setRetryFile(id);
-            toggleRetryPopup();
+          onRetry={useCallback((fileName) => {
+            setIsOpen(false);
+            setRetryFileName(fileName);
+            setFilesData((prev) =>
+              prev.map((f) => {
+                if (f.name !== fileName) {
+                  return f;
+                }
+                const defaultOption =
+                  f.status === 'Failed' || f.status === 'Cancelled' ? RETRY_OPIONS[1] : RETRY_OPIONS[0];
+                return {
+                  ...f,
+                  retryOption: f.retryOption?.length ? f.retryOption : defaultOption,
+                  retryOptionStatus: true,
+                };
+              })
+            );
+            setShowRetryPopup(true);
           }, [])}
           onChunkView={useCallback(
             async (name) => {

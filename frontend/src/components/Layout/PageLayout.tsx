@@ -296,19 +296,29 @@ const PageLayout: React.FC = () => {
             })
           );
 
+          const storedCredentialsRaw = localStorage.getItem('neo4j.connection');
+          const storedCredentials = storedCredentialsRaw ? JSON.parse(storedCredentialsRaw) : null;
           const credentials = {
             uri: connectionData.data.uri,
+            userName: storedCredentials?.userName,
+            password: storedCredentials?.password ? atob(storedCredentials.password) : undefined,
             isReadonlyUser: !connectionData.data.write_access,
             isgdsActive: connectionData.data.gds_status,
             isGCSActive: connectionData.data.gcs_file_cache === 'True',
             chunksTobeProcess: Number(connectionData.data.chunk_to_be_created),
-            email: user?.email ?? '',
+            email: user?.email ?? storedCredentials?.email ?? '',
             connection: 'backendApi',
             database: connectionData.data.database,
           };
           setIsGCSActive(credentials.isGCSActive);
           setUserCredentials(credentials);
-          createDefaultFormData({ uri: credentials.uri, email: credentials.email ?? '' });
+          createDefaultFormData({
+            uri: credentials.uri,
+            database: credentials.database,
+            userName: credentials.userName,
+            password: credentials.password,
+            email: credentials.email ?? '',
+          });
           setGdsActive(credentials.isgdsActive);
           setConnectionStatus(
             Array.isArray(connectionData.data.graph_connection)

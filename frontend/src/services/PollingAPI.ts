@@ -25,7 +25,9 @@ export default async function subscribe(
   }
   while (pollingAttempts < MAX_POLLING_ATTEMPTS) {
     let currentDelay = delay;
-    const response: PollingAPI_Response = await api.get(`/document_status/${fileName}?${queryParams.toString()}`);
+    const response: PollingAPI_Response = await api.get(
+      `/document_status/${encodeURIComponent(fileName)}?${queryParams.toString()}`
+    );
     if (response.data?.file_name?.status === 'Processing') {
       progressHandler(response.data);
       await new Promise((resolve) => setTimeout(resolve, currentDelay));

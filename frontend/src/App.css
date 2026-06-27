@@ -364,8 +364,9 @@
   max-width: 305px;
 }
 
+/* Keep dialog panel above ndl-modal-backdrop (z-index 60 in NDL). A lower value traps modals behind the blur. */
 .ndl-modal-root {
-  z-index: 39 !important;
+  z-index: 61 !important;
 }
 
 .tbody-dark .ndl-data-grid-tr:hover {

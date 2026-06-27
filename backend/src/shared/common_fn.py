@@ -152,8 +152,36 @@ def get_chunk_and_graphDocument(graph_document_list, chunkId_chunkDoc_list):
                   
   return lst_chunk_chunkId_document  
                  
+def resolve_neo4j_credentials(credentials: Neo4jCredentials) -> Neo4jCredentials:
+    """Fill missing Neo4j fields from backend environment (local .env workflow)."""
+    uri = credentials.uri or get_value_from_env("NEO4J_URI")
+    userName = credentials.userName or get_value_from_env("NEO4J_USERNAME")
+    password = credentials.password if credentials.password not in (None, "") else get_value_from_env("NEO4J_PASSWORD")
+    database = credentials.database or get_value_from_env("NEO4J_DATABASE", "neo4j")
+    if not uri or not userName or not password:
+        raise ValueError(
+            "Missing Neo4j credentials. Provide uri, userName, and password, or set NEO4J_URI, "
+            "NEO4J_USERNAME, and NEO4J_PASSWORD in backend/.env."
+        )
+    return Neo4jCredentials(
+        uri=uri,
+        userName=userName,
+        password=password,
+        database=database,
+        email=credentials.email,
+    )
+
+
 def create_graph_database_connection(credentials):
-    graph = Neo4jGraph(url=credentials.uri, database=credentials.database, username=credentials.userName, password=credentials.password, refresh_schema=False, sanitize=True)    
+    resolved = resolve_neo4j_credentials(credentials)
+    graph = Neo4jGraph(
+        url=resolved.uri,
+        database=resolved.database,
+        username=resolved.userName,
+        password=resolved.password,
+        refresh_schema=False,
+        sanitize=True,
+    )
     return graph
 
 
