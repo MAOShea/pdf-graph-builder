@@ -369,6 +369,11 @@
   z-index: 61 !important;
 }
 
+/* NDL tooltips from modal controls must sit above the dialog panel. */
+[role='tooltip'] {
+  z-index: 62 !important;
+}
+
 .tbody-dark .ndl-data-grid-tr:hover {
   --cell-background: rgb(60 63 68) !important;
 }

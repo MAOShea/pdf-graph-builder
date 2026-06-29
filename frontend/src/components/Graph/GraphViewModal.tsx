@@ -493,7 +493,7 @@ const GraphViewModal: React.FunctionComponent<GraphViewModalProps> = ({
                     <IconButtonArray orientation='vertical' isFloating={true} className='absolute top-4 right-4'>
                       <IconButtonWithToolTip
                         label='Schema View'
-                        text='Schema View'
+                        text='Schema view — node types and relationship patterns in this preview'
                         onClick={() => handleSchemaView(node, relationship)}
                         placement='left'
                       >
