@@ -374,6 +374,13 @@
   z-index: 62 !important;
 }
 
+/* Select/dropdown menus portal to body at popover z-index (40); keep above modal panel (61). */
+.ndl-select-menu-portal,
+.ndl-select-menu,
+.ndl-menu {
+  z-index: 63 !important;
+}
+
 .tbody-dark .ndl-data-grid-tr:hover {
   --cell-background: rgb(60 63 68) !important;
 }
