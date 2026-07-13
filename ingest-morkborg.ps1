@@ -1,0 +1,51 @@
+# ingest-morkborg.ps1 — upload and extract the Mork Borg PDF into the morkborg Neo4j DB.
+# Run from the workspace root: .\ingest-morkborg.ps1
+
+$ErrorActionPreference = "Stop"
+$BackendUrl = "http://localhost:8000"
+$PdfPath    = "$PSScriptRoot\mork-borg.pdf"
+$FileName   = "mork-borg.pdf"
+$Model      = "ollama_llama3"
+$Uri        = "neo4j://127.0.0.1:7687"
+$User       = "neo4j"
+$Password   = "69696969"
+$Database   = "morkborg"
+
+if (-not (Test-Path $PdfPath)) {
+    Write-Error "PDF not found at $PdfPath — make sure mork-borg.pdf is in the workspace root."
+    exit 1
+}
+
+# ------------------------------------------------------------------
+# 1. Upload
+# ------------------------------------------------------------------
+Write-Host "Uploading $FileName ..."
+$uploadResponse = curl.exe -s -X POST "$BackendUrl/upload" `
+    -F "file=@$PdfPath;type=application/pdf" `
+    -F "originalname=$FileName" `
+    -F "chunkNumber=1" `
+    -F "totalChunks=1" `
+    -F "model=$Model" `
+    -F "uri=$Uri" `
+    -F "userName=$User" `
+    -F "password=$Password" `
+    -F "database=$Database"
+
+Write-Host "Upload response: $uploadResponse"
+
+# ------------------------------------------------------------------
+# 2. Extract (scaffold-diff mode)
+# ------------------------------------------------------------------
+Write-Host ""
+Write-Host "Starting scaffold-diff extraction — this will take a while ..."
+$extractResponse = curl.exe -s -X POST "$BackendUrl/extract" `
+    -F "file_name=$FileName" `
+    -F "source_type=local file" `
+    -F "model=$Model" `
+    -F "ingest_mode=scaffold-diff" `
+    -F "uri=$Uri" `
+    -F "userName=$User" `
+    -F "password=$Password" `
+    -F "database=$Database"
+
+Write-Host "Extract response: $extractResponse"

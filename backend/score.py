@@ -276,36 +276,40 @@ async def extract_knowledge_graph_from_file(
         return create_api_response('Success', data=result, file_source= params.source_type)
     except LLMGraphBuilderException as e:
         error_message = str(e)
-        graph = create_graph_database_connection(credentials)   
-        graphDb_data_Access = graphDBdataAccess(graph)
-        graphDb_data_Access.update_exception_db(params.file_name,error_message, params.retry_condition)
-        if params.source_type == 'local file':
-            failed_file_process(credentials.uri,params.file_name, merged_file_path)
-        node_detail = graphDb_data_Access.get_current_status_document_node(params.file_name)
-        # Set the status "Completed" in logging becuase we are treating these error already handled by application as like custom errors.
-        json_obj = {'api_name':'extract','message':error_message,'file_created_at':formatted_time(node_detail[0]['created_time']),'error_message':error_message, 'filename': params.file_name,'status':'Completed',
-                    'db_url':credentials.uri,'model': params.model, 'userName':credentials.userName, 'database':credentials.database,'failed_count':1, 'source_type': params.source_type, 'source_url':params.source_url, 'wiki_query':params.wiki_query, 'logging_time': formatted_time(datetime.now(timezone.utc)),'email':credentials.email}
-        if "Token usage limit exceeded" in error_message:
-            logger.log_struct(json_obj, "WARNING")
-        else:
-            logger.log_struct(json_obj, "ERROR")
         logging.exception(f'File Failed in extraction: {e}')
-        return create_api_response("Failed", message = error_message, error=error_message, file_name=params.file_name)
+        try:
+            graph = create_graph_database_connection(credentials)
+            graphDb_data_Access = graphDBdataAccess(graph)
+            graphDb_data_Access.update_exception_db(params.file_name, error_message, params.retry_condition)
+            if params.source_type == 'local file':
+                failed_file_process(credentials.uri, params.file_name, merged_file_path)
+            node_detail = graphDb_data_Access.get_current_status_document_node(params.file_name)
+            json_obj = {'api_name':'extract','message':error_message,'file_created_at':formatted_time(node_detail[0]['created_time']),'error_message':error_message, 'filename': params.file_name,'status':'Completed',
+                        'db_url':credentials.uri,'model': params.model, 'userName':credentials.userName, 'database':credentials.database,'failed_count':1, 'source_type': params.source_type, 'source_url':params.source_url, 'wiki_query':params.wiki_query, 'logging_time': formatted_time(datetime.now(timezone.utc)),'email':credentials.email}
+            if "Token usage limit exceeded" in error_message:
+                logger.log_struct(json_obj, "WARNING")
+            else:
+                logger.log_struct(json_obj, "ERROR")
+        except Exception as db_err:
+            logging.error(f'Could not log extract error to DB: {db_err}')
+        return create_api_response("Failed", message=error_message, error=error_message, file_name=params.file_name)
     except Exception as e:
         message=f"Failed To Process File:{params.file_name} or LLM Unable To Parse Content "
         error_message = str(e)
-        graph = create_graph_database_connection(credentials)   
-        graphDb_data_Access = graphDBdataAccess(graph)
-        graphDb_data_Access.update_exception_db(params.file_name,error_message, params.retry_condition)
-        if params.source_type == 'local file':
-            failed_file_process(credentials.uri,params.file_name, merged_file_path)
-        node_detail = graphDb_data_Access.get_current_status_document_node(params.file_name)
-        
-        json_obj = {'api_name':'extract','message':message,'file_created_at':formatted_time(node_detail[0]['created_time']),'error_message':error_message, 'filename': params.file_name,'status':'Failed',
-                    'db_url':credentials.uri,'model': params.model, 'userName':credentials.userName, 'database':credentials.database,'failed_count':1, 'source_type': params.source_type, 'source_url':params.source_url, 'wiki_query':params.wiki_query, 'logging_time': formatted_time(datetime.now(timezone.utc)),'email':credentials.email}
-        logger.log_struct(json_obj, "ERROR")
         logging.exception(f'File Failed in extraction: {e}')
-        return create_api_response('Failed', message=message + error_message[:100], error=error_message, file_name = params.file_name)
+        try:
+            graph = create_graph_database_connection(credentials)
+            graphDb_data_Access = graphDBdataAccess(graph)
+            graphDb_data_Access.update_exception_db(params.file_name, error_message, params.retry_condition)
+            if params.source_type == 'local file':
+                failed_file_process(credentials.uri, params.file_name, merged_file_path)
+            node_detail = graphDb_data_Access.get_current_status_document_node(params.file_name)
+            json_obj = {'api_name':'extract','message':message,'file_created_at':formatted_time(node_detail[0]['created_time']),'error_message':error_message, 'filename': params.file_name,'status':'Failed',
+                        'db_url':credentials.uri,'model': params.model, 'userName':credentials.userName, 'database':credentials.database,'failed_count':1, 'source_type': params.source_type, 'source_url':params.source_url, 'wiki_query':params.wiki_query, 'logging_time': formatted_time(datetime.now(timezone.utc)),'email':credentials.email}
+            logger.log_struct(json_obj, "ERROR")
+        except Exception as db_err:
+            logging.error(f'Could not log extract error to DB: {db_err}')
+        return create_api_response('Failed', message=message + error_message[:100], error=error_message, file_name=params.file_name)
     finally:
         gc.collect()
             
@@ -598,15 +602,18 @@ async def upload_large_file_into_chunks(
     except Exception as e:
         message="Unable to upload file in chunks"
         error_message = str(e)
-        graph = create_graph_database_connection(credentials)   
-        graphDb_data_Access = graphDBdataAccess(graph)
-        graphDb_data_Access.update_exception_db(originalname,error_message)
         logging.info(message)
         logging.exception(f'Exception:{error_message}')
-        return create_api_response('Failed', message=message + error_message[:100], error=error_message, file_name = originalname)
+        try:
+            graph = create_graph_database_connection(credentials)
+            graphDb_data_Access = graphDBdataAccess(graph)
+            graphDb_data_Access.update_exception_db(originalname, error_message)
+        except Exception as db_err:
+            logging.error(f'Could not log upload error to DB: {db_err}')
+        return create_api_response('Failed', message=message + error_message[:100], error=error_message, file_name=originalname)
     finally:
         gc.collect()
-            
+
 @app.post("/schema")
 async def get_structured_schema(credentials: Neo4jCredentials = Depends(get_neo4j_credentials)):
     """Get the structured schema (labels and relation types) from Neo4j."""

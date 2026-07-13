@@ -37,7 +37,8 @@ from src.make_relationships import (
 from src.shared.common_fn import (
     check_url_source, create_gcs_bucket_folder_name_hashed, create_graph_database_connection,
     delete_uploaded_local_file, get_chunk_and_graphDocument, get_value_from_env,
-    handle_backticks_nodes_relationship_id_type, last_url_segment, save_graphDocuments_in_neo4j, track_token_usage
+    handle_backticks_nodes_relationship_id_type, last_url_segment, save_graphDocuments_in_neo4j,
+    save_scaffold_diff_in_neo4j, track_token_usage,
 )
 from src.shared.constants import (
     DELETE_ENTITIES_AND_START_FROM_BEGINNING, QUERY_TO_DELETE_EXISTING_ENTITIES,
@@ -490,6 +491,20 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   uri_latency["create_connection"] = f'{elapsed_create_connection:.2f}'
   graphDb_data_Access = graphDBdataAccess(graph)
   create_chunk_vector_index(graph, params.embedding_provider,params.embedding_model)
+
+  # In scaffold-diff mode, read the pre-existing scaffold before touching any chunks.
+  scaffold_map = None
+  if getattr(params, "ingest_mode", None) == "scaffold-diff":
+    logging.info("scaffold-diff mode: fetching scaffold node map")
+    scaffold_map = graphDb_data_Access.fetch_scaffold_node_map()
+    if not scaffold_map.get("seed_nodes"):
+      raise LLMGraphBuilderException(
+        "scaffold-diff mode requested but no scaffold nodes found in the database. "
+        "Run the bootstrap script first (e.g. python schema/bootstrap.py --game mork-borg)."
+      )
+    uri_latency["scaffold_labels_count"] = len(scaffold_map.get("scaffold_labels", set()))
+    uri_latency["scaffold_seed_count"] = len(scaffold_map.get("seed_nodes", {}))
+
   start_get_chunkId_chunkDoc_list = time.time()
   total_chunks, chunkId_chunkDoc_list = get_chunkId_chunkDoc_list(graph, params.file_name, pages, params.token_chunk_size, params.chunk_overlap, params.retry_condition, credentials.email)
   end_get_chunkId_chunkDoc_list = time.time()
@@ -558,7 +573,7 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
           break
         else:
           processing_chunks_start_time = time.time()
-          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,params.chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model)
+          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,params.chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map)
           logging.info("Token used in processing chunks: %s", token_usage)
           tokens_per_file += token_usage
           logging.info("Total token used per file: %s", tokens_per_file)
@@ -624,6 +639,9 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
       logging.info('Updated the nodeCount and relCount properties in Document node')
       logging.info(f'file:{params.file_name} extraction has been completed')
 
+      # In scaffold-diff mode, do a final coverage propagation pass.
+      if getattr(params, "ingest_mode", None) == "scaffold-diff" and job_status == "Completed":
+        graphDb_data_Access.propagate_coverage()
 
       # merged_file_path have value only when file uploaded from local
       
@@ -659,8 +677,12 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
     logging.error(error_message)
     raise LLMGraphBuilderException(error_message)
 
-async def processing_chunks(chunkId_chunkDoc_list,graph,credentials,file_name,model,allowedNodes,allowedRelationship, chunks_to_combine, node_count, rel_count, additional_instructions, embedding_provider, embedding_model):
-  #create vector index and update chunk node with embedding
+async def processing_chunks(
+    chunkId_chunkDoc_list, graph, credentials, file_name, model,
+    allowedNodes, allowedRelationship, chunks_to_combine, node_count, rel_count,
+    additional_instructions, embedding_provider, embedding_model,
+    ingest_mode=None, scaffold_map=None,
+):
   latency_processing_chunk = {}
   if graph is not None:
     if graph._driver._closed:
@@ -669,7 +691,7 @@ async def processing_chunks(chunkId_chunkDoc_list,graph,credentials,file_name,mo
     graph = create_graph_database_connection(credentials)
     
   start_update_embedding = time.time()
-  create_chunk_embeddings( graph, chunkId_chunkDoc_list, file_name, embedding_provider, embedding_model)
+  create_chunk_embeddings(graph, chunkId_chunkDoc_list, file_name, embedding_provider, embedding_model)
   end_update_embedding = time.time()
   elapsed_update_embedding = end_update_embedding - start_update_embedding
   logging.info(f'Time taken to update embedding in chunk node: {elapsed_update_embedding:.2f} seconds')
@@ -677,35 +699,45 @@ async def processing_chunks(chunkId_chunkDoc_list,graph,credentials,file_name,mo
   logging.info("Get graph document list from models")
   
   start_entity_extraction = time.time()
-  graph_documents, token_usage =  await get_graph_from_llm(model, chunkId_chunkDoc_list, allowedNodes, allowedRelationship, chunks_to_combine, additional_instructions)
+  graph_documents, token_usage = await get_graph_from_llm(
+    model, chunkId_chunkDoc_list, allowedNodes, allowedRelationship, chunks_to_combine,
+    additional_instructions, ingest_mode=ingest_mode, scaffold_map=scaffold_map,
+  )
   end_entity_extraction = time.time()
   elapsed_entity_extraction = end_entity_extraction - start_entity_extraction
-  logging.info(f'Time taken to extract enitities from LLM Graph Builder: {elapsed_entity_extraction:.2f} seconds')
+  logging.info(f'Time taken to extract entities from LLM Graph Builder: {elapsed_entity_extraction:.2f} seconds')
   latency_processing_chunk["entity_extraction"] = f'{elapsed_entity_extraction:.2f}'
   
   cleaned_graph_documents = handle_backticks_nodes_relationship_id_type(graph_documents)
   
   start_save_graphDocuments = time.time()
-  save_graphDocuments_in_neo4j(graph, cleaned_graph_documents)
+  if ingest_mode == "scaffold-diff" and scaffold_map is not None:
+    # Diff-aware save: classify against scaffold, emit diff signals, never add SPECIALIZES
+    logging.info("scaffold-diff: using save_scaffold_diff_in_neo4j")
+    save_scaffold_diff_in_neo4j(graph, cleaned_graph_documents, scaffold_map)
+  else:
+    # Default bottom-up save
+    save_graphDocuments_in_neo4j(graph, cleaned_graph_documents)
   end_save_graphDocuments = time.time()
   elapsed_save_graphDocuments = end_save_graphDocuments - start_save_graphDocuments
   logging.info(f'Time taken to save graph document in neo4j: {elapsed_save_graphDocuments:.2f} seconds')
   latency_processing_chunk["save_graphDocuments"] = f'{elapsed_save_graphDocuments:.2f}'
 
-  chunks_and_graphDocuments_list = get_chunk_and_graphDocument(cleaned_graph_documents, chunkId_chunkDoc_list)
-
-  start_relationship = time.time()
-  merge_relationship_between_chunk_and_entites(graph, chunks_and_graphDocuments_list)
-  end_relationship = time.time()
-  elapsed_relationship = end_relationship - start_relationship
-  logging.info(f'Time taken to create relationship between chunk and entities: {elapsed_relationship:.2f} seconds')
-  latency_processing_chunk["relationship_between_chunk_entity"] = f'{elapsed_relationship:.2f}'
+  if ingest_mode != "scaffold-diff":
+    # HAS_ENTITY edges are only created in bottom-up mode; scaffold-diff uses DOCUMENTED_BY instead.
+    chunks_and_graphDocuments_list = get_chunk_and_graphDocument(cleaned_graph_documents, chunkId_chunkDoc_list)
+    start_relationship = time.time()
+    merge_relationship_between_chunk_and_entites(graph, chunks_and_graphDocuments_list)
+    end_relationship = time.time()
+    elapsed_relationship = end_relationship - start_relationship
+    logging.info(f'Time taken to create relationship between chunk and entities: {elapsed_relationship:.2f} seconds')
+    latency_processing_chunk["relationship_between_chunk_entity"] = f'{elapsed_relationship:.2f}'
   
   graphDb_data_Access = graphDBdataAccess(graph)
   count_response = graphDb_data_Access.update_node_relationship_count(file_name)
-  node_count = count_response[file_name].get('nodeCount',"0")
-  rel_count = count_response[file_name].get('relationshipCount',"0")
-  return node_count,rel_count,latency_processing_chunk,token_usage
+  node_count = count_response[file_name].get('nodeCount', "0")
+  rel_count = count_response[file_name].get('relationshipCount', "0")
+  return node_count, rel_count, latency_processing_chunk, token_usage
 
 def get_chunkId_chunkDoc_list(graph, file_name, pages, token_chunk_size, chunk_overlap, retry_condition, email):
   """

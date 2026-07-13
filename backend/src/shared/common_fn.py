@@ -260,6 +260,160 @@ def save_graphDocuments_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gr
    logging.error("Failed to execute query after maximum retries due to persistent deadlocks.")
    raise RuntimeError("Query execution failed after multiple retries due to deadlock.")
            
+def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[GraphDocument], scaffold_map: dict):
+    """Scaffold-diff mode replacement for save_graphDocuments_in_neo4j.
+
+    Instead of blindly merging extracted content, classifies each extracted node and
+    relationship against the pre-existing scaffold and emits diff signals:
+
+    - CONFIRMS_SEED  : Chunk → scaffold node (extracted ID matches a known seed_id)
+    - INSTANCE_OF    : new concrete node → scaffold concept (label matches but ID is new)
+    - DOCUMENTED_BY  : Chunk → scaffold node for every passage that references the concept
+    - FlaggedConcept : node created for labels/IDs not in scaffold (NEW_NODE signal)
+    - FlaggedRel     : node created for relationship types not in scaffold (NEW_REL signal)
+    - SPECIALIZES    : always dropped (belongs to bootstrap only)
+    """
+    from src.shared.constants import SCAFFOLD_ONLY_REL_TYPES, INGEST_REL_TYPES
+
+    seed_nodes: dict = scaffold_map.get("seed_nodes", {})          # lower(seed_id) → dict
+    scaffold_labels: set = scaffold_map.get("scaffold_labels", set())
+    scaffold_rel_types: set = scaffold_map.get("scaffold_rel_types", set())
+
+    # All relationship types ingest is allowed to create (signals + bootstrap types ingest may confirm)
+    allowed_rel_types = scaffold_rel_types | INGEST_REL_TYPES
+
+    for graph_doc in graph_document_list:
+        chunk_ids: list = graph_doc.source.metadata.get("combined_chunk_ids", [])
+
+        # --- Nodes ---------------------------------------------------------
+        for node in graph_doc.nodes:
+            node_label = str(node.type or "").strip()
+            node_id = str(node.id or "").strip()
+            if not node_label or not node_id:
+                continue
+            node_id_lower = node_id.lower()
+
+            if node_label not in scaffold_labels:
+                # Unknown label — flag, do not add
+                logging.info(f"scaffold-diff: NEW_NODE flagged: {node_label}/{node_id}")
+                try:
+                    graph.query(
+                        """
+                        MERGE (f:FlaggedConcept {id: $node_id, proposedLabel: $label})
+                        SET f.signal    = 'NEW_NODE',
+                            f.flaggedAt = datetime(),
+                            f.reviewed  = false
+                        """,
+                        {"node_id": node_id, "label": node_label},
+                    )
+                except Exception as e:
+                    logging.error(f"scaffold-diff: error flagging NEW_NODE {node_id}: {e}")
+                continue
+
+            if node_id_lower in seed_nodes:
+                # Exact seed match — CONFIRMS_SEED + coverage upgrade + DOCUMENTED_BY per chunk
+                seed_id = seed_nodes[node_id_lower]["seed_id"]
+                logging.info(f"scaffold-diff: CONFIRMS_SEED for seed '{seed_id}'")
+                try:
+                    graph.query(
+                        """
+                        MATCH (seed)
+                        WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($seed_id)
+                        SET seed.coverage = CASE seed.coverage
+                            WHEN 'research-only' THEN 'ingest-confirmed'
+                            ELSE seed.coverage END
+                        """,
+                        {"seed_id": seed_id},
+                    )
+                    for chunk_id in chunk_ids:
+                        graph.query(
+                            """
+                            MATCH (c:Chunk {id: $chunk_id})
+                            MATCH (seed)
+                            WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($seed_id)
+                            MERGE (c)-[:DOCUMENTED_BY]->(seed)
+                            MERGE (c)-[:CONFIRMS_SEED]->(seed)
+                            """,
+                            {"chunk_id": chunk_id, "seed_id": seed_id},
+                        )
+                except Exception as e:
+                    logging.error(f"scaffold-diff: error writing CONFIRMS_SEED for {seed_id}: {e}")
+            else:
+                # Label is known but ID is new — concrete instance of a scaffold concept
+                logging.info(f"scaffold-diff: INSTANCE_OF for {node_label}/{node_id}")
+                try:
+                    graph.query(
+                        """
+                        MATCH (scaffold)
+                        WHERE $label IN labels(scaffold)
+                          AND (scaffold.tier IS NOT NULL OR scaffold.seed_id IS NOT NULL)
+                        WITH scaffold LIMIT 1
+                        MERGE (inst:__Entity__ {id: $node_id})
+                        SET inst += $props
+                        MERGE (inst)-[:INSTANCE_OF]->(scaffold)
+                        """,
+                        {
+                            "label": node_label,
+                            "node_id": node_id,
+                            "props": {k: v for k, v in (node.properties or {}).items()},
+                        },
+                    )
+                    for chunk_id in chunk_ids:
+                        graph.query(
+                            """
+                            MATCH (c:Chunk {id: $chunk_id})
+                            MATCH (inst {id: $node_id})
+                            MERGE (c)-[:DOCUMENTED_BY]->(inst)
+                            """,
+                            {"chunk_id": chunk_id, "node_id": node_id},
+                        )
+                except Exception as e:
+                    logging.error(f"scaffold-diff: error writing INSTANCE_OF for {node_id}: {e}")
+
+        # --- Relationships --------------------------------------------------
+        for rel in graph_doc.relationships:
+            rel_type = str(rel.type or "").strip()
+            src_id = str(getattr(rel.source, "id", "") or "").strip()
+            tgt_id = str(getattr(rel.target, "id", "") or "").strip()
+
+            if rel_type in SCAFFOLD_ONLY_REL_TYPES:
+                # SPECIALIZES and any other bootstrap-only types are silently dropped
+                logging.info(f"scaffold-diff: dropping {rel_type} ({src_id} → {tgt_id})")
+                continue
+
+            if rel_type not in allowed_rel_types:
+                # Unknown relationship type — flag
+                logging.info(f"scaffold-diff: NEW_REL flagged: {rel_type} ({src_id} → {tgt_id})")
+                try:
+                    graph.query(
+                        """
+                        MERGE (f:FlaggedRelationship {
+                            sourceId: $src_id, relType: $rel_type, targetId: $tgt_id
+                        })
+                        SET f.signal    = 'NEW_REL',
+                            f.flaggedAt = datetime(),
+                            f.reviewed  = false
+                        """,
+                        {"src_id": src_id, "rel_type": rel_type, "tgt_id": tgt_id},
+                    )
+                except Exception as e:
+                    logging.error(f"scaffold-diff: error flagging NEW_REL {rel_type}: {e}")
+                continue
+
+            # Known rel type — write normally between the two nodes if both exist
+            try:
+                graph.query(
+                    f"""
+                    MATCH (a) WHERE toLower(coalesce(a.seed_id, a.id, '')) = toLower($src_id)
+                    MATCH (b) WHERE toLower(coalesce(b.seed_id, b.id, '')) = toLower($tgt_id)
+                    MERGE (a)-[:{rel_type}]->(b)
+                    """,
+                    {"src_id": src_id, "tgt_id": tgt_id},
+                )
+            except Exception as e:
+                logging.error(f"scaffold-diff: error writing rel {rel_type}: {e}")
+
+
 def handle_backticks_nodes_relationship_id_type(graph_document_list:List[GraphDocument]):
   for graph_document in graph_document_list:
     # Clean node id and types

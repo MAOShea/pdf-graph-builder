@@ -652,3 +652,82 @@ class graphDBdataAccess:
                 """
         param = {"file_name" : file_name}
         return self.execute_query(query, param)
+
+    # ------------------------------------------------------------------
+    # Scaffold-diff helpers
+    # ------------------------------------------------------------------
+
+    def fetch_scaffold_node_map(self):
+        """Return a description of the pre-bootstrapped scaffold in the current DB.
+
+        Returns a dict with three keys:
+            scaffold_labels  – set of distinct node labels carried by scaffold nodes
+            seed_nodes       – {lower(seed_id): {"seed_id": str, "labels": list, "coverage": str}}
+            scaffold_rel_types – set of relationship type names present between scaffold nodes
+        """
+        logging.info("scaffold-diff: fetching scaffold node map from Neo4j")
+        node_query = """
+            MATCH (n)
+            WHERE n.tier IS NOT NULL OR n.seed_id IS NOT NULL
+            RETURN labels(n) AS labels,
+                   coalesce(n.seed_id, n.id, elementId(n)) AS seed_id,
+                   coalesce(n.coverage, 'research-only') AS coverage
+        """
+        rel_query = """
+            MATCH (a)-[r]->(b)
+            WHERE (a.tier IS NOT NULL OR a.seed_id IS NOT NULL)
+              AND (b.tier IS NOT NULL OR b.seed_id IS NOT NULL)
+            RETURN DISTINCT type(r) AS rel_type
+        """
+        try:
+            node_rows = self.execute_query(node_query)
+            rel_rows = self.execute_query(rel_query)
+        except Exception as e:
+            logging.error(f"scaffold-diff: error fetching scaffold map: {e}")
+            return {"scaffold_labels": set(), "seed_nodes": {}, "scaffold_rel_types": set()}
+
+        system_labels = {"Document", "Chunk", "__Entity__", "__Community__"}
+        seed_nodes = {}
+        scaffold_labels = set()
+
+        for row in node_rows:
+            raw_labels = [lbl for lbl in (row.get("labels") or []) if lbl not in system_labels]
+            seed_id = str(row.get("seed_id") or "").strip()
+            coverage = str(row.get("coverage") or "research-only")
+            if not seed_id:
+                continue
+            seed_nodes[seed_id.lower()] = {
+                "seed_id": seed_id,
+                "labels": raw_labels,
+                "coverage": coverage,
+            }
+            scaffold_labels.update(raw_labels)
+
+        scaffold_rel_types = {str(r.get("rel_type")) for r in rel_rows if r.get("rel_type")}
+
+        logging.info(
+            f"scaffold-diff: found {len(seed_nodes)} seed nodes, "
+            f"{len(scaffold_labels)} labels, {len(scaffold_rel_types)} rel types"
+        )
+        return {
+            "scaffold_labels": scaffold_labels,
+            "seed_nodes": seed_nodes,
+            "scaffold_rel_types": scaffold_rel_types,
+        }
+
+    def propagate_coverage(self):
+        """Upgrade seed nodes that have at least one CONFIRMS_SEED edge from research-only
+        to ingest-confirmed.  Safe to call multiple times (idempotent)."""
+        logging.info("scaffold-diff: propagating coverage flags")
+        query = """
+            MATCH ()-[:CONFIRMS_SEED]->(seed)
+            WHERE coalesce(seed.coverage, 'research-only') = 'research-only'
+            SET seed.coverage = 'ingest-confirmed'
+            RETURN count(seed) AS upgraded
+        """
+        try:
+            result = self.execute_query(query)
+            upgraded = result[0]["upgraded"] if result else 0
+            logging.info(f"scaffold-diff: coverage propagation upgraded {upgraded} node(s)")
+        except Exception as e:
+            logging.error(f"scaffold-diff: error propagating coverage: {e}")

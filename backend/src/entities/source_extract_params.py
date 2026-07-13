@@ -25,6 +25,7 @@ class SourceScanExtractParams(BaseModel):
     additional_instructions: Optional[str] = Field(None, description="Additional instructions")
     embedding_provider: Optional[str] = Field(None, description="Embedding provider")
     embedding_model: Optional[str] = Field(None, description="Embedding model")
+    ingest_mode: Optional[str] = Field(None, description="'scaffold-diff' for top-down diff against a pre-bootstrapped scaffold, or None for default bottom-up extraction")
 
 def get_source_scan_extract_params(
     source_url: Optional[str] = Form(None),
@@ -49,6 +50,7 @@ def get_source_scan_extract_params(
     additional_instructions: Optional[str] = Form(None),
     embedding_provider: Optional[str] = Form(None),
     embedding_model: Optional[str] = Form(None),
+    ingest_mode: Optional[str] = Form(None),
 ) -> SourceScanExtractParams:
     return SourceScanExtractParams(
         source_url=source_url,
@@ -72,5 +74,6 @@ def get_source_scan_extract_params(
         retry_condition=retry_condition,
         additional_instructions=additional_instructions,
         embedding_provider=embedding_provider,
-        embedding_model=embedding_model
+        embedding_model=embedding_model,
+        ingest_mode=ingest_mode,
     )

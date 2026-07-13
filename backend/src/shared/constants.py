@@ -881,9 +881,40 @@ If any item cannot be grouped, it must remain in its own category using its orig
 Use these rules to group and name categories accurately without introducing errors or new types.
 """
 
-ADDITIONAL_INSTRUCTIONS = """Your goal is to identify and categorize entities while ensuring that specific data 
+ADDITIONAL_INSTRUCTIONS = """Your goal is to identify and categorize entities while ensuring that specific data
 types such as dates, numbers, revenues, and other non-entity information are not extracted as separate nodes.
 Instead, treat these as properties associated with the relevant entities."""
+
+# Relationship types that belong exclusively to the scaffold bootstrap phase.
+# Ingest must never emit these.
+SCAFFOLD_ONLY_REL_TYPES = {"SPECIALIZES"}
+
+# Relationship types that ingest is permitted to create in scaffold-diff mode.
+INGEST_REL_TYPES = {
+    "INSTANCE_OF",
+    "DOCUMENTED_BY",
+    "CONFIRMS_SEED",
+    "OVERRIDES_SEED",
+    "REFERENCES",
+}
+
+SCAFFOLD_DIFF_INSTRUCTIONS = """You are ingesting a rulebook PDF against a pre-existing knowledge graph scaffold.
+
+STRICT RULES — follow these exactly:
+1. Use ONLY the node labels listed under SCAFFOLD LABELS below. Do not invent new labels.
+2. NEVER extract a SPECIALIZES relationship. If you detect a subtype or "is-a" relationship, skip it entirely.
+3. For each entity you extract, prefer an ID that matches one of the known seed names below exactly (case-insensitive).
+4. If a passage describes a concrete in-game value (e.g. a specific character's STR score of 14, a named weapon's damage die), extract it and use the matching scaffold label — it will be recorded as INSTANCE_OF that concept.
+5. If a passage explicitly contradicts a scaffold claim, extract the relationship type OVERRIDES_SEED between the two concepts.
+6. Focus on rule mechanics, procedures, and game system definitions. Skip narrative flavour text.
+7. Do not extract dates, numbers, or simple values as standalone nodes; attach them as properties instead.
+
+SCAFFOLD LABELS (the only labels you may use):
+{scaffold_labels}
+
+KNOWN SEED IDs (prefer exact matches for node IDs):
+{seed_ids}
+"""
 
 SCHEMA_VISUALIZATION_QUERY = """
 CALL db.schema.visualization() YIELD nodes, relationships

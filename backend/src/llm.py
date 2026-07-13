@@ -12,7 +12,7 @@ from langchain_aws import ChatBedrock
 from langchain_ollama import ChatOllama
 import boto3
 import google.auth
-from src.shared.constants import ADDITIONAL_INSTRUCTIONS
+from src.shared.constants import ADDITIONAL_INSTRUCTIONS, SCAFFOLD_DIFF_INSTRUCTIONS, SCAFFOLD_ONLY_REL_TYPES
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 import re
 from langchain_core.callbacks.manager import CallbackManager
@@ -191,10 +191,29 @@ def get_chunk_id_as_doc_metadata(chunkId_chunkDoc_list):
       
 
 async def get_graph_document_list(
-    llm, combined_chunk_document_list, allowedNodes, allowedRelationship,callback_handler, additional_instructions=None
+    llm, combined_chunk_document_list, allowedNodes, allowedRelationship, callback_handler,
+    additional_instructions=None, ingest_mode=None, scaffold_map=None
 ):
     if additional_instructions:
         additional_instructions = sanitize_additional_instruction(additional_instructions)
+
+    # In scaffold-diff mode, build a richer system prompt from the scaffold map.
+    if ingest_mode == "scaffold-diff" and scaffold_map is not None:
+        scaffold_labels_list = sorted(scaffold_map.get("scaffold_labels", []))
+        seed_ids_list = sorted(scaffold_map.get("seed_nodes", {}).keys())
+        base_instructions = SCAFFOLD_DIFF_INSTRUCTIONS.format(
+            scaffold_labels=", ".join(scaffold_labels_list) if scaffold_labels_list else "(none loaded)",
+            seed_ids=", ".join(seed_ids_list) if seed_ids_list else "(none loaded)",
+        )
+        # Override allowedNodes to the strict scaffold label set.
+        allowedNodes = scaffold_labels_list
+        # Do not constrain relationship types here — post-processing handles SPECIALIZES + flagging.
+        allowedRelationship = []
+    else:
+        base_instructions = ADDITIONAL_INSTRUCTIONS
+
+    effective_instructions = base_instructions + (additional_instructions if additional_instructions else "")
+
     graph_document_list = []
     token_usage = 0
     try:
@@ -224,7 +243,7 @@ async def get_graph_document_list(
                 allowed_nodes=allowedNodes,
                 allowed_relationships=allowedRelationship,
                 ignore_tool_usage=ignore_tool_usage,
-                additional_instructions=ADDITIONAL_INSTRUCTIONS+ (additional_instructions if additional_instructions else "")
+                additional_instructions=effective_instructions,
             )
         
         if isinstance(llm,DiffbotGraphTransformer):
@@ -244,44 +263,56 @@ async def get_graph_document_list(
 
     return graph_document_list, token_usage
 
-async def get_graph_from_llm(model, chunkId_chunkDoc_list, allowedNodes, allowedRelationship, chunks_to_combine, additional_instructions=None):
+async def get_graph_from_llm(
+    model, chunkId_chunkDoc_list, allowedNodes, allowedRelationship, chunks_to_combine,
+    additional_instructions=None, ingest_mode=None, scaffold_map=None
+):
    try:
-       llm, model_name,callback_handler = get_llm(model)
+       llm, model_name, callback_handler = get_llm(model)
        logging.info(f"Using model: {model_name}")
     
        combined_chunk_document_list = get_combined_chunks(chunkId_chunkDoc_list, chunks_to_combine)
        logging.info(f"Combined {len(combined_chunk_document_list)} chunks")
-    
-       if allowedNodes:
-           allowed_nodes = [node.strip() for node in allowedNodes.split(',') if node.strip()]
-       else:
-           allowed_nodes = []
-       logging.info(f"Allowed nodes: {allowed_nodes}")
-    
-       allowed_relationships = []
-       if allowedRelationship:
-           items = [item.strip() for item in allowedRelationship.split(',') if item.strip()]
-           if len(items) % 3 != 0:
-               raise LLMGraphBuilderException("allowedRelationship must be a multiple of 3 (source, relationship, target)")
-           for i in range(0, len(items), 3):
-               source, relation, target = items[i:i + 3]
-               if source not in allowed_nodes or target not in allowed_nodes:
-                   raise LLMGraphBuilderException(
-                       f"Invalid relationship ({source}, {relation}, {target}): "
-                       f"source or target not in allowedNodes"
-                   )
-               allowed_relationships.append((source, relation, target))
-           logging.info(f"Allowed relationships: {allowed_relationships}")
-       else:
-           logging.info("No allowed relationships provided")
 
-       graph_document_list,token_usage = await get_graph_document_list(
+       # In scaffold-diff mode the allowed sets are derived from the scaffold map inside
+       # get_graph_document_list, so we pass the raw param values through as placeholders.
+       if ingest_mode == "scaffold-diff":
+           allowed_nodes = []
+           allowed_relationships = []
+           logging.info("scaffold-diff mode: node/rel constraints will be set from scaffold_map")
+       else:
+           if allowedNodes:
+               allowed_nodes = [node.strip() for node in allowedNodes.split(',') if node.strip()]
+           else:
+               allowed_nodes = []
+           logging.info(f"Allowed nodes: {allowed_nodes}")
+
+           allowed_relationships = []
+           if allowedRelationship:
+               items = [item.strip() for item in allowedRelationship.split(',') if item.strip()]
+               if len(items) % 3 != 0:
+                   raise LLMGraphBuilderException("allowedRelationship must be a multiple of 3 (source, relationship, target)")
+               for i in range(0, len(items), 3):
+                   source, relation, target = items[i:i + 3]
+                   if source not in allowed_nodes or target not in allowed_nodes:
+                       raise LLMGraphBuilderException(
+                           f"Invalid relationship ({source}, {relation}, {target}): "
+                           f"source or target not in allowedNodes"
+                       )
+                   allowed_relationships.append((source, relation, target))
+               logging.info(f"Allowed relationships: {allowed_relationships}")
+           else:
+               logging.info("No allowed relationships provided")
+
+       graph_document_list, token_usage = await get_graph_document_list(
            llm,
            combined_chunk_document_list,
            allowed_nodes,
            allowed_relationships,
            callback_handler,
            additional_instructions,
+           ingest_mode=ingest_mode,
+           scaffold_map=scaffold_map,
        )
        logging.info(f"Generated {len(graph_document_list)} graph documents")
        return graph_document_list, token_usage

@@ -1,0 +1,300 @@
+{
+  "version": "2.4",
+  "name": "Scaffold Diff Review",
+  "description": "Visualises the scaffold-diff ingest output. Colour-codes diff signal relationships and coverage states so an operator can quickly spot what the PDF confirmed, what it contradicts, and what is flagged for review.",
+  "categories": [
+    {
+      "id": "cat-document",
+      "label": "Document",
+      "color": "#4C8EDA",
+      "size": 60,
+      "caption": "fileName"
+    },
+    {
+      "id": "cat-chunk",
+      "label": "Chunk",
+      "color": "#9E9E9E",
+      "size": 20,
+      "caption": "id"
+    },
+    {
+      "id": "cat-seed-confirmed",
+      "label": "__ScaffoldNode_Confirmed__",
+      "color": "#2ECC71",
+      "size": 50,
+      "caption": "seed_id",
+      "description": "Scaffold nodes whose coverage was upgraded to ingest-confirmed"
+    },
+    {
+      "id": "cat-seed-research",
+      "label": "__ScaffoldNode_Research__",
+      "color": "#F39C12",
+      "size": 50,
+      "caption": "seed_id",
+      "description": "Scaffold nodes still at research-only — not yet seen in the PDF"
+    },
+    {
+      "id": "cat-flagged-concept",
+      "label": "FlaggedConcept",
+      "color": "#E74C3C",
+      "size": 40,
+      "caption": "id",
+      "description": "Concepts extracted from the PDF that have no matching scaffold label (NEW_NODE signal)"
+    },
+    {
+      "id": "cat-flagged-rel",
+      "label": "FlaggedRelationship",
+      "color": "#E67E22",
+      "size": 35,
+      "caption": "relType",
+      "description": "Relationship types extracted from the PDF that are not in the scaffold (NEW_REL signal)"
+    }
+  ],
+  "relationshipTypes": [
+    {
+      "id": "rt-confirms-seed",
+      "label": "CONFIRMS_SEED",
+      "color": "#27AE60",
+      "width": 3,
+      "description": "PDF passage confirms this scaffold node"
+    },
+    {
+      "id": "rt-overrides-seed",
+      "label": "OVERRIDES_SEED",
+      "color": "#C0392B",
+      "width": 4,
+      "dashed": true,
+      "description": "PDF passage contradicts this scaffold claim — requires operator review"
+    },
+    {
+      "id": "rt-documented-by",
+      "label": "DOCUMENTED_BY",
+      "color": "#BDC3C7",
+      "width": 1,
+      "description": "Chunk passage references this scaffold node"
+    },
+    {
+      "id": "rt-instance-of",
+      "label": "INSTANCE_OF",
+      "color": "#9B59B6",
+      "width": 2,
+      "description": "A concrete rulebook value is an instance of this scaffold concept"
+    },
+    {
+      "id": "rt-part-of",
+      "label": "PART_OF",
+      "color": "#ECF0F1",
+      "width": 1
+    },
+    {
+      "id": "rt-next-chunk",
+      "label": "NEXT_CHUNK",
+      "color": "#ECF0F1",
+      "width": 1
+    },
+    {
+      "id": "rt-first-chunk",
+      "label": "FIRST_CHUNK",
+      "color": "#ECF0F1",
+      "width": 1
+    },
+    {
+      "id": "rt-specializes",
+      "label": "SPECIALIZES",
+      "color": "#3498DB",
+      "width": 2,
+      "description": "Ontological subtype — bootstrap only, never written by ingest"
+    },
+    {
+      "id": "rt-overrides",
+      "label": "OVERRIDES",
+      "color": "#E67E22",
+      "width": 2,
+      "description": "Bootstrap rule: this rule supersedes that rule"
+    },
+    {
+      "id": "rt-uses",
+      "label": "USES",
+      "color": "#1ABC9C",
+      "width": 2
+    },
+    {
+      "id": "rt-references",
+      "label": "REFERENCES",
+      "color": "#7F8C8D",
+      "width": 1
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule-seed-node",
+      "name": "Scaffold seed node (bootstrap-created)",
+      "condition": {
+        "property": "tier",
+        "operator": "IS NOT NULL"
+      },
+      "style": {
+        "color": "#1ABC9C",
+        "borderColor": "#148F77",
+        "borderWidth": 2,
+        "textColor": "#FFFFFF"
+      }
+    },
+    {
+      "id": "rule-seed-node-by-seed-id",
+      "name": "Scaffold seed node (identified by seed_id)",
+      "condition": {
+        "property": "seed_id",
+        "operator": "IS NOT NULL"
+      },
+      "style": {
+        "color": "#1ABC9C",
+        "borderColor": "#148F77",
+        "borderWidth": 2,
+        "textColor": "#FFFFFF"
+      }
+    },
+    {
+      "id": "rule-ingest-instance",
+      "name": "Ingest-created instance node (no scaffold tier or signal)",
+      "condition": {
+        "property": "tier",
+        "operator": "IS NULL"
+      },
+      "style": {
+        "color": "#9B59B6",
+        "borderColor": "#6C3483",
+        "borderWidth": 2,
+        "textColor": "#FFFFFF"
+      }
+    },
+    {
+      "id": "rule-coverage-confirmed",
+      "name": "Coverage: ingest-confirmed",
+      "condition": {
+        "property": "coverage",
+        "operator": "=",
+        "value": "ingest-confirmed"
+      },
+      "style": {
+        "color": "#2ECC71",
+        "borderColor": "#27AE60",
+        "borderWidth": 3
+      }
+    },
+    {
+      "id": "rule-coverage-research",
+      "name": "Coverage: research-only",
+      "condition": {
+        "property": "coverage",
+        "operator": "=",
+        "value": "research-only"
+      },
+      "style": {
+        "color": "#F39C12",
+        "borderColor": "#D35400",
+        "borderWidth": 2
+      }
+    },
+    {
+      "id": "rule-coverage-verified",
+      "name": "Coverage: operator-verified",
+      "condition": {
+        "property": "coverage",
+        "operator": "=",
+        "value": "operator-verified"
+      },
+      "style": {
+        "color": "#3498DB",
+        "borderColor": "#2980B9",
+        "borderWidth": 3
+      }
+    },
+    {
+      "id": "rule-flagged-new-node",
+      "name": "Flagged: NEW_NODE",
+      "condition": {
+        "property": "signal",
+        "operator": "=",
+        "value": "NEW_NODE"
+      },
+      "style": {
+        "color": "#E74C3C",
+        "borderColor": "#922B21",
+        "borderWidth": 3,
+        "icon": "warning"
+      }
+    },
+    {
+      "id": "rule-flagged-new-rel",
+      "name": "Flagged: NEW_REL",
+      "condition": {
+        "property": "signal",
+        "operator": "=",
+        "value": "NEW_REL"
+      },
+      "style": {
+        "color": "#E67E22",
+        "borderColor": "#784212",
+        "borderWidth": 3,
+        "icon": "warning"
+      }
+    },
+    {
+      "id": "rule-reviewed",
+      "name": "Flagged item: reviewed",
+      "condition": {
+        "property": "reviewed",
+        "operator": "=",
+        "value": true
+      },
+      "style": {
+        "color": "#95A5A6",
+        "borderColor": "#7F8C8D",
+        "borderWidth": 1
+      }
+    }
+  ],
+  "savedSearches": [
+    {
+      "id": "search-overrides",
+      "name": "All OVERRIDES_SEED (conflicts to review)",
+      "query": "MATCH p=(c:Chunk)-[:OVERRIDES_SEED]->(seed) RETURN p"
+    },
+    {
+      "id": "search-new-nodes",
+      "name": "Flagged NEW_NODE concepts",
+      "query": "MATCH (f:FlaggedConcept {reviewed: false}) RETURN f"
+    },
+    {
+      "id": "search-new-rels",
+      "name": "Flagged NEW_REL types",
+      "query": "MATCH (f:FlaggedRelationship {reviewed: false}) RETURN f"
+    },
+    {
+      "id": "search-unconfirmed-seeds",
+      "name": "Seed nodes not yet confirmed by PDF",
+      "query": "MATCH (n) WHERE n.coverage = 'research-only' AND (n.tier IS NOT NULL OR n.seed_id IS NOT NULL) RETURN n"
+    },
+    {
+      "id": "search-confirmed-seeds",
+      "name": "Seed nodes confirmed by PDF",
+      "query": "MATCH (n) WHERE n.coverage = 'ingest-confirmed' RETURN n"
+    },
+    {
+      "id": "search-confirmed-with-evidence",
+      "name": "Confirmed seeds with their evidence chunks",
+      "query": "MATCH p=(c:Chunk)-[:CONFIRMS_SEED]->(seed) RETURN p LIMIT 100"
+    },
+    {
+      "id": "search-seed-vs-ingest",
+      "name": "Seed nodes vs ingest-created instances (side by side)",
+      "query": "MATCH (n) WHERE n.tier IS NOT NULL OR n.seed_id IS NOT NULL WITH n OPTIONAL MATCH p=(n)<-[:INSTANCE_OF]-(inst) RETURN n, p LIMIT 150"
+    },
+    {
+      "id": "search-ingest-instances-only",
+      "name": "Ingest-created instance nodes only",
+      "query": "MATCH (inst)-[:INSTANCE_OF]->(seed) RETURN inst, seed LIMIT 100"
+    }
+  ]
+}
