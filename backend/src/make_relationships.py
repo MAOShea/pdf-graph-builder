@@ -34,7 +34,9 @@ def merge_relationship_between_chunk_and_entites(graph: Neo4jGraph, graph_docume
     
 def create_chunk_embeddings(graph, chunkId_chunkDoc_list, file_name, embedding_provider, embedding_model):
     isEmbedding= get_value_from_env("IS_EMBEDDING", "True" ,"bool")
-    
+    if not isEmbedding or not embedding_provider:
+        logging.info("IS_EMBEDDING=False or no embedding provider — skipping chunk embeddings.")
+        return
     embeddings, dimension = load_embedding_model(embedding_provider, embedding_model)
     logging.info(f'embedding model:{embeddings} and dimesion:{dimension}')
     data_for_query = []
@@ -152,6 +154,9 @@ def create_chunk_vector_index(graph, embedding_provider, embedding_model):
         vector_index_query = "SHOW INDEXES YIELD name, type, labelsOrTypes, properties WHERE name = 'vector' AND type = 'VECTOR' AND 'Chunk' IN labelsOrTypes AND 'embedding' IN properties RETURN name"
         vector_index = execute_graph_query(graph,vector_index_query)
         if not vector_index:
+            if not embedding_provider:
+                logging.info("No embedding provider configured (IS_EMBEDDING=False), skipping vector index creation.")
+                return
             EMBEDDING_FUNCTION , EMBEDDING_DIMENSION = load_embedding_model(embedding_provider,embedding_model)
             vector_store = Neo4jVector(embedding=EMBEDDING_FUNCTION,
                                     graph=graph,

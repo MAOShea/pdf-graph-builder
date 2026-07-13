@@ -506,7 +506,9 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
     uri_latency["scaffold_seed_count"] = len(scaffold_map.get("seed_nodes", {}))
 
   start_get_chunkId_chunkDoc_list = time.time()
-  total_chunks, chunkId_chunkDoc_list = get_chunkId_chunkDoc_list(graph, params.file_name, pages, params.token_chunk_size, params.chunk_overlap, params.retry_condition, credentials.email)
+  token_chunk_size = params.token_chunk_size or 512
+  chunk_overlap = params.chunk_overlap or 100
+  total_chunks, chunkId_chunkDoc_list = get_chunkId_chunkDoc_list(graph, params.file_name, pages, token_chunk_size, chunk_overlap, params.retry_condition, credentials.email)
   end_get_chunkId_chunkDoc_list = time.time()
   elapsed_get_chunkId_chunkDoc_list = end_get_chunkId_chunkDoc_list - start_get_chunkId_chunkDoc_list
   logging.info(f'Time taken to create list chunkids with chunk document: {elapsed_get_chunkId_chunkDoc_list:.2f} seconds')
@@ -573,7 +575,8 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
           break
         else:
           processing_chunks_start_time = time.time()
-          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,params.chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map)
+          chunks_to_combine = params.chunks_to_combine or 1
+          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map)
           logging.info("Token used in processing chunks: %s", token_usage)
           tokens_per_file += token_usage
           logging.info("Total token used per file: %s", tokens_per_file)
