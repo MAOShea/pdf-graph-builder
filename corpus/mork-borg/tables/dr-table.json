@@ -1,0 +1,21 @@
+{
+  "source": "mork-borg",
+  "section_id": "dr-table",
+  "title": "Difficulty Rating",
+  "blocks": [
+    {
+      "type": "table",
+      "title": "DR",
+      "columns": ["DR", "label"],
+      "rows": [
+        [6, "so simple people laugh at you for failing"],
+        [8, "routine"],
+        [10, "pretty simple"],
+        [12, "normal"],
+        [14, "difficult"],
+        [16, "really hard"],
+        [18, "should not be possible"]
+      ]
+    }
+  ]
+}

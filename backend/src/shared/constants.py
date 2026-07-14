@@ -897,6 +897,11 @@ INGEST_REL_TYPES = {
     "OVERRIDES_SEED",
     "POSSIBLE_OVERRIDES_SEED",
     "REFERENCES",
+    # Tier-5 lookup table materialization (briefing-3)
+    "HAS_COLUMN",
+    "HAS_ENTRY",
+    "APPLIES_TO",
+    "USES",
 }
 
 SCAFFOLD_DIFF_INSTRUCTIONS = """You are ingesting a rulebook PDF against a pre-existing knowledge graph scaffold.

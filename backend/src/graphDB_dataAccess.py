@@ -667,16 +667,15 @@ class graphDBdataAccess:
         """
         logging.info("scaffold-diff: fetching scaffold node map from Neo4j")
         node_query = """
-            MATCH (n)
+            MATCH (n:SeedNode)
             WHERE n.tier IS NOT NULL OR n.seed_id IS NOT NULL
             RETURN labels(n) AS labels,
                    coalesce(n.seed_id, n.id, elementId(n)) AS seed_id,
+                   coalesce(n.name, n.seed_id, n.id) AS display_id,
                    coalesce(n.coverage, 'research-only') AS coverage
         """
         rel_query = """
-            MATCH (a)-[r]->(b)
-            WHERE (a.tier IS NOT NULL OR a.seed_id IS NOT NULL)
-              AND (b.tier IS NOT NULL OR b.seed_id IS NOT NULL)
+            MATCH (a:SeedNode)-[r]->(b:SeedNode)
             RETURN DISTINCT type(r) AS rel_type
         """
         try:
@@ -697,14 +696,18 @@ class graphDBdataAccess:
         for row in node_rows:
             raw_labels = [lbl for lbl in (row.get("labels") or []) if lbl not in system_labels]
             seed_id = str(row.get("seed_id") or "").strip()
+            display_id = str(row.get("display_id") or seed_id).strip()
             coverage = str(row.get("coverage") or "research-only")
             if not seed_id:
                 continue
-            seed_nodes[seed_id.lower()] = {
+            entry = {
                 "seed_id": seed_id,
                 "labels": raw_labels,
                 "coverage": coverage,
             }
+            for key in {display_id.lower(), seed_id.lower()}:
+                if key:
+                    seed_nodes[key] = entry
             scaffold_labels.update(raw_labels)
 
         scaffold_rel_types = {str(r.get("rel_type")) for r in rel_rows if r.get("rel_type")}

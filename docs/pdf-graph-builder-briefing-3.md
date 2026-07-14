@@ -37,7 +37,9 @@ From bootstrap:
 - Row entries with cell values
 - Links: `DRTable INSTANCE_OF LookupTable`, `AbilityTest USES DRTable`, `DRTable APPLIES_TO DR`
 
-Reference contract: `corpus/games/mork-borg/deltas.json` → `ingest_expectations.lookup_tables[0]`
+Reference contract: `games/mork-borg/ingest-manifest.json` → `lookup_tables[]`
+
+Manifest sync: [ingest-manifest-sync.md](./ingest-manifest-sync.md)
 
 Ontology source: `corpus/seeds/families/lookup-tables.json` (v0.2 — `TableColumn`, `HAS_COLUMN`, `cells` on rows)
 
@@ -87,7 +89,7 @@ When ingest finds the DR reference table, create:
 // and/or CONFIRMS_SEED on the existing AbilityTest-[:USES]->LookupTable edge
 ```
 
-**Expected rows** (from `ingest_expectations`):
+**Expected rows** (from `acceptance_rows` in ingest-manifest):
 
 | DR | label |
 |---|---|
@@ -134,7 +136,7 @@ Use exact rulebook text for labels; the table above is the acceptance test.
 **Do not:**
 
 - Create flat `DR6`, `DR8`, … as `:DifficultyRating` nodes (old workaround — removed)
-- Put `DRTable` or rows in `deltas.json` / bootstrap
+- Put `DRTable` or rows in `deltas.json` / bootstrap (use `ingest-manifest.json` for the contract instead)
 - Write `SPECIALIZES` relationships during ingest
 - Treat `Chunk.table_json` alone as sufficient for runtime table lookup — the assistant queries mechanism nodes
 
@@ -189,12 +191,14 @@ Expected: 1 table, 2 columns, 7 rows, `AbilityTest USES DRTable`.
 | File | What |
 |---|---|
 | `corpus/seeds/families/lookup-tables.json` | Tier 1 ontology (`TableColumn`, `HAS_COLUMN`, `cells`) |
-| `corpus/games/mork-borg/deltas.json` | `ingest_expectations` contract for `DRTable` |
+| `games/mork-borg/ingest-manifest.json` | Tier-5 materialization + `pdf_extract` contracts |
+| [ingest-manifest-sync.md](./ingest-manifest-sync.md) | Table inventory, PDF signatures, sync workflow |
 | `DESIGN.md` §6.2.2 | Full model and Cypher examples |
-| `docs/pdf-graph-builder-briefing-2.md` | Prior ingest bugs (case norm, instance routing, SeedNode leakage) still apply |
+| `docs/outbox/pdf-graph-builder-briefing-2.md` | Prior ingest bugs (case norm, instance routing, SeedNode leakage) still apply |
+| `docs/inbox/ai-dm-assistant-handoff-1.md` | Prior ingest findings |
 
 ---
 
 ## One-line summary
 
-> When you parse a rulebook table, don't stop at `Chunk.table_json` — also create `:IngestNode` `LookupTable` instances with `:HAS_COLUMN` column defs and `:HAS_ENTRY` rows using a `cells` map keyed by column name; for Mörk Borg start with `DRTable` on p.28 per `deltas.json` `ingest_expectations`.
+> When you parse a rulebook table, don't stop at `Chunk.table_json` — also create `:IngestNode` `LookupTable` instances with `:HAS_COLUMN` column defs and `:HAS_ENTRY` rows using a `cells` map keyed by column name; for Mörk Borg start with `DRTable` on p.28 per `ingest-manifest.json`.

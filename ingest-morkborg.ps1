@@ -25,7 +25,7 @@ $python = "$PSScriptRoot\backend\venv\Scripts\python.exe"
 from neo4j import GraphDatabase
 driver = GraphDatabase.driver('$Uri', auth=('$User', '$Password'))
 with driver.session(database='$Database') as s:
-    s.run('MATCH ()-[r:OVERRIDES_SEED]->() DELETE r')
+    s.run('MATCH ()-[r:OVERRIDES_SEED|POSSIBLE_OVERRIDES_SEED|CONFIRMS_SEED|DOCUMENTED_BY|INSTANCE_OF|REFERENCES|HAS_COLUMN|HAS_ENTRY|APPLIES_TO|USES]->() DELETE r')
     s.run('MATCH (n:IngestNode) DETACH DELETE n')
     s.run('MATCH (n:FlaggedRelationship) DETACH DELETE n')
     s.run('MATCH (n:FlaggedConcept) DETACH DELETE n')

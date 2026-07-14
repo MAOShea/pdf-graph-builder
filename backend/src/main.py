@@ -48,6 +48,8 @@ from src.shared.constants import (
 )
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from src.shared.schema_extraction import schema_extraction_from_text
+from src.pdf_table_parser import enrich_pdf_chunks_with_tables, persist_chunk_table_metadata
+from src.table_materialization import materialize_lookup_tables_from_chunks
 
 from langchain_community.document_loaders import WebBaseLoader
 
@@ -514,6 +516,26 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   logging.info(f'Time taken to create list chunkids with chunk document: {elapsed_get_chunkId_chunkDoc_list:.2f} seconds')
   uri_latency["create_list_chunk_and_document"] = f'{elapsed_get_chunkId_chunkDoc_list:.2f}'
   uri_latency["total_chunks"] = total_chunks
+
+  if getattr(params, "ingest_mode", None) == "scaffold-diff" and scaffold_map:
+    pdf_table_stats = enrich_pdf_chunks_with_tables(chunkId_chunkDoc_list)
+    persist_chunk_table_metadata(graph, chunkId_chunkDoc_list)
+    logging.info(
+      "pdf table parser: scanned %s PDF chunk(s), found %s table(s)",
+      pdf_table_stats["chunks_scanned"],
+      pdf_table_stats["tables_found"],
+    )
+    uri_latency["pdf_table_parser"] = pdf_table_stats
+
+    table_stats = materialize_lookup_tables_from_chunks(
+      graph, params.file_name, chunkId_chunkDoc_list, scaffold_map
+    )
+    logging.info(
+      "table materialization: scanned %s table chunk(s), materialized %s",
+      table_stats["chunks_scanned"],
+      table_stats["tables_materialized"],
+    )
+    uri_latency["table_materialization"] = table_stats
 
   start_status_document_node = time.time()
   result = graphDb_data_Access.get_current_status_document_node(params.file_name)
