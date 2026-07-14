@@ -1,6 +1,6 @@
 # Briefing 2: Mörk Borg Re-ingest — Fixes & Scaffold Update
 
-**Context:** This follows [Briefing 1](./pdf-graph-builder-briefing.md) and the findings from the first ingest run documented in `docs/morkborg-ingest-findings.md`. Three bugs were identified in the ingest process. They have been fixed on the AI-DM-Assistant side (scaffold updated). This briefing describes what to fix in pdf-graph-builder before re-ingesting.
+**Context:** This follows [Briefing 1](./pdf-graph-builder-briefing.md) and the findings from the first ingest run documented in [Handoff 1](./ai-dm-assistant-handoff-1.md). Three bugs were identified in the ingest process. They have been fixed on the AI-DM-Assistant side (scaffold updated). This briefing describes what to fix in pdf-graph-builder before re-ingesting.
 
 ---
 

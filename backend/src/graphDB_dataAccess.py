@@ -686,7 +686,11 @@ class graphDBdataAccess:
             logging.error(f"scaffold-diff: error fetching scaffold map: {e}")
             return {"scaffold_labels": set(), "seed_nodes": {}, "scaffold_rel_types": set()}
 
-        system_labels = {"Document", "Chunk", "__Entity__", "__Community__"}
+        system_labels = {
+            "Document", "Chunk", "__Entity__", "__Community__",
+            # internal scaffold/ingest infrastructure — never expose to LLM prompt
+            "SeedNode", "IngestNode", "FlaggedConcept", "FlaggedRelationship", "RulePassage",
+        }
         seed_nodes = {}
         scaffold_labels = set()
 

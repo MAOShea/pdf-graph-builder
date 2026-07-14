@@ -760,17 +760,24 @@ def get_chunkId_chunkDoc_list(graph, file_name, pages, token_chunk_size, chunk_o
   """
   if retry_condition in ["", None] or retry_condition not in [DELETE_ENTITIES_AND_START_FROM_BEGINNING, START_FROM_LAST_PROCESSED_POSITION]:
     logging.info("Break down file into chunks")
-    bad_chars = ['"', "\n", "'"]
-    for i in range(0,len(pages)):
-      text = pages[i].page_content
-      for j in bad_chars:
-        if j == '\n':
-          text = text.replace(j, ' ')
-        else:
-          text = text.replace(j, '')
-      pages[i]=Document(page_content=str(text), metadata=pages[i].metadata)
+    is_structured = bool(
+        pages
+        and pages[0].metadata.get("source_format") == "structured-json"
+    )
+    if not is_structured:
+      bad_chars = ['"', "\n", "'"]
+      for i in range(0,len(pages)):
+        text = pages[i].page_content
+        for j in bad_chars:
+          if j == '\n':
+            text = text.replace(j, ' ')
+          else:
+            text = text.replace(j, '')
+        pages[i]=Document(page_content=str(text), metadata=pages[i].metadata)
+    else:
+      logging.info("Structured JSON — preserving block formatting (no newline stripping)")
     create_chunks_obj = CreateChunksofDocument(pages, graph)
-    chunks = create_chunks_obj.split_file_into_chunks(token_chunk_size, chunk_overlap, email)
+    chunks = create_chunks_obj.split_file_into_chunks(token_chunk_size, chunk_overlap)
     chunkId_chunkDoc_list = create_relation_between_chunks(graph,file_name,chunks)
     return len(chunks), chunkId_chunkDoc_list
   

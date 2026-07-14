@@ -279,6 +279,9 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
     scaffold_labels: set = scaffold_map.get("scaffold_labels", set())
     scaffold_rel_types: set = scaffold_map.get("scaffold_rel_types", set())
 
+    # Bug 1 fix: build a lowercase → canonical-casing lookup so label matching is case-insensitive
+    scaffold_labels_lower: dict = {l.lower(): l for l in scaffold_labels}
+
     # All relationship types ingest is allowed to create (signals + bootstrap types ingest may confirm)
     allowed_rel_types = scaffold_rel_types | INGEST_REL_TYPES
 
@@ -293,8 +296,11 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
                 continue
             node_id_lower = node_id.lower()
 
-            if node_label not in scaffold_labels:
-                # Unknown label — flag, do not add
+            # Bug 1 fix: case-insensitive label lookup; use canonical casing for all downstream ops
+            canonical_label = scaffold_labels_lower.get(node_label.lower())
+
+            if canonical_label is None:
+                # Unknown label — flag as NEW_NODE, do not add to graph
                 logging.info(f"scaffold-diff: NEW_NODE flagged: {node_label}/{node_id}")
                 try:
                     graph.query(
@@ -339,8 +345,12 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
                 except Exception as e:
                     logging.error(f"scaffold-diff: error writing CONFIRMS_SEED for {seed_id}: {e}")
             else:
-                # Label is known but ID is new — concrete instance of a scaffold concept
-                logging.info(f"scaffold-diff: INSTANCE_OF for {node_label}/{node_id}")
+                # Bug 2 fix: label matches scaffold but ID is a new proper noun → :IngestNode
+                # Use canonical_label (correct casing) for the scaffold MATCH
+                logging.info(f"scaffold-diff: INSTANCE_OF for {canonical_label}/{node_id}")
+                extra_props = {k: v for k, v in (node.properties or {}).items()}
+                extra_props["name"] = node_id
+                extra_props["tier"] = 5
                 try:
                     graph.query(
                         """
@@ -348,21 +358,21 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
                         WHERE $label IN labels(scaffold)
                           AND (scaffold.tier IS NOT NULL OR scaffold.seed_id IS NOT NULL)
                         WITH scaffold LIMIT 1
-                        MERGE (inst:__Entity__ {id: $node_id})
+                        MERGE (inst:IngestNode {id: $node_id})
                         SET inst += $props
                         MERGE (inst)-[:INSTANCE_OF]->(scaffold)
                         """,
                         {
-                            "label": node_label,
+                            "label": canonical_label,
                             "node_id": node_id,
-                            "props": {k: v for k, v in (node.properties or {}).items()},
+                            "props": extra_props,
                         },
                     )
                     for chunk_id in chunk_ids:
                         graph.query(
                             """
                             MATCH (c:Chunk {id: $chunk_id})
-                            MATCH (inst {id: $node_id})
+                            MATCH (inst:IngestNode {id: $node_id})
                             MERGE (c)-[:DOCUMENTED_BY]->(inst)
                             """,
                             {"chunk_id": chunk_id, "node_id": node_id},

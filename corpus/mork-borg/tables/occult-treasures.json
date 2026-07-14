@@ -1,0 +1,19 @@
+{
+  "source": "mork-borg",
+  "section_id": "occult-treasures",
+  "title": "Occult Treasures",
+  "blocks": [
+    {
+      "type": "table",
+      "title": "Occult Treasures",
+      "columns": ["d10", "Treasure"],
+      "rows": [
+        [1, "Ash-grey ring a finger-width wide. All that passes through is obliterated."],
+        [2, "The keening music of this small, vile flute animates a fetus-sized meat golem in a nearby corpse. HP 5, Morale -, No armor, Bite d4, immune to Powers."],
+        [3, "A note explains: one taste from this Famine Spoon means death from slow starvation."],
+        [4, "The image of a being in this malevolently-accurate mirror shows only the shameful truth of their soul."],
+        [5, "Vampiric phurba. Heals you as it harms your target (d3), but beware: after stealing a total of 6 HP, test Presence DR14 or become addicted."]
+      ]
+    }
+  ]
+}

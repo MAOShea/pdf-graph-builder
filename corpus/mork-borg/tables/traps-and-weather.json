@@ -1,0 +1,45 @@
+{
+  "source": "mork-borg",
+  "section_id": "traps-and-weather",
+  "title": "Traps and Devilry",
+  "blocks": [
+    {
+      "type": "table",
+      "title": "Traps and Devilry",
+      "columns": ["d12", "Trap"],
+      "rows": [
+        [1, "Well dressed corpse, booby trapped"],
+        [2, "Wall-holes shoot poisonous arrows"],
+        [3, "Bells and marbles on the floor"],
+        [4, "Scorpion-filled basket poised to fall"],
+        [5, "Fish hooks hanging at eye level"],
+        [6, "Chest marked with explosive runes"],
+        [7, "Lock trapped with vial of poison gas"],
+        [8, "Jewel removal leads to roof collapse"],
+        [9, "Slanted floor, translucent oil, pit"],
+        [10, "Snake-cages on collapsing ceiling tiles"],
+        [11, "Evil urns release cold ghosts"],
+        [12, "Coins coated in grime and poison"]
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Weather",
+      "columns": ["d12", "Weather"],
+      "rows": [
+        [1, "Lifeless grey"],
+        [2, "Hammering rain"],
+        [3, "Piercing wind"],
+        [4, "Deafening storm"],
+        [5, "Black as night"],
+        [6, "Dead quiet"],
+        [7, "Cloudburst"],
+        [8, "Soup-thick mist"],
+        [9, "Crackling frost"],
+        [10, "Irritating drizzle"],
+        [11, "Roaring thunder"],
+        [12, "Gravelike cold"]
+      ]
+    }
+  ]
+}

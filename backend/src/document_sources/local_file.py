@@ -5,6 +5,12 @@ from langchain_community.document_loaders import PyMuPDFLoader, UnstructuredFile
 from langchain_core.documents import Document
 from langchain_core.document_loaders import BaseLoader
 
+from src.document_sources.structured_json import (
+    StructuredJsonError,
+    is_structured_json_file,
+    load_structured_json_documents,
+)
+
 class ListLoader(BaseLoader):
     """
     A wrapper to make a list of Documents compatible with BaseLoader.
@@ -84,13 +90,19 @@ def get_documents_from_file_by_path(file_path, file_name):
         raise Exception(f'File {file_name} does not exist')
     logging.info('file %s processing', file_name)
     try:
-        loader, encoding_flag = load_document_content(file_path)
         file_extension = file_path.suffix.lower()
+        if file_extension == ".json" and is_structured_json_file(file_path):
+            pages = load_structured_json_documents(file_path)
+            return file_name, pages, file_extension
+
+        loader, encoding_flag = load_document_content(file_path)
         if file_extension == ".pdf" or (file_extension == ".txt" and encoding_flag):
             pages = loader.load()
         else:
             unstructured_pages = loader.load()
             pages = get_pages_with_page_numbers(unstructured_pages)
+    except StructuredJsonError as exc:
+        raise Exception(f'Structured JSON error in {file_name}: {exc}')
     except Exception as exc:
         raise Exception(f'Error while reading the file content or metadata, {exc}')
     return file_name, pages, file_extension

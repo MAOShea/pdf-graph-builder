@@ -94,6 +94,14 @@ def create_relation_between_chunks(graph, file_name, chunks: List[Document])->li
         
         if 'page_number' in chunk.metadata:
             chunk_data['page_number'] = chunk.metadata['page_number']
+
+        if chunk.metadata.get('source_format') == 'structured-json':
+            chunk_data['source_format'] = 'structured-json'
+            for key in ('block_type', 'block_title', 'section_id', 'file_title', 'table_json', 'block_index'):
+                if key in chunk.metadata and chunk.metadata[key] is not None:
+                    chunk_data[key] = chunk.metadata[key]
+            if chunk.metadata.get('heading_path') is not None:
+                chunk_data['heading_path'] = list(chunk.metadata['heading_path'])
          
         if 'start_timestamp' in chunk.metadata and 'end_timestamp' in chunk.metadata:
             chunk_data['start_time'] = chunk.metadata['start_timestamp']
@@ -120,7 +128,15 @@ def create_relation_between_chunks(graph, file_name, chunks: List[Document])->li
         WITH data, c
         SET c.page_number = CASE WHEN data.page_number IS NOT NULL THEN data.page_number END,
             c.start_time = CASE WHEN data.start_time IS NOT NULL THEN data.start_time END,
-            c.end_time = CASE WHEN data.end_time IS NOT NULL THEN data.end_time END
+            c.end_time = CASE WHEN data.end_time IS NOT NULL THEN data.end_time END,
+            c.source_format = CASE WHEN data.source_format IS NOT NULL THEN data.source_format END,
+            c.block_type = CASE WHEN data.block_type IS NOT NULL THEN data.block_type END,
+            c.block_title = CASE WHEN data.block_title IS NOT NULL THEN data.block_title END,
+            c.section_id = CASE WHEN data.section_id IS NOT NULL THEN data.section_id END,
+            c.file_title = CASE WHEN data.file_title IS NOT NULL THEN data.file_title END,
+            c.heading_path = CASE WHEN data.heading_path IS NOT NULL THEN data.heading_path END,
+            c.table_json = CASE WHEN data.table_json IS NOT NULL THEN data.table_json END,
+            c.block_index = CASE WHEN data.block_index IS NOT NULL THEN data.block_index END
         WITH data, c
         MATCH (d:Document {fileName: data.f_name})
         MERGE (c)-[:PART_OF]->(d)

@@ -17,6 +17,23 @@ if (-not (Test-Path $PdfPath)) {
 }
 
 # ------------------------------------------------------------------
+# 0. Pre-ingest cleanup — clear all ingest-created data, leave scaffold intact
+# ------------------------------------------------------------------
+Write-Host "Clearing previous ingest data (IngestNode, OVERRIDES_SEED, FlaggedRelationship, FlaggedConcept) ..."
+$python = "$PSScriptRoot\backend\venv\Scripts\python.exe"
+& $python -c @"
+from neo4j import GraphDatabase
+driver = GraphDatabase.driver('$Uri', auth=('$User', '$Password'))
+with driver.session(database='$Database') as s:
+    s.run('MATCH ()-[r:OVERRIDES_SEED]->() DELETE r')
+    s.run('MATCH (n:IngestNode) DETACH DELETE n')
+    s.run('MATCH (n:FlaggedRelationship) DETACH DELETE n')
+    s.run('MATCH (n:FlaggedConcept) DETACH DELETE n')
+    print('Cleanup done.')
+driver.close()
+"@
+
+# ------------------------------------------------------------------
 # 1. Upload
 # ------------------------------------------------------------------
 Write-Host "Uploading $FileName ..."

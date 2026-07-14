@@ -895,6 +895,7 @@ INGEST_REL_TYPES = {
     "DOCUMENTED_BY",
     "CONFIRMS_SEED",
     "OVERRIDES_SEED",
+    "POSSIBLE_OVERRIDES_SEED",
     "REFERENCES",
 }
 
@@ -905,7 +906,11 @@ STRICT RULES — follow these exactly:
 2. NEVER extract a SPECIALIZES relationship. If you detect a subtype or "is-a" relationship, skip it entirely.
 3. For each entity you extract, prefer an ID that matches one of the known seed names below exactly (case-insensitive).
 4. If a passage describes a concrete in-game value (e.g. a specific character's STR score of 14, a named weapon's damage die), extract it and use the matching scaffold label — it will be recorded as INSTANCE_OF that concept.
-5. If a passage explicitly contradicts a scaffold claim, extract the relationship type OVERRIDES_SEED between the two concepts.
+5. OVERRIDES_SEED means a TRUE CONTRADICTION only. Use it ONLY when the rulebook text explicitly states something that directly conflicts with what the scaffold already defines — for example, the scaffold says "STR is used for melee attacks" but the rulebook says "AGI is used for melee attacks instead". Do NOT use OVERRIDES_SEED for:
+   - Structural mechanic relationships ("X is used for Y", "X applies to Y", "X sets the threshold for Y") — DROP these entirely.
+   - NPC interactions or narrative events between characters.
+   - Anything where both things can be true at the same time.
+   If you are unsure whether something is a true contradiction, emit it as a POSSIBLE_OVERRIDES_SEED relationship so it is explicitly flagged for human review.
 6. Focus on rule mechanics, procedures, and game system definitions. Skip narrative flavour text.
 7. Do not extract dates, numbers, or simple values as standalone nodes; attach them as properties instead.
 

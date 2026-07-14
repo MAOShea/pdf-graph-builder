@@ -317,6 +317,24 @@ Node colours signal coverage state: **amber** = `research-only`, **green** = `in
 
 ---
 
+### Use Case 3 — Structured JSON ingest (hand-authored rulebook sections)
+
+PDF extraction fails for side-by-side tables and art-heavy layouts. For rulebooks, hand-author (or script from an SRD) structured JSON files instead.
+
+- **One block = one chunk** — no token splitting, no 19-chunk cap
+- **Tables** stored as markdown for the LLM and as `table_json` on `:Chunk` for direct lookup
+- **Schema:** see `docs/structured-ingest-schema.md`
+- **Examples:** `corpus/mork-borg/tables/`
+
+```powershell
+# From workspace root — uploads every .json under corpus/mork-borg/
+.\ingest-morkborg-json.ps1
+```
+
+Each file is ingested with `ingest_mode=scaffold-diff` against the same scaffold as Use Case 2.
+
+---
+
 ## [ENV][env-sheet]
 | Env Variable Name       | Mandatory/Optional | Default Value | Description                                                                                      |
 |------------------------ |-------------------|---------------|--------------------------------------------------------------------------------------------------|
@@ -332,7 +350,6 @@ Node colours signal coverage state: **amber** = `research-only`, **green** = `in
 | DUPLICATE_SCORE_VALUE   | Optional          | 0.97          | Node score value to match duplicate nodes                                                        |
 | EFFECTIVE_SEARCH_RATIO  | Optional          | 1             | Ratio used for effective search calculations                                                     |
 | GRAPH_CLEANUP_MODEL     | Optional          | openai_gpt_5_mini | Model name to clean up graph in post processing                                            |
-| MAX_TOKEN_CHUNK_SIZE    | Optional          | 10000         | Maximum token size to process file content                                                       |
 | YOUTUBE_TRANSCRIPT_PROXY| Mandatory         |               | Proxy key to process YouTube videos for getting transcripts                                      |
 | IS_EMBEDDING           | Optional           | true          | Flag to enable text embedding                                                                    |
 | KNN_MIN_SCORE          | Optional           | 0.8           | Minimum score for KNN algorithm                                                                  |
