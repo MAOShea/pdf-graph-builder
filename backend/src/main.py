@@ -48,6 +48,7 @@ from src.shared.constants import (
 )
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from src.shared.schema_extraction import schema_extraction_from_text
+from src.hand_authored_tables import materialize_hand_authored_tables
 from src.pdf_table_parser import enrich_pdf_chunks_with_tables, persist_chunk_table_metadata
 from src.table_materialization import materialize_lookup_tables_from_chunks
 
@@ -536,6 +537,16 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
       table_stats["tables_materialized"],
     )
     uri_latency["table_materialization"] = table_stats
+
+    hand_stats = materialize_hand_authored_tables(
+      graph, params.file_name, scaffold_map
+    )
+    logging.info(
+      "hand-authored tables: loaded %s, materialized %s",
+      hand_stats["tables_loaded"],
+      hand_stats["tables_materialized"],
+    )
+    uri_latency["hand_authored_tables"] = hand_stats
 
   start_status_document_node = time.time()
   result = graphDb_data_Access.get_current_status_document_node(params.file_name)

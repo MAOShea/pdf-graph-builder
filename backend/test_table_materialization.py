@@ -1,46 +1,33 @@
 import json
 import unittest
 
-from src.table_materialization import DR_TABLE_INDEX_VALUES, is_dr_table
+from src.ingest_manifest import load_ingest_manifest, spec_by_name
+from src.table_materialization import _table_matches_spec
 
 
-DR_TABLE = {
-    "title": "DR",
-    "columns": ["DR", "label"],
-    "rows": [
-        [6, "so simple people laugh at you for failing"],
-        [8, "routine"],
-        [10, "pretty simple"],
-        [12, "normal"],
-        [14, "difficult"],
-        [16, "really hard"],
-        [18, "should not be possible"],
-    ],
-}
+class TestTableMaterializationMatching(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest = load_ingest_manifest()
 
+    def test_matches_dr_by_manifest_name(self):
+        spec = spec_by_name(self.manifest, "DRTable")
+        table = {
+            "manifest_name": "DRTable",
+            "columns": ["DR", "label"],
+            "rows": [[6, "x"], [8, "y"], [10, "a"], [12, "b"], [14, "c"], [16, "d"], [18, "e"]],
+        }
+        self.assertTrue(_table_matches_spec(table, spec))
 
-class TestDrTableMatching(unittest.TestCase):
-    def test_accepts_canonical_dr_table(self):
-        self.assertTrue(is_dr_table(DR_TABLE))
+    def test_matches_by_column_shape(self):
+        spec = spec_by_name(self.manifest, "WeatherTable")
+        table = {"columns": ["d12", "Weather"], "rows": [[1, "rain"]]}
+        self.assertTrue(_table_matches_spec(table, spec))
 
     def test_rejects_wrong_columns(self):
-        bad = dict(DR_TABLE, columns=["d12", "Trap"])
-        self.assertFalse(is_dr_table(bad))
-
-    def test_rejects_incomplete_rows(self):
-        bad = dict(DR_TABLE, rows=[[6, "x"], [8, "y"]])
-        self.assertFalse(is_dr_table(bad))
-
-    def test_accepts_extra_rows_if_all_dr_values_present(self):
-        extra = dict(
-            DR_TABLE,
-            rows=DR_TABLE["rows"] + [[99, "ignored"]],
-        )
-        self.assertTrue(is_dr_table(extra))
-
-    def test_parsed_from_json_string_metadata_shape(self):
-        table = json.loads(json.dumps(DR_TABLE))
-        self.assertEqual(len([r for r in table["rows"] if r[0] in DR_TABLE_INDEX_VALUES]), 7)
+        spec = spec_by_name(self.manifest, "DRTable")
+        table = {"columns": ["d12", "Trap"], "rows": []}
+        self.assertFalse(_table_matches_spec(table, spec))
 
 
 if __name__ == "__main__":

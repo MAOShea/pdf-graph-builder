@@ -1,8 +1,4 @@
-"""Deterministic Tier-5 lookup table materialization from parsed table chunks.
-
-Layer B (briefing-3): concrete DRTable / columns / rows as :IngestNode nodes,
-linked to scaffold seeds. Complements layer C (Chunk.table_json evidence).
-"""
+"""Deterministic Tier-5 lookup table materialization driven by ingest-manifest.json."""
 
 import json
 import logging
@@ -10,13 +6,14 @@ from typing import Any
 
 from langchain_core.documents import Document
 
-# Phase 1 acceptance contract — Mörk Borg DR reference table (p.28)
-DR_TABLE_NAME = "DRTable"
-DR_TABLE_COLUMNS = [
-    {"column_name": "DR", "role": "index", "position": 0},
-    {"column_name": "label", "role": "result", "position": 1},
-]
-DR_TABLE_INDEX_VALUES = {6, 8, 10, 12, 14, 16, 18}
+from src.ingest_manifest import (
+    column_names,
+    load_ingest_manifest,
+    spec_by_name,
+)
+from src.pdf_table_parser import tables_from_chunk_metadata
+
+_MAX_LABEL_LEN = 500
 
 
 def _normalize_columns(columns: list[Any]) -> list[str]:
@@ -30,36 +27,11 @@ def _parse_table_json(raw: Any) -> dict | None:
         return raw
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else None
         except json.JSONDecodeError:
             return None
     return None
-
-
-def is_dr_table(table: dict) -> bool:
-    """True when table_json matches the DR reference table shape."""
-    columns = _normalize_columns(table.get("columns") or [])
-    if len(columns) != 2:
-        return False
-    if columns[0].lower() != "dr" or columns[1].lower() != "label":
-        return False
-
-    rows = table.get("rows") or []
-    if len(rows) < len(DR_TABLE_INDEX_VALUES):
-        return False
-
-    seen: set[int] = set()
-    for row in rows:
-        if not isinstance(row, (list, tuple)) or len(row) < 2:
-            continue
-        try:
-            dr_val = int(row[0])
-        except (TypeError, ValueError):
-            continue
-        if dr_val in DR_TABLE_INDEX_VALUES:
-            seen.add(dr_val)
-
-    return seen == DR_TABLE_INDEX_VALUES
 
 
 def _find_seed_id(scaffold_map: dict, label: str, graph=None) -> str | None:
@@ -88,43 +60,114 @@ def _find_seed_id(scaffold_map: dict, label: str, graph=None) -> str | None:
 def _row_cells(row: list[Any], columns: list[str]) -> dict[str, Any]:
     cells: dict[str, Any] = {}
     for idx, col in enumerate(columns):
-        if idx < len(row):
-            val = row[idx]
-            if col.lower() == "dr":
-                try:
-                    cells[col] = int(val)
-                except (TypeError, ValueError):
-                    cells[col] = val
-            else:
-                cells[col] = str(val).strip() if val is not None else ""
+        if idx >= len(row):
+            continue
+        val = row[idx]
+        col_lower = col.lower()
+        if col_lower.startswith("d") and col_lower[1:].isdigit():
+            try:
+                cells[col] = int(val)
+            except (TypeError, ValueError):
+                cells[col] = val
+        elif col_lower == "dr":
+            try:
+                cells[col] = int(val)
+            except (TypeError, ValueError):
+                cells[col] = val
+        else:
+            cells[col] = str(val).strip() if val is not None else ""
     return cells
 
 
-def materialize_dr_table(
+def _row_index_key(cells: dict[str, Any], columns: list[dict]) -> str:
+    index_cols = sorted(
+        [c for c in columns if c.get("role") == "index"],
+        key=lambda c: c.get("position", 0),
+    )
+    if not index_cols and columns:
+        index_cols = [columns[0]]
+    if not index_cols:
+        return "0"
+    parts = [str(cells.get(col["name"], "")).replace(" ", "") for col in index_cols]
+    return ":".join(parts)
+
+
+def _table_matches_spec(table: dict, spec: dict) -> bool:
+    if table.get("manifest_name") == spec.get("name"):
+        return True
+    table_cols = _normalize_columns(table.get("columns") or [])
+    return table_cols == column_names(spec)
+
+
+def _validate_rows(table: dict, spec: dict) -> None:
+    acceptance = spec.get("acceptance_rows") or []
+    if not acceptance:
+        return
+    cols = column_names(spec)
+    if not cols:
+        return
+    index_col = cols[0]
+    extracted = {}
+    for row in table.get("rows") or []:
+        cells = _row_cells(list(row), cols)
+        extracted[str(cells.get(index_col))] = cells
+
+    mismatches = 0
+    for expected in acceptance:
+        exp_cells = expected.get("cells") or {}
+        key = str(exp_cells.get(index_col))
+        if key not in extracted:
+            mismatches += 1
+            continue
+        for col, exp_val in exp_cells.items():
+            got = extracted[key].get(col)
+            if col == index_col:
+                continue
+            if str(got).strip().lower() != str(exp_val).strip().lower():
+                mismatches += 1
+                logging.warning(
+                    "table materialization: %s row %s label mismatch (PDF wins)",
+                    spec.get("name"),
+                    key,
+                )
+    if mismatches:
+        logging.info(
+            "table materialization: %s validation — %s mismatch(es) vs acceptance_rows",
+            spec.get("name"),
+            mismatches,
+        )
+
+
+def materialize_lookup_table(
     graph,
     chunk_id: str,
     table: dict,
+    spec: dict,
     chunk_doc: Document,
     file_name: str,
     scaffold_map: dict,
 ) -> bool:
-    """Create DRTable instance, columns, rows, and semantic links. Idempotent."""
-    lookup_seed = _find_seed_id(scaffold_map, "LookupTable", graph)
-    dr_seed = _find_seed_id(scaffold_map, "DR", graph)
-    ability_test_seed = _find_seed_id(scaffold_map, "AbilityTest", graph)
+    """Create one lookup table instance from manifest spec. Idempotent."""
+    table_name = spec["name"]
+    lookup_label = spec.get("instance_of", "LookupTable")
+    lookup_seed = _find_seed_id(scaffold_map, lookup_label, graph)
 
     if not lookup_seed:
-        logging.warning("table materialization: LookupTable seed not found — skipping DRTable")
+        logging.warning(
+            "table materialization: %s seed not found — skipping %s",
+            lookup_label,
+            table_name,
+        )
         return False
 
     meta = chunk_doc.metadata or {}
     page = meta.get("page_number")
-    columns = _normalize_columns(table.get("columns") or ["DR", "label"])
-    col0, col1 = columns[0], columns[1]
+    columns = column_names(spec)
+    col_defs = spec.get("columns") or []
 
-    table_props = {
-        "id": DR_TABLE_NAME,
-        "name": DR_TABLE_NAME,
+    table_props: dict[str, Any] = {
+        "id": table_name,
+        "name": table_name,
         "tier": 5,
         "source": file_name,
     }
@@ -133,8 +176,8 @@ def materialize_dr_table(
 
     try:
         graph.query(
-            """
-            MERGE (t:IngestNode:DRTable {id: $table_id})
+            f"""
+            MERGE (t:IngestNode:{table_name} {{id: $table_id}})
             SET t += $props
             WITH t
             MATCH (lt)
@@ -145,19 +188,19 @@ def materialize_dr_table(
             DELETE r
             """,
             {
-                "table_id": DR_TABLE_NAME,
+                "table_id": table_name,
                 "props": table_props,
                 "lookup_seed": lookup_seed,
             },
         )
 
-        for col_def in DR_TABLE_COLUMNS:
-            col_name = col_def["column_name"]
-            node_id = f"{DR_TABLE_NAME}:{col_name}"
+        for col_def in col_defs:
+            col_name = col_def["name"]
+            node_id = f"{table_name}:{col_name}"
             graph.query(
-                """
-                MATCH (t:DRTable {id: $table_id})
-                MERGE (col:IngestNode:TableColumn {id: $col_id})
+                f"""
+                MATCH (t:{table_name} {{id: $table_id}})
+                MERGE (col:IngestNode:TableColumn {{id: $col_id}})
                 SET col.name = $col_name_full,
                     col.column_name = $column_name,
                     col.role = $role,
@@ -166,98 +209,97 @@ def materialize_dr_table(
                 MERGE (t)-[:HAS_COLUMN]->(col)
                 """,
                 {
-                    "table_id": DR_TABLE_NAME,
+                    "table_id": table_name,
                     "col_id": node_id,
                     "col_name_full": node_id,
                     "column_name": col_name,
-                    "role": col_def["role"],
-                    "position": col_def["position"],
+                    "role": col_def.get("role", "data"),
+                    "position": col_def.get("position", 0),
                 },
             )
 
         for row in table.get("rows") or []:
             cells = _row_cells(list(row), columns)
-            dr_val = cells.get(col0) or cells.get("DR")
-            if dr_val is None:
-                continue
-            try:
-                dr_int = int(dr_val)
-            except (TypeError, ValueError):
-                continue
-            if dr_int not in DR_TABLE_INDEX_VALUES:
-                continue
-
-            row_id = f"{DR_TABLE_NAME}:row:{dr_int}"
+            row_key = _row_index_key(cells, col_defs)
+            row_id = f"{table_name}:row:{row_key}"
             graph.query(
-                """
-                MATCH (t:DRTable {id: $table_id})
-                MERGE (row:IngestNode:TableEntry {id: $row_id})
+                f"""
+                MATCH (t:{table_name} {{id: $table_id}})
+                MERGE (row:IngestNode:TableEntry {{id: $row_id}})
                 SET row.name = $row_name,
                     row.cells = $cells_json,
                     row.tier = 5
                 MERGE (t)-[:HAS_ENTRY]->(row)
                 """,
                 {
-                    "table_id": DR_TABLE_NAME,
+                    "table_id": table_name,
                     "row_id": row_id,
                     "row_name": row_id,
                     "cells_json": json.dumps(cells),
                 },
             )
 
-        if dr_seed:
-            graph.query(
-                """
-                MATCH (t:DRTable {id: $table_id})
-                MATCH (dr)
-                WHERE toLower(coalesce(dr.seed_id, dr.id, '')) = toLower($dr_seed)
-                MERGE (t)-[:APPLIES_TO]->(dr)
-                """,
-                {"table_id": DR_TABLE_NAME, "dr_seed": dr_seed},
-            )
+        applies_to = spec.get("applies_to")
+        if applies_to:
+            target_seed = _find_seed_id(scaffold_map, applies_to, graph)
+            if target_seed:
+                graph.query(
+                    f"""
+                    MATCH (t:{table_name} {{id: $table_id}})
+                    MATCH (target)
+                    WHERE toLower(coalesce(target.seed_id, target.id, '')) = toLower($target_seed)
+                    MERGE (t)-[:APPLIES_TO]->(target)
+                    """,
+                    {"table_id": table_name, "target_seed": target_seed},
+                )
 
-        if ability_test_seed:
-            graph.query(
-                """
-                MATCH (t:DRTable {id: $table_id})
-                MATCH (at)
-                WHERE toLower(coalesce(at.seed_id, at.id, '')) = toLower($ability_seed)
-                MERGE (at)-[:USES]->(t)
-                """,
-                {"table_id": DR_TABLE_NAME, "ability_seed": ability_test_seed},
-            )
+        for user_label in spec.get("used_by") or []:
+            user_seed = _find_seed_id(scaffold_map, user_label, graph)
+            if user_seed:
+                graph.query(
+                    f"""
+                    MATCH (t:{table_name} {{id: $table_id}})
+                    MATCH (user)
+                    WHERE toLower(coalesce(user.seed_id, user.id, '')) = toLower($user_seed)
+                    MERGE (user)-[:USES]->(t)
+                    """,
+                    {"table_id": table_name, "user_seed": user_seed},
+                )
 
         graph.query(
-            """
-            MATCH (c:Chunk {id: $chunk_id})
-            MATCH (t:DRTable {id: $table_id})
+            f"""
+            MATCH (c:Chunk {{id: $chunk_id}})
+            MATCH (t:{table_name} {{id: $table_id}})
             MERGE (c)-[:DOCUMENTED_BY]->(t)
             """,
-            {"chunk_id": chunk_id, "table_id": DR_TABLE_NAME},
+            {"chunk_id": chunk_id, "table_id": table_name},
         )
 
-        graph.query(
-            """
-            MATCH (c:Chunk {id: $chunk_id})
-            MATCH (lt)
-            WHERE toLower(coalesce(lt.seed_id, lt.id, '')) = toLower($lookup_seed)
-            MERGE (c)-[:CONFIRMS_SEED]->(lt)
-            SET lt.coverage = CASE lt.coverage
-                WHEN 'research-only' THEN 'ingest-confirmed'
-                ELSE lt.coverage END
-            """,
-            {"chunk_id": chunk_id, "lookup_seed": lookup_seed},
-        )
+        if table_name == "DRTable":
+            graph.query(
+                """
+                MATCH (c:Chunk {id: $chunk_id})
+                MATCH (lt)
+                WHERE toLower(coalesce(lt.seed_id, lt.id, '')) = toLower($lookup_seed)
+                MERGE (c)-[:CONFIRMS_SEED]->(lt)
+                SET lt.coverage = CASE lt.coverage
+                    WHEN 'research-only' THEN 'ingest-confirmed'
+                    ELSE lt.coverage END
+                """,
+                {"chunk_id": chunk_id, "lookup_seed": lookup_seed},
+            )
 
+        _validate_rows(table, spec)
         logging.info(
-            "table materialization: DRTable materialized from chunk %s (%s)",
+            "table materialization: %s materialized from chunk %s (%s)",
+            table_name,
             chunk_id[:8],
             file_name,
         )
         return True
 
     except Exception as e:
-        logging.error("table materialization: failed for DRTable: %s", e)
+        logging.error("table materialization: failed for %s: %s", table_name, e)
         return False
 
 
@@ -266,12 +308,17 @@ def materialize_lookup_tables_from_chunks(
     file_name: str,
     chunk_list: list[dict],
     scaffold_map: dict | None,
+    *,
+    game: str = "mork-borg",
 ) -> dict[str, int]:
-    """Scan chunks for table_json and materialize known lookup tables."""
+    """Materialize lookup tables from chunk table_json using ingest manifest."""
     stats = {"chunks_scanned": 0, "tables_materialized": 0}
 
     if not scaffold_map or not chunk_list:
         return stats
+
+    manifest = load_ingest_manifest(game)
+    materialized: set[str] = set()
 
     sorted_chunks = sorted(
         chunk_list,
@@ -288,22 +335,38 @@ def materialize_lookup_tables_from_chunks(
             continue
 
         meta = chunk_doc.metadata or {}
-        table = _parse_table_json(meta.get("table_json"))
-        is_table_block = meta.get("block_type") == "table"
-
-        if not table and not is_table_block:
+        tables = tables_from_chunk_metadata(meta)
+        if not tables and meta.get("block_type") != "table":
             continue
 
         stats["chunks_scanned"] += 1
 
-        if table is None:
-            continue
+        for table in tables:
+            if not isinstance(table, dict):
+                continue
+            spec = None
+            if table.get("manifest_name"):
+                spec = spec_by_name(manifest, table["manifest_name"])
+            if spec is None:
+                for candidate in manifest.get("lookup_tables") or []:
+                    if _table_matches_spec(table, candidate):
+                        spec = candidate
+                        table["manifest_name"] = candidate["name"]
+                        break
+            if spec is None:
+                continue
+            if spec.get("name") in materialized:
+                continue
+            pdf_status = (spec.get("pdf_extract") or {}).get("status")
+            if pdf_status == "todo":
+                continue
+            if pdf_status == "hand-authored":
+                continue
 
-        if is_dr_table(table):
-            if materialize_dr_table(
-                graph, chunk_id, table, chunk_doc, file_name, scaffold_map
+            if materialize_lookup_table(
+                graph, chunk_id, table, spec, chunk_doc, file_name, scaffold_map
             ):
+                materialized.add(spec["name"])
                 stats["tables_materialized"] += 1
-                break
 
     return stats

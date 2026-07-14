@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_neo4j import Neo4jGraph
 
+from src.hand_authored_tables import materialize_hand_authored_tables
 from src.graphDB_dataAccess import graphDBdataAccess
 from src.pdf_table_parser import enrich_pdf_chunks_with_tables, persist_chunk_table_metadata
 from src.table_materialization import materialize_lookup_tables_from_chunks
@@ -47,25 +48,29 @@ def main():
         for r in rows
     ]
 
-    pdf_stats = enrich_pdf_chunks_with_tables(chunk_list)
+    pdf_stats = enrich_pdf_chunks_with_tables(chunk_list, force=True)
     persisted = persist_chunk_table_metadata(graph, chunk_list)
     mat_stats = materialize_lookup_tables_from_chunks(
         graph, file_name, chunk_list, scaffold_map
+    )
+    hand_stats = materialize_hand_authored_tables(
+        graph, file_name, scaffold_map
     )
 
     print("pdf_table_parser:", pdf_stats)
     print("persisted_chunks:", persisted)
     print("materialization:", mat_stats)
+    print("hand_authored:", hand_stats)
 
     verify = graph.query(
         """
-        MATCH (t:DRTable:IngestNode)
-        OPTIONAL MATCH (t)-[:HAS_COLUMN]->(col:TableColumn)
-        OPTIONAL MATCH (t)-[:HAS_ENTRY]->(row:TableEntry)
-        RETURN t.name, collect(DISTINCT col.column_name) AS cols, count(DISTINCT row) AS rows
+        MATCH (t:IngestNode)-[:HAS_ENTRY]->(row:TableEntry)
+        WITH t, count(DISTINCT row) AS rows
+        RETURN t.name AS table, rows
+        ORDER BY table
         """
     )
-    print("dr_table:", verify)
+    print("materialized_tables:", verify)
 
 
 if __name__ == "__main__":

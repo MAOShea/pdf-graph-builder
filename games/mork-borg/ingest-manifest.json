@@ -18,27 +18,87 @@
       "phase": 1,
       "instance_of": "LookupTable",
       "applies_to": "DR",
-      "used_by": ["AbilityTest"],
+      "used_by": [
+        "AbilityTest"
+      ],
       "source_ref": "mork-borg.pdf",
       "pages": "28",
       "columns": [
-        {"name": "DR", "role": "index", "position": 0},
-        {"name": "label", "role": "result", "position": 1}
+        {
+          "name": "DR",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "label",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [
-        {"cells": {"DR": 6, "label": "so simple people laugh at you for failing"}},
-        {"cells": {"DR": 8, "label": "routine"}},
-        {"cells": {"DR": 10, "label": "pretty simple"}},
-        {"cells": {"DR": 12, "label": "normal"}},
-        {"cells": {"DR": 14, "label": "difficult"}},
-        {"cells": {"DR": 16, "label": "really hard"}},
-        {"cells": {"DR": 18, "label": "should not be possible"}}
+        {
+          "cells": {
+            "DR": 6,
+            "label": "so simple people laugh at you for failing"
+          }
+        },
+        {
+          "cells": {
+            "DR": 8,
+            "label": "routine"
+          }
+        },
+        {
+          "cells": {
+            "DR": 10,
+            "label": "pretty simple"
+          }
+        },
+        {
+          "cells": {
+            "DR": 12,
+            "label": "normal"
+          }
+        },
+        {
+          "cells": {
+            "DR": 14,
+            "label": "difficult"
+          }
+        },
+        {
+          "cells": {
+            "DR": 16,
+            "label": "really hard"
+          }
+        },
+        {
+          "cells": {
+            "DR": 18,
+            "label": "should not be possible"
+          }
+        }
       ],
       "pdf_extract": {
         "status": "verified",
-        "header_patterns": ["Difficulty Ratings?\\s*\\(DR\\)"],
-        "stop_before": ["Carrying Capacity"],
-        "index": {"type": "dr_set", "values": [6, 8, 10, 12, 14, 16, 18]},
+        "header_patterns": [
+          "Difficulty Ratings?\\s*\\(DR\\)"
+        ],
+        "stop_before": [
+          "Carrying Capacity"
+        ],
+        "index": {
+          "type": "dr_set",
+          "values": [
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18
+          ]
+        },
         "min_rows": 7,
         "max_rows": 7,
         "prefer_page": 28,
@@ -53,28 +113,102 @@
       "source_ref": "mork-borg.pdf",
       "pages": "4",
       "columns": [
-        {"name": "d12", "role": "index", "position": 0},
-        {"name": "Trap", "role": "result", "position": 1}
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "Trap",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [
-        {"cells": {"d12": 1, "Trap": "Well dressed corpse, booby trapped"}},
-        {"cells": {"d12": 2, "Trap": "Wall-holes shoot poisonous arrows"}},
-        {"cells": {"d12": 3, "Trap": "Bells and marbles on the floor"}},
-        {"cells": {"d12": 4, "Trap": "Scorpion-filled basket poised to fall"}},
-        {"cells": {"d12": 5, "Trap": "Fish hooks hanging at eye level"}},
-        {"cells": {"d12": 6, "Trap": "Chest marked with explosive runes"}},
-        {"cells": {"d12": 7, "Trap": "Lock trapped with vial of poison gas"}},
-        {"cells": {"d12": 8, "Trap": "Jewel removal leads to roof collapse"}},
-        {"cells": {"d12": 9, "Trap": "Slanted floor, translucent oil, pit"}},
-        {"cells": {"d12": 10, "Trap": "Snake-cages on collapsing ceiling tiles"}},
-        {"cells": {"d12": 11, "Trap": "Evil urns release cold ghosts"}},
-        {"cells": {"d12": 12, "Trap": "Coins coated in grime and poison"}}
+        {
+          "cells": {
+            "d12": 1,
+            "Trap": "Well dressed corpse, booby trapped"
+          }
+        },
+        {
+          "cells": {
+            "d12": 2,
+            "Trap": "Wall-holes shoot poisonous arrows"
+          }
+        },
+        {
+          "cells": {
+            "d12": 3,
+            "Trap": "Bells and marbles on the floor"
+          }
+        },
+        {
+          "cells": {
+            "d12": 4,
+            "Trap": "Scorpion-filled basket poised to fall"
+          }
+        },
+        {
+          "cells": {
+            "d12": 5,
+            "Trap": "Fish hooks hanging at eye level"
+          }
+        },
+        {
+          "cells": {
+            "d12": 6,
+            "Trap": "Chest marked with explosive runes"
+          }
+        },
+        {
+          "cells": {
+            "d12": 7,
+            "Trap": "Lock trapped with vial of poison gas"
+          }
+        },
+        {
+          "cells": {
+            "d12": 8,
+            "Trap": "Jewel removal leads to roof collapse"
+          }
+        },
+        {
+          "cells": {
+            "d12": 9,
+            "Trap": "Slanted floor, translucent oil, pit"
+          }
+        },
+        {
+          "cells": {
+            "d12": 10,
+            "Trap": "Snake-cages on collapsing ceiling tiles"
+          }
+        },
+        {
+          "cells": {
+            "d12": 11,
+            "Trap": "Evil urns release cold ghosts"
+          }
+        },
+        {
+          "cells": {
+            "d12": 12,
+            "Trap": "Coins coated in grime and poison"
+          }
+        }
       ],
       "pdf_extract": {
         "status": "verified",
-        "header_patterns": ["Traps and Devilry\\s*\\(d12\\)"],
-        "stop_before": ["weather\\s*\\(d12\\)"],
-        "index": {"type": "d12"},
+        "header_patterns": [
+          "Traps and Devilry\\s*\\(d12\\)"
+        ],
+        "stop_before": [
+          "weather\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
         "min_rows": 12,
         "max_rows": 12,
         "multi_table_page": true
@@ -88,28 +222,102 @@
       "source_ref": "mork-borg.pdf",
       "pages": "4",
       "columns": [
-        {"name": "d12", "role": "index", "position": 0},
-        {"name": "Weather", "role": "result", "position": 1}
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "Weather",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [
-        {"cells": {"d12": 1, "Weather": "Lifeless grey"}},
-        {"cells": {"d12": 2, "Weather": "Hammering rain"}},
-        {"cells": {"d12": 3, "Weather": "Piercing wind"}},
-        {"cells": {"d12": 4, "Weather": "Deafening storm"}},
-        {"cells": {"d12": 5, "Weather": "Black as night"}},
-        {"cells": {"d12": 6, "Weather": "Dead quiet"}},
-        {"cells": {"d12": 7, "Weather": "Cloudburst"}},
-        {"cells": {"d12": 8, "Weather": "Soup-thick mist"}},
-        {"cells": {"d12": 9, "Weather": "Crackling frost"}},
-        {"cells": {"d12": 10, "Weather": "Irritating drizzle"}},
-        {"cells": {"d12": 11, "Weather": "Roaring thunder"}},
-        {"cells": {"d12": 12, "Weather": "Gravelike cold"}}
+        {
+          "cells": {
+            "d12": 1,
+            "Weather": "Lifeless grey"
+          }
+        },
+        {
+          "cells": {
+            "d12": 2,
+            "Weather": "Hammering rain"
+          }
+        },
+        {
+          "cells": {
+            "d12": 3,
+            "Weather": "Piercing wind"
+          }
+        },
+        {
+          "cells": {
+            "d12": 4,
+            "Weather": "Deafening storm"
+          }
+        },
+        {
+          "cells": {
+            "d12": 5,
+            "Weather": "Black as night"
+          }
+        },
+        {
+          "cells": {
+            "d12": 6,
+            "Weather": "Dead quiet"
+          }
+        },
+        {
+          "cells": {
+            "d12": 7,
+            "Weather": "Cloudburst"
+          }
+        },
+        {
+          "cells": {
+            "d12": 8,
+            "Weather": "Soup-thick mist"
+          }
+        },
+        {
+          "cells": {
+            "d12": 9,
+            "Weather": "Crackling frost"
+          }
+        },
+        {
+          "cells": {
+            "d12": 10,
+            "Weather": "Irritating drizzle"
+          }
+        },
+        {
+          "cells": {
+            "d12": 11,
+            "Weather": "Roaring thunder"
+          }
+        },
+        {
+          "cells": {
+            "d12": 12,
+            "Weather": "Gravelike cold"
+          }
+        }
       ],
       "pdf_extract": {
         "status": "verified",
-        "header_patterns": ["weather\\s*\\(d12\\)"],
-        "stop_before": ["Corpse plundering\\s*\\(d66\\)"],
-        "index": {"type": "d12"},
+        "header_patterns": [
+          "weather\\s*\\(d12\\)"
+        ],
+        "stop_before": [
+          "Corpse plundering\\s*\\(d66\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
         "min_rows": 12,
         "max_rows": 12,
         "multi_table_page": true
@@ -123,26 +331,91 @@
       "source_ref": "mork-borg.pdf",
       "pages": "3",
       "columns": [
-        {"name": "d10", "role": "index", "position": 0},
-        {"name": "Treasure", "role": "result", "position": 1}
+        {
+          "name": "d10",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "Treasure",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [
-        {"cells": {"d10": 1, "Treasure": "Ash-grey ring a finger-width wide. All that passes through is obliterated."}},
-        {"cells": {"d10": 2, "Treasure": "The keening music of this small, vile flute animates a fetus-sized meat golem in a nearby corpse. HP 5, Morale -, No armor, Bite d4, immune to Powers."}},
-        {"cells": {"d10": 3, "Treasure": "A note explains: one taste from this Famine Spoon means death from slow starvation."}},
-        {"cells": {"d10": 4, "Treasure": "The image of a being in this malevolently-accurate mirror shows only the shameful truth of their soul."}},
-        {"cells": {"d10": 5, "Treasure": "Vampiric phurba. Heals you as it harms your target (d3), but beware: after stealing a total of 6 HP, test Presence DR14 or become addicted."}},
-        {"cells": {"d10": 6, "Treasure": "A black pearl. If dropped in darkness it rolls towards the nearest exit to day."}},
-        {"cells": {"d10": 7, "Treasure": "This torch burns for an immortal hour. Hold it and live. You can lose limbs and enter negative HP but won't die unless you drop the torch or it burns out."}},
-        {"cells": {"d10": 8, "Treasure": "Silver bird cage slays whatever is placed behind its bars, slowly, over one long night. That which is killed reanimates twice as strong, as a raging uncontrollable undead."}},
-        {"cells": {"d10": 9, "Treasure": "Black Crown of the Crippled King. Wearing this crooks your body as you become aware that you and every creature within 100 yards gain +10 to attack rolls but −10 to defence rolls."}},
-        {"cells": {"d10": 10, "Treasure": "Anyone wearing this ancient blindfold becomes invisible to those who breathe though the undead attack them obsessively and nearby corpses awaken in moaning, unholy wrath."}}
+        {
+          "cells": {
+            "d10": 1,
+            "Treasure": "Ash-grey ring a finger-width wide. All that passes through is obliterated."
+          }
+        },
+        {
+          "cells": {
+            "d10": 2,
+            "Treasure": "The keening music of this small, vile flute animates a fetus-sized meat golem in a nearby corpse. HP 5, Morale -, No armor, Bite d4, immune to Powers."
+          }
+        },
+        {
+          "cells": {
+            "d10": 3,
+            "Treasure": "A note explains: one taste from this Famine Spoon means death from slow starvation."
+          }
+        },
+        {
+          "cells": {
+            "d10": 4,
+            "Treasure": "The image of a being in this malevolently-accurate mirror shows only the shameful truth of their soul."
+          }
+        },
+        {
+          "cells": {
+            "d10": 5,
+            "Treasure": "Vampiric phurba. Heals you as it harms your target (d3), but beware: after stealing a total of 6 HP, test Presence DR14 or become addicted."
+          }
+        },
+        {
+          "cells": {
+            "d10": 6,
+            "Treasure": "A black pearl. If dropped in darkness it rolls towards the nearest exit to day."
+          }
+        },
+        {
+          "cells": {
+            "d10": 7,
+            "Treasure": "This torch burns for an immortal hour. Hold it and live. You can lose limbs and enter negative HP but won't die unless you drop the torch or it burns out."
+          }
+        },
+        {
+          "cells": {
+            "d10": 8,
+            "Treasure": "Silver bird cage slays whatever is placed behind its bars, slowly, over one long night. That which is killed reanimates twice as strong, as a raging uncontrollable undead."
+          }
+        },
+        {
+          "cells": {
+            "d10": 9,
+            "Treasure": "Black Crown of the Crippled King. Wearing this crooks your body as you become aware that you and every creature within 100 yards gain +10 to attack rolls but −10 to defence rolls."
+          }
+        },
+        {
+          "cells": {
+            "d10": 10,
+            "Treasure": "Anyone wearing this ancient blindfold becomes invisible to those who breathe though the undead attack them obsessively and nearby corpses awaken in moaning, unholy wrath."
+          }
+        }
       ],
       "pdf_extract": {
         "status": "verified",
-        "header_patterns": ["Occult Treasures", "d10\\s+Occult Treasures"],
-        "stop_before": ["Traps and Devilry"],
-        "index": {"type": "d10"},
+        "header_patterns": [
+          "Occult Treasures",
+          "d10\\s+Occult Treasures"
+        ],
+        "stop_before": [
+          "Traps and Devilry"
+        ],
+        "index": {
+          "type": "d10"
+        },
         "min_rows": 10,
         "max_rows": 10,
         "multi_table_page": false
@@ -156,28 +429,79 @@
       "source_ref": "mork-borg.pdf",
       "pages": "4-5",
       "columns": [
-        {"name": "d66", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d66",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [
-        {"cells": {"d66": "11-16", "result": "The remains of something worthless crumbles in your hands."}},
-        {"cells": {"d66": 21, "result": "Pot filled with extremely potent itching ointment."}},
-        {"cells": {"d66": 22, "result": "Necklace of human teeth."}},
-        {"cells": {"d66": 23, "result": "Bag of angry, venomous moths. Test Toughness DR6 or die."}},
-        {"cells": {"d66": 24, "result": "Pocket full of broken glass, PC takes d2 damage."}},
-        {"cells": {"d66": 25, "result": "Mad manifesto. If read, test Presence DR12 or lose 1 Presence permanently from confusion."}},
-        {"cells": {"d66": 26, "result": "Key to nearby locked door. Stolen."}}
+        {
+          "cells": {
+            "d66": "11-16",
+            "result": "The remains of something worthless crumbles in your hands."
+          }
+        },
+        {
+          "cells": {
+            "d66": 21,
+            "result": "Pot filled with extremely potent itching ointment."
+          }
+        },
+        {
+          "cells": {
+            "d66": 22,
+            "result": "Necklace of human teeth."
+          }
+        },
+        {
+          "cells": {
+            "d66": 23,
+            "result": "Bag of angry, venomous moths. Test Toughness DR6 or die."
+          }
+        },
+        {
+          "cells": {
+            "d66": 24,
+            "result": "Pocket full of broken glass, PC takes d2 damage."
+          }
+        },
+        {
+          "cells": {
+            "d66": 25,
+            "result": "Mad manifesto. If read, test Presence DR12 or lose 1 Presence permanently from confusion."
+          }
+        },
+        {
+          "cells": {
+            "d66": 26,
+            "result": "Key to nearby locked door. Stolen."
+          }
+        }
       ],
       "pdf_extract": {
-        "status": "partial",
-        "header_patterns": ["Corpse plundering\\s*\\(d66\\)"],
+        "status": "hand-authored",
+        "header_patterns": [
+          "Corpse plundering\\s*\\(d66\\)"
+        ],
         "stop_before": [],
-        "index": {"type": "d66"},
+        "index": {
+          "type": "d66"
+        },
         "min_rows": 30,
         "max_rows": 40,
         "multi_table_page": true
       },
-      "note": "acceptance_rows incomplete (first 7 entries only). d66 index type not implemented in parser yet; ranges like 11-16 need special handling."
+      "hand_authored": {
+        "file": "mork-borg-corpse-plunder-d66.json",
+        "skip_pdf_extract": true
+      },
+      "note": "PDF d66 parsing not viable — use hand-authored JSON beside mork-borg.pdf. Ingest via: .\\ingest-hand-table.ps1"
     },
     {
       "name": "OptionalClassesTable",
@@ -186,15 +510,29 @@
       "source_ref": "mork-borg.pdf",
       "pages": "46",
       "columns": [
-        {"name": "d6", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
         "status": "todo",
-        "header_patterns": ["Optional Classes\\s*\\(d6\\)"],
-        "stop_before": ["EARLIEST MEMORIES"],
-        "index": {"type": "d6"},
+        "header_patterns": [
+          "Optional Classes\\s*\\(d6\\)"
+        ],
+        "stop_before": [
+          "EARLIEST MEMORIES"
+        ],
+        "index": {
+          "type": "d6"
+        },
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": true
@@ -207,14 +545,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "46",
       "columns": [
-        {"name": "d6", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["EARLIEST MEMORIES\\s*\\(d6\\)"],
-        "index": {"type": "d6"},
+        "status": "verified",
+        "header_patterns": [
+          "EARLIEST MEMORIES\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": true
@@ -227,14 +577,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "48",
       "columns": [
-        {"name": "d6", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Bad Birth\\s*\\(d6\\)"],
-        "index": {"type": "d6"},
+        "status": "verified",
+        "header_patterns": [
+          "Bad Birth\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -247,14 +609,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "50",
       "columns": [
-        {"name": "d6", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Eldritch Origins\\s*\\(d6\\)"],
-        "index": {"type": "d6"},
+        "status": "verified",
+        "header_patterns": [
+          "Eldritch Origins\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -267,14 +641,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "52",
       "columns": [
-        {"name": "d6", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Things were going so well"],
-        "index": {"type": "d6"},
+        "status": "verified",
+        "header_patterns": [
+          "Things were going so well"
+        ],
+        "index": {
+          "type": "d6"
+        },
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -287,16 +673,36 @@
       "source_ref": "mork-borg.pdf",
       "pages": "56",
       "columns": [
-        {"name": "d8", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d8",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Probably raised in\\s*\\(d8\\)"],
-        "index": {"type": "d8"},
-        "min_rows": 8,
-        "max_rows": 8,
+        "status": "verified",
+        "header_patterns": [
+          "Probably raised in\\s*\\(d8\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"
+          ]
+        },
+        "min_rows": 6,
+        "max_rows": 6,
         "multi_table_page": false
       }
     },
@@ -307,14 +713,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "57",
       "columns": [
-        {"name": "d8", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d8",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Occult Herbmaster decoctions\\s*\\(d8\\)"],
-        "index": {"type": "d8"},
+        "status": "verified",
+        "header_patterns": [
+          "Occult Herbmaster decoctions\\s*\\(d8\\)"
+        ],
+        "index": {
+          "type": "d8"
+        },
         "min_rows": 8,
         "max_rows": 8,
         "multi_table_page": false
@@ -325,22 +743,43 @@
       "phase": 2,
       "instance_of": "LookupTable",
       "source_ref": "mork-borg.pdf",
-      "pages": "TBD",
+      "pages": "46",
       "columns": [
-        {"name": "d6", "role": "index", "position": 0},
-        {"name": "d8", "role": "index", "position": 1},
-        {"name": "Name", "role": "result", "position": 2}
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "d8",
+          "role": "index",
+          "position": 1
+        },
+        {
+          "name": "Name",
+          "role": "result",
+          "position": 2
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Name table", "Names?\\s*\\(d6"],
-        "index": {"type": "d6_x_d8"},
+        "status": "hand-authored",
+        "header_patterns": [
+          "Name table",
+          "Names?\\s*\\(d6"
+        ],
+        "index": {
+          "type": "d6_x_d8"
+        },
         "min_rows": 48,
         "max_rows": 48,
         "multi_table_page": false
       },
-      "note": "3-column table. Reference: corpus/mork-borg/tables/name-table.json. PDF page TBD — header not found by simple scan."
+      "note": "Hand-authored from corpus/mork-borg/tables/name-table.json",
+      "hand_authored": {
+        "file": "mork-borg-name-table.json",
+        "skip_pdf_extract": true
+      }
     },
     {
       "name": "BasilisksDemandTable",
@@ -349,14 +788,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "36",
       "columns": [
-        {"name": "d20", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["The Basilisks Demand\\s*\\(d20\\)"],
-        "index": {"type": "d20"},
+        "status": "verified",
+        "header_patterns": [
+          "The Basilisks Demand\\s*\\(d20\\)"
+        ],
+        "index": {
+          "type": "d20"
+        },
         "multi_table_page": false
       }
     },
@@ -365,17 +816,31 @@
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "mork-borg.pdf",
-      "pages": "43",
+      "pages": "43-45",
       "columns": [
-        {"name": "d20", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Arcane catastrophes\\s*\\(d20\\)"],
-        "index": {"type": "d20"},
-        "multi_table_page": false
+        "status": "verified",
+        "header_patterns": [
+          "Arcane catastrophes\\s*\\(d20\\)"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
       }
     },
     {
@@ -383,17 +848,31 @@
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "mork-borg.pdf",
-      "pages": "69",
+      "pages": "69-70",
       "columns": [
-        {"name": "d100", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d100",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Adventure spark\\s*\\(d100\\)"],
-        "index": {"type": "d100"},
-        "multi_table_page": false
+        "status": "verified",
+        "header_patterns": [
+          "Adventure spark\\s*\\(d100\\)"
+        ],
+        "index": {
+          "type": "d100_pairs"
+        },
+        "multi_table_page": false,
+        "min_rows": 49,
+        "max_rows": 50
       }
     },
     {
@@ -403,14 +882,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "68",
       "columns": [
-        {"name": "d12", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Where do you wander\\?\\s*\\(d12\\)"],
-        "index": {"type": "d12"},
+        "status": "verified",
+        "header_patterns": [
+          "Where do you wander\\?\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
         "min_rows": 12,
         "max_rows": 12,
         "multi_table_page": false
@@ -423,14 +914,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "72",
       "columns": [
-        {"name": "d12", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Who or what dwells here now\\?\\s*\\(d12\\)"],
-        "index": {"type": "d12"},
+        "status": "verified",
+        "header_patterns": [
+          "Who or what dwells here now\\?\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
         "min_rows": 12,
         "max_rows": 12,
         "multi_table_page": true
@@ -443,17 +946,32 @@
       "source_ref": "mork-borg.pdf",
       "pages": "72",
       "columns": [
-        {"name": "d10", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d10",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Imminent danger\\s*\\(d10\\)"],
-        "index": {"type": "d10"},
+        "status": "verified",
+        "header_patterns": [
+          "Imminent danger\\s*\\(d10\\)"
+        ],
+        "index": {
+          "type": "d10"
+        },
         "min_rows": 10,
         "max_rows": 10,
-        "multi_table_page": true
+        "multi_table_page": true,
+        "stop_before": [
+          "Who or what dwells here"
+        ]
       }
     },
     {
@@ -463,14 +981,26 @@
       "source_ref": "mork-borg.pdf",
       "pages": "73",
       "columns": [
-        {"name": "d12", "role": "index", "position": 0},
-        {"name": "result", "role": "result", "position": 1}
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
       ],
       "acceptance_rows": [],
       "pdf_extract": {
-        "status": "todo",
-        "header_patterns": ["Distinctive feature\\s*\\(d12\\)"],
-        "index": {"type": "d12"},
+        "status": "verified",
+        "header_patterns": [
+          "Distinctive feature\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
         "min_rows": 12,
         "max_rows": 12,
         "multi_table_page": false

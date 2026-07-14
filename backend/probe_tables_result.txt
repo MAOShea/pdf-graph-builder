@@ -1,0 +1,18 @@
+OK  DRTable                      page= 28 rows=7
+OK  TrapsTable                   page=  4 rows=12
+OK  WeatherTable                 page=  4 rows=12
+OK  OccultTreasuresTable         page=  3 rows=10
+MISS OptionalClassesTable         expected~46
+OK  EarliestMemoriesTable        page= 46 rows=6
+OK  BadBirthTable                page= 48 rows=6
+OK  EldritchOriginsTable         page= 50 rows=6
+OK  ThingsGoingWrongTable        page= 52 rows=6
+MISS RaisedInTable                expected~56
+OK  HerbmasterDecoctionsTable    page= 57 rows=8
+OK  BasilisksDemandTable         page= 36 rows=20
+MISS ArcaneCatastrophesTable      expected~43-44
+MISS AdventureSparkTable          expected~69-70
+OK  WanderTable                  page= 68 rows=12
+OK  DwellsHereTable              page= 72 rows=12
+OK  ImminentDangerTable          page= 72 rows=10
+OK  DistinctiveFeatureTable      page= 73 rows=12

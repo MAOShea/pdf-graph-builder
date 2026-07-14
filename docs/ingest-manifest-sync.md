@@ -113,10 +113,58 @@ Duplicate on p.76 (quick reference) — prefer p.28 (`prefer_page: 28`).
 | `TrapsTable` | 4 | `Traps and Devilry (d12)` | d12 | d12, Trap | 12 | Same chunk as weather + corpse; `multi_table_page` |
 | `WeatherTable` | 4 | `weather (d12)` | d12 | d12, Weather | 12 | Stop before `Corpse plundering` |
 | `OccultTreasuresTable` | 3 | `Occult Treasures` / `d10` | d10 | d10, Treasure | 10 | Verified from PDF p.3 |
-| `CorpsePlunderTable` | 4–5 | `Corpse plundering (d66)` | d66 | d66, result | ~36 | **partial** — d66 parsing not implemented |
+| `CorpsePlunderTable` | 4–5 | `Corpse plundering (d66)` | d66 | d66, result | ~36 | **hand-authored** — see below |
 
-### Phase 2 — character generation (pages 46–57)
+---
 
+## Hand-authored exceptions (`hand_authored`)
+
+When PDF extraction is not viable (e.g. d66 Corpse plundering), use a JSON file **beside `mork-borg.pdf`** and point the manifest at it.
+
+### Manifest fields (per `lookup_tables[]` entry)
+
+```json
+"hand_authored": {
+  "file": "mork-borg-corpse-plunder-d66.json",
+  "skip_pdf_extract": true
+},
+"pdf_extract": { "status": "hand-authored" }
+```
+
+- **`skip_pdf_extract`** — PDF parser will not attempt this table; avoids duplicate/broken rows from chunk text.
+- **`file`** — path relative to workspace root (same folder as `mork-borg.pdf`).
+
+### JSON file fields (beside PDF)
+
+| Field | Purpose |
+|---|---|
+| `manifest_table` | Links file to manifest entry e.g. `CorpsePlunderTable` |
+| `override_pdf` | `true` — documents that PDF content is superseded for this table |
+| `blocks[].rows` | `[[d66, result], ...]` — d66 may be `"11-16"` or `21` |
+
+**Source txt format** ([corpus/mork-borg/tables/corpse-plunder.txt](../corpus/mork-borg/tables/corpse-plunder.txt)): each row is `roll  result` where **two or more spaces** divide the d66 column from the explanation. Only the first such run is a divider; double spaces inside the result text are preserved.
+
+```powershell
+.\sync-corpse-plunder.ps1    # txt -> mork-borg-corpse-plunder-d66.json
+.\ingest-hand-table.ps1      # load into Neo4j
+```
+
+Example: [mork-borg-corpse-plunder-d66.json](../mork-borg-corpse-plunder-d66.json)
+
+### CLI ingest (no curl)
+
+```powershell
+.\ingest-hand-table.ps1
+# or
+cd backend
+.\venv\Scripts\python.exe ingest_hand_table.py ..\mork-borg-corpse-plunder-d66.json
+```
+
+Requires prior `mork-borg.pdf` ingest (Document node in Neo4j). Full PDF re-ingest also loads hand-authored tables automatically after PDF extraction.
+
+**Note:** `override_pdf` skips PDF **parsing** for this table. The corpse-plunder prose may still appear in page-4 chunk text for the LLM; stripping that from chunks is a separate optional step.
+
+---
 | Instance | Page | Header (approx) | Index | Status |
 |---|---|---|---|---|
 | `OptionalClassesTable` | 46 | `Optional Classes (d6)` | d6 | todo |
