@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_neo4j import Neo4jGraph
 
+from src.bundle_materialization import materialize_character_creation_bundles
 from src.hand_authored_tables import materialize_hand_authored_tables
 from src.graphDB_dataAccess import graphDBdataAccess
 from src.pdf_table_parser import enrich_pdf_chunks_with_tables, persist_chunk_table_metadata
@@ -56,11 +57,15 @@ def main():
     hand_stats = materialize_hand_authored_tables(
         graph, file_name, scaffold_map
     )
+    bundle_stats = materialize_character_creation_bundles(
+        graph, file_name, scaffold_map
+    )
 
     print("pdf_table_parser:", pdf_stats)
     print("persisted_chunks:", persisted)
     print("materialization:", mat_stats)
     print("hand_authored:", hand_stats)
+    print("bundle_materialization:", bundle_stats)
 
     verify = graph.query(
         """

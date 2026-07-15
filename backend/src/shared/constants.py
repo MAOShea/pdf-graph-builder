@@ -902,6 +902,10 @@ INGEST_REL_TYPES = {
     "HAS_ENTRY",
     "APPLIES_TO",
     "USES",
+    # Phase 2 optional-class bundles (briefing-5)
+    "SELECTS",
+    "CONTAINS",
+    "APPLIES_DURING",
 }
 
 SCAFFOLD_DIFF_INSTRUCTIONS = """You are ingesting a rulebook PDF against a pre-existing knowledge graph scaffold.

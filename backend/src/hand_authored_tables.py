@@ -50,6 +50,27 @@ def load_hand_authored_table(spec: dict[str, Any]) -> dict | None:
     if not path:
         logging.warning("hand-authored file missing for %s", spec.get("name"))
         return None
+
+    cfg = _hand_authored_cfg(spec)
+    selector_key = cfg.get("selector_key")
+    if selector_key:
+        with path.open(encoding="utf-8") as f:
+            envelope = json.load(f)
+        selector = envelope.get(selector_key)
+        if not selector or not selector.get("rows"):
+            logging.warning(
+                "hand-authored selector %r missing in %s for %s",
+                selector_key,
+                path.name,
+                spec.get("name"),
+            )
+            return None
+        return {
+            "manifest_name": spec["name"],
+            "columns": column_names(spec),
+            "rows": selector["rows"],
+        }
+
     docs = load_structured_json_documents(path)
     for doc in docs:
         if doc.metadata.get("block_type") == "table" and doc.metadata.get("table_json"):
@@ -81,6 +102,17 @@ def _spec_for_json_path(path: Path, game: str) -> dict[str, Any]:
     )
 
 
+def _render_selector_preview(table: dict[str, Any], spec: dict[str, Any]) -> str:
+    lines = [f"## {spec.get('name', 'table')}"]
+    cols = table.get("columns") or []
+    if cols:
+        lines.append("| " + " | ".join(str(c) for c in cols) + " |")
+    for row in table.get("rows") or []:
+        cells = list(row) if isinstance(row, (list, tuple)) else [row]
+        lines.append("| " + " | ".join(str(c) for c in cells) + " |")
+    return "\n".join(lines)
+
+
 def materialize_hand_authored_tables(
     graph,
     file_name: str,
@@ -97,6 +129,39 @@ def materialize_hand_authored_tables(
         path = resolve_hand_authored_path(spec)
         if not path:
             continue
+
+        cfg = _hand_authored_cfg(spec)
+        if cfg.get("selector_key"):
+            table = load_hand_authored_table(spec)
+            if not table:
+                continue
+            stats["tables_loaded"] += 1
+            doc = Document(
+                page_content=_render_selector_preview(table, spec),
+                metadata={
+                    "block_type": "table",
+                    "table_json": json.dumps(
+                        {
+                            "columns": table["columns"],
+                            "rows": table["rows"],
+                            "manifest_name": spec["name"],
+                        }
+                    ),
+                    "source_format": "hand-authored",
+                    "override_pdf": True,
+                    "hand_authored_file": path.name,
+                },
+            )
+            chunk_list = create_relation_between_chunks(graph, file_name, [doc])
+            if not chunk_list:
+                continue
+            chunk_id = chunk_list[0]["chunk_id"]
+            if materialize_lookup_table(
+                graph, chunk_id, table, spec, doc, file_name, scaffold_map
+            ):
+                stats["tables_materialized"] += 1
+            continue
+
         docs = load_structured_json_documents(path)
         for doc in docs:
             if doc.metadata.get("block_type") != "table":

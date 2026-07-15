@@ -2,15 +2,15 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "status": "verified",
-  "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection.",
+  "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (role-based index+result; index key enumeration per table, not per die size).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-07-14",
+  "verified_date": "2026-07-15",
   "handoff": {
     "target_repo": "pdf-graph-builder",
     "target_path": "games/mork-borg/ingest-manifest.json",
-    "sync": "Copy this file when the contract changes. See docs/ingest-manifest-sync.md."
+    "sync": "Copy this file when the contract changes. See docs/outbox/ingest-manifest-sync.md."
   },
   "lookup_tables": [
     {
@@ -21,7 +21,7 @@
       "used_by": [
         "AbilityTest"
       ],
-      "source_ref": "mork-borg.pdf",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "28",
       "columns": [
         {
@@ -104,329 +104,13 @@
         "prefer_page": 28,
         "multi_table_page": false
       },
-      "note": "Materialized in Neo4j. PDF labels may be longer than acceptance_rows (e.g. 'routine but some chance of failure'); PDF wins on mismatch."
-    },
-    {
-      "name": "TrapsTable",
-      "phase": 2,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "4",
-      "columns": [
-        {
-          "name": "d12",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "Trap",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [
-        {
-          "cells": {
-            "d12": 1,
-            "Trap": "Well dressed corpse, booby trapped"
-          }
-        },
-        {
-          "cells": {
-            "d12": 2,
-            "Trap": "Wall-holes shoot poisonous arrows"
-          }
-        },
-        {
-          "cells": {
-            "d12": 3,
-            "Trap": "Bells and marbles on the floor"
-          }
-        },
-        {
-          "cells": {
-            "d12": 4,
-            "Trap": "Scorpion-filled basket poised to fall"
-          }
-        },
-        {
-          "cells": {
-            "d12": 5,
-            "Trap": "Fish hooks hanging at eye level"
-          }
-        },
-        {
-          "cells": {
-            "d12": 6,
-            "Trap": "Chest marked with explosive runes"
-          }
-        },
-        {
-          "cells": {
-            "d12": 7,
-            "Trap": "Lock trapped with vial of poison gas"
-          }
-        },
-        {
-          "cells": {
-            "d12": 8,
-            "Trap": "Jewel removal leads to roof collapse"
-          }
-        },
-        {
-          "cells": {
-            "d12": 9,
-            "Trap": "Slanted floor, translucent oil, pit"
-          }
-        },
-        {
-          "cells": {
-            "d12": 10,
-            "Trap": "Snake-cages on collapsing ceiling tiles"
-          }
-        },
-        {
-          "cells": {
-            "d12": 11,
-            "Trap": "Evil urns release cold ghosts"
-          }
-        },
-        {
-          "cells": {
-            "d12": 12,
-            "Trap": "Coins coated in grime and poison"
-          }
-        }
-      ],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Traps and Devilry\\s*\\(d12\\)"
-        ],
-        "stop_before": [
-          "weather\\s*\\(d12\\)"
-        ],
-        "index": {
-          "type": "d12"
-        },
-        "min_rows": 12,
-        "max_rows": 12,
-        "multi_table_page": true
-      },
-      "note": "Page 4 chunk contains traps + weather + corpse plundering. Reference: corpus/mork-borg/tables/traps-and-weather.json"
-    },
-    {
-      "name": "WeatherTable",
-      "phase": 2,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "4",
-      "columns": [
-        {
-          "name": "d12",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "Weather",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [
-        {
-          "cells": {
-            "d12": 1,
-            "Weather": "Lifeless grey"
-          }
-        },
-        {
-          "cells": {
-            "d12": 2,
-            "Weather": "Hammering rain"
-          }
-        },
-        {
-          "cells": {
-            "d12": 3,
-            "Weather": "Piercing wind"
-          }
-        },
-        {
-          "cells": {
-            "d12": 4,
-            "Weather": "Deafening storm"
-          }
-        },
-        {
-          "cells": {
-            "d12": 5,
-            "Weather": "Black as night"
-          }
-        },
-        {
-          "cells": {
-            "d12": 6,
-            "Weather": "Dead quiet"
-          }
-        },
-        {
-          "cells": {
-            "d12": 7,
-            "Weather": "Cloudburst"
-          }
-        },
-        {
-          "cells": {
-            "d12": 8,
-            "Weather": "Soup-thick mist"
-          }
-        },
-        {
-          "cells": {
-            "d12": 9,
-            "Weather": "Crackling frost"
-          }
-        },
-        {
-          "cells": {
-            "d12": 10,
-            "Weather": "Irritating drizzle"
-          }
-        },
-        {
-          "cells": {
-            "d12": 11,
-            "Weather": "Roaring thunder"
-          }
-        },
-        {
-          "cells": {
-            "d12": 12,
-            "Weather": "Gravelike cold"
-          }
-        }
-      ],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "weather\\s*\\(d12\\)"
-        ],
-        "stop_before": [
-          "Corpse plundering\\s*\\(d66\\)"
-        ],
-        "index": {
-          "type": "d12"
-        },
-        "min_rows": 12,
-        "max_rows": 12,
-        "multi_table_page": true
-      },
-      "note": "Same page-4 chunk as TrapsTable."
-    },
-    {
-      "name": "OccultTreasuresTable",
-      "phase": 2,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "3",
-      "columns": [
-        {
-          "name": "d10",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "Treasure",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [
-        {
-          "cells": {
-            "d10": 1,
-            "Treasure": "Ash-grey ring a finger-width wide. All that passes through is obliterated."
-          }
-        },
-        {
-          "cells": {
-            "d10": 2,
-            "Treasure": "The keening music of this small, vile flute animates a fetus-sized meat golem in a nearby corpse. HP 5, Morale -, No armor, Bite d4, immune to Powers."
-          }
-        },
-        {
-          "cells": {
-            "d10": 3,
-            "Treasure": "A note explains: one taste from this Famine Spoon means death from slow starvation."
-          }
-        },
-        {
-          "cells": {
-            "d10": 4,
-            "Treasure": "The image of a being in this malevolently-accurate mirror shows only the shameful truth of their soul."
-          }
-        },
-        {
-          "cells": {
-            "d10": 5,
-            "Treasure": "Vampiric phurba. Heals you as it harms your target (d3), but beware: after stealing a total of 6 HP, test Presence DR14 or become addicted."
-          }
-        },
-        {
-          "cells": {
-            "d10": 6,
-            "Treasure": "A black pearl. If dropped in darkness it rolls towards the nearest exit to day."
-          }
-        },
-        {
-          "cells": {
-            "d10": 7,
-            "Treasure": "This torch burns for an immortal hour. Hold it and live. You can lose limbs and enter negative HP but won't die unless you drop the torch or it burns out."
-          }
-        },
-        {
-          "cells": {
-            "d10": 8,
-            "Treasure": "Silver bird cage slays whatever is placed behind its bars, slowly, over one long night. That which is killed reanimates twice as strong, as a raging uncontrollable undead."
-          }
-        },
-        {
-          "cells": {
-            "d10": 9,
-            "Treasure": "Black Crown of the Crippled King. Wearing this crooks your body as you become aware that you and every creature within 100 yards gain +10 to attack rolls but −10 to defence rolls."
-          }
-        },
-        {
-          "cells": {
-            "d10": 10,
-            "Treasure": "Anyone wearing this ancient blindfold becomes invisible to those who breathe though the undead attack them obsessively and nearby corpses awaken in moaning, unholy wrath."
-          }
-        }
-      ],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Occult Treasures",
-          "d10\\s+Occult Treasures"
-        ],
-        "stop_before": [
-          "Traps and Devilry"
-        ],
-        "index": {
-          "type": "d10"
-        },
-        "min_rows": 10,
-        "max_rows": 10,
-        "multi_table_page": false
-      },
-      "note": "Full 10 rows verified from PDF p.3. corpus/mork-borg/tables/occult-treasures.json is partial (5 rows)."
+      "note": "Phase 1. Ingest creates :IngestNode DRTable with :HAS_COLUMN and :HAS_ENTRY rows. Extract from Chunk.table_json; validate against acceptance_rows."
     },
     {
       "name": "CorpsePlunderTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "4-5",
       "columns": [
         {
@@ -482,8 +166,127 @@
             "d66": 26,
             "result": "Key to nearby locked door. Stolen."
           }
+        },
+        {
+          "cells": {
+            "d66": 31,
+            "result": "Map to a weak but wealthy family's house."
+          }
+        },
+        {
+          "cells": {
+            "d66": 32,
+            "result": "A hopeless amount of spiders."
+          }
+        },
+        {
+          "cells": {
+            "d66": 33,
+            "result": "Metal cylinder with gun powder and fuse. Roll a d6. 1–2 you lose a hand. 3–6 3d10 damage wherever it lands."
+          }
+        },
+        {
+          "cells": {
+            "d66": 34,
+            "result": "Known and liked/despised witch-hunter's face. Flayed."
+          }
+        },
+        {
+          "cells": {
+            "d66": 35,
+            "result": "Note with PC's names. One is crossed out."
+          }
+        },
+        {
+          "cells": {
+            "d66": 36,
+            "result": "Tortured pixie with torn-off wings and gouged out eyes."
+          }
+        },
+        {
+          "cells": {
+            "d66": 41,
+            "result": "Map to a place that cannot possibly exist."
+          }
+        },
+        {
+          "cells": {
+            "d66": 42,
+            "result": "Unmarked bottle with a liquid that shifts between red and green."
+          }
+        },
+        {
+          "cells": {
+            "d66": 43,
+            "result": "Bond. A local potentate owes the holder a sizable amount."
+          }
+        },
+        {
+          "cells": {
+            "d66": 44,
+            "result": "Death mask of one of the PCs."
+          }
+        },
+        {
+          "cells": {
+            "d66": 45,
+            "result": "The 'Water of Life.' Heals d8. Test Toughness DR10 or go blind. Highly alcoholic."
+          }
+        },
+        {
+          "cells": {
+            "d66": 46,
+            "result": "There was something very wrong with this one. Hands covered with something lukewarm, brown and acidic. Take d2+1 damage and smell terrible for d4 days."
+          }
+        },
+        {
+          "cells": {
+            "d66": 51,
+            "result": "Black Kergüs dagger. 2d4 damage."
+          }
+        },
+        {
+          "cells": {
+            "d66": 52,
+            "result": "Labelled poison bottle. Test Toughness DR12 or lower random ability by d4. The ability can be increased when your character is improved."
+          }
+        },
+        {
+          "cells": {
+            "d66": 53,
+            "result": "Scalp with long black hair."
+          }
+        },
+        {
+          "cells": {
+            "d66": 54,
+            "result": "Golden ball with an invisible seam, twists open."
+          }
+        },
+        {
+          "cells": {
+            "d66": 55,
+            "result": "Bloodstained knuckle-duster."
+          }
+        },
+        {
+          "cells": {
+            "d66": 56,
+            "result": "Two weighted dice."
+          }
+        },
+        {
+          "cells": {
+            "d66": "61-66",
+            "result": "The result in silver."
+          }
         }
       ],
+      "hand_authored": {
+        "file": "corpus/games/mork-borg/tables/corpse-plunder-d66.json",
+        "skip_pdf_extract": true
+      },
+      "note": "d66 keys use sparse notation (11-16, 21, …, 61-66). PDF parsing not viable — materialize from hand-authored JSON in pdf-graph-builder.",
       "pdf_extract": {
         "status": "hand-authored",
         "header_patterns": [
@@ -496,18 +299,17 @@
         "min_rows": 30,
         "max_rows": 40,
         "multi_table_page": true
-      },
-      "hand_authored": {
-        "file": "mork-borg-corpse-plunder-d66.json",
-        "skip_pdf_extract": true
-      },
-      "note": "PDF d66 parsing not viable — use hand-authored JSON beside mork-borg.pdf. Ingest via: .\\ingest-hand-table.ps1"
+      }
     },
     {
       "name": "OptionalClassesTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "applies_during": "CharacterCreation",
+      "used_by": [
+        "CharacterCreation"
+      ],
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "46",
       "columns": [
         {
@@ -521,9 +323,58 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": 1,
+            "result": "Fanged deserter"
+          },
+          "selects_bundle": "FangedDeserter"
+        },
+        {
+          "cells": {
+            "d6": 2,
+            "result": "Gutterborn Scum"
+          },
+          "selects_bundle": "GutterbornScum"
+        },
+        {
+          "cells": {
+            "d6": 3,
+            "result": "Esoteric hermit"
+          },
+          "selects_bundle": "EsotericHermit"
+        },
+        {
+          "cells": {
+            "d6": 4,
+            "result": "Wretched royalty"
+          },
+          "selects_bundle": "WretchedRoyalty"
+        },
+        {
+          "cells": {
+            "d6": 5,
+            "result": "Heretical priest"
+          },
+          "selects_bundle": "HereticalPriest"
+        },
+        {
+          "cells": {
+            "d6": 6,
+            "result": "Occult herbmaster"
+          },
+          "selects_bundle": "OccultHerbmaster"
+        }
+      ],
+      "note": "Selector only. Each row SELECTS an OptionalClass bundle — do not treat nested tables as page siblings.",
+      "hand_authored": {
+        "file": "games/mork-borg/tables/optional-classes.json",
+        "selector_key": "selector",
+        "skip_pdf_extract": true
+      },
       "pdf_extract": {
-        "status": "todo",
+        "status": "hand-authored",
         "header_patterns": [
           "Optional Classes\\s*\\(d6\\)"
         ],
@@ -542,7 +393,8 @@
       "name": "EarliestMemoriesTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "parent_bundle": "FangedDeserter",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "46",
       "columns": [
         {
@@ -556,7 +408,44 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": 1,
+            "result": "A burnt-black building in Sarkash. Your home?"
+          }
+        },
+        {
+          "cells": {
+            "d6": 2,
+            "result": "A derelict rotting ship rolling endlessly across a grey sea."
+          }
+        },
+        {
+          "cells": {
+            "d6": 3,
+            "result": "A brothel in Schleswig. Quite a friendly environment."
+          }
+        },
+        {
+          "cells": {
+            "d6": 4,
+            "result": "Sleeping with dogs in the corner of an inn, waiting for someone to return."
+          }
+        },
+        {
+          "cells": {
+            "d6": 5,
+            "result": "Following an army in eastern Wästland."
+          }
+        },
+        {
+          "cells": {
+            "d6": 6,
+            "result": "Suckling a wolf in the wild of Bergen Chrypt."
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -571,11 +460,12 @@
       }
     },
     {
-      "name": "BadBirthTable",
+      "name": "FangedDeserterEquipmentTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "48",
+      "parent_bundle": "FangedDeserter",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "47",
       "columns": [
         {
           "name": "d6",
@@ -589,6 +479,82 @@
         }
       ],
       "acceptance_rows": [],
+      "note": "Header: 'You also begin with one of the following (d6)'. Six equipment options — extract from p.47.",
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "You also begin with one of the following\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "multi_table_page": false
+      }
+    },
+    {
+      "name": "BadBirthTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "parent_bundle": "GutterbornScum",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "48",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": 1,
+            "result": "Dumped onto a moving shit-cart still in your birth caul."
+          }
+        },
+        {
+          "cells": {
+            "d6": 2,
+            "result": "Mother hanged from a tree outside of Galgenbeck, you fell from the corpse."
+          }
+        },
+        {
+          "cells": {
+            "d6": 3,
+            "result": "Raised by rats in the gutters of Grift."
+          }
+        },
+        {
+          "cells": {
+            "d6": 4,
+            "result": "Kicked and beaten beneath a baker's table in Schleswig."
+          }
+        },
+        {
+          "cells": {
+            "d6": 5,
+            "result": "Escaped the Tvelandian orphanarium."
+          }
+        },
+        {
+          "cells": {
+            "d6": 6,
+            "result": "Educated by outlaws in a hovel south of Alliáns."
+          }
+        }
+      ],
+      "uses_tables": [
+        "WeaponTable",
+        "ArmorTable"
+      ],
+      "note": "Abilities block references weapon and armor tables elsewhere in the book.",
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -606,7 +572,8 @@
       "name": "EldritchOriginsTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "parent_bundle": "EsotericHermit",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "50",
       "columns": [
         {
@@ -621,6 +588,7 @@
         }
       ],
       "acceptance_rows": [],
+      "note": "Header: 'Eldritch Origins (d6)' on p.50.",
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -638,7 +606,8 @@
       "name": "ThingsGoingWrongTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "parent_bundle": "WretchedRoyalty",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "52",
       "columns": [
         {
@@ -653,6 +622,7 @@
         }
       ],
       "acceptance_rows": [],
+      "note": "Header: 'Things were going so well' on p.52.",
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -667,10 +637,118 @@
       }
     },
     {
+      "name": "WretchedRoyaltyEquipmentTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "parent_bundle": "WretchedRoyalty",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "53",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "note": "Header: 'You begin with two of the following (d6)' on p.53 — player picks two rows.",
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "begin with two of the following\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "multi_table_page": false
+      }
+    },
+    {
+      "name": "HereticalPriestOriginsTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "parent_bundle": "HereticalPriest",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "54",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": 1,
+            "result": "Galgenbeck, near the cathedral of the Two-Headed Basilisks."
+          }
+        },
+        {
+          "cells": {
+            "d6": 2,
+            "result": "Massacred Alliáns cult, sole survivor."
+          }
+        },
+        {
+          "cells": {
+            "d6": 3,
+            "result": "The crypts of Grift."
+          }
+        },
+        {
+          "cells": {
+            "d6": 4,
+            "result": "Temple ruins in the Valley of the Unfortunate Undead."
+          }
+        },
+        {
+          "cells": {
+            "d6": 5,
+            "result": "One of the many Graven-Tosk thief-tunnels."
+          }
+        },
+        {
+          "cells": {
+            "d6": 6,
+            "result": "Secret Bergen Chrypt church."
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Unholy origins"
+        ],
+        "stop_before": [
+          "Abilities"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "multi_table_page": false
+      }
+    },
+    {
       "name": "RaisedInTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "parent_bundle": "OccultHerbmaster",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "56",
       "columns": [
         {
@@ -685,6 +763,7 @@
         }
       ],
       "acceptance_rows": [],
+      "note": "Header: 'Probably raised in (d8)' — keys may use ranges 1-3 for first row.",
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -710,7 +789,8 @@
       "name": "HerbmasterDecoctionsTable",
       "phase": 2,
       "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
+      "parent_bundle": "OccultHerbmaster",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "57",
       "columns": [
         {
@@ -725,6 +805,10 @@
         }
       ],
       "acceptance_rows": [],
+      "uses_tables": [
+        "WeaponTable",
+        "ArmorTable"
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -737,274 +821,52 @@
         "max_rows": 8,
         "multi_table_page": false
       }
-    },
-    {
-      "name": "NameTable",
-      "phase": 2,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "46",
-      "columns": [
-        {
-          "name": "d6",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "d8",
-          "role": "index",
-          "position": 1
-        },
-        {
-          "name": "Name",
-          "role": "result",
-          "position": 2
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "hand-authored",
-        "header_patterns": [
-          "Name table",
-          "Names?\\s*\\(d6"
-        ],
-        "index": {
-          "type": "d6_x_d8"
-        },
-        "min_rows": 48,
-        "max_rows": 48,
-        "multi_table_page": false
-      },
-      "note": "Hand-authored from corpus/mork-borg/tables/name-table.json",
-      "hand_authored": {
-        "file": "mork-borg-name-table.json",
-        "skip_pdf_extract": true
-      }
-    },
-    {
-      "name": "BasilisksDemandTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "36",
-      "columns": [
-        {
-          "name": "d20",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "The Basilisks Demand\\s*\\(d20\\)"
-        ],
-        "index": {
-          "type": "d20"
-        },
-        "multi_table_page": false
-      }
-    },
-    {
-      "name": "ArcaneCatastrophesTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "43-45",
-      "columns": [
-        {
-          "name": "d20",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Arcane catastrophes\\s*\\(d20\\)"
-        ],
-        "index": {
-          "type": "d20"
-        },
-        "multi_table_page": false,
-        "min_rows": 20,
-        "max_rows": 20
-      }
-    },
-    {
-      "name": "AdventureSparkTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "69-70",
-      "columns": [
-        {
-          "name": "d100",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Adventure spark\\s*\\(d100\\)"
-        ],
-        "index": {
-          "type": "d100_pairs"
-        },
-        "multi_table_page": false,
-        "min_rows": 49,
-        "max_rows": 50
-      }
-    },
-    {
-      "name": "WanderTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "68",
-      "columns": [
-        {
-          "name": "d12",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Where do you wander\\?\\s*\\(d12\\)"
-        ],
-        "index": {
-          "type": "d12"
-        },
-        "min_rows": 12,
-        "max_rows": 12,
-        "multi_table_page": false
-      }
-    },
-    {
-      "name": "DwellsHereTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "72",
-      "columns": [
-        {
-          "name": "d12",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Who or what dwells here now\\?\\s*\\(d12\\)"
-        ],
-        "index": {
-          "type": "d12"
-        },
-        "min_rows": 12,
-        "max_rows": 12,
-        "multi_table_page": true
-      }
-    },
-    {
-      "name": "ImminentDangerTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "72",
-      "columns": [
-        {
-          "name": "d10",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Imminent danger\\s*\\(d10\\)"
-        ],
-        "index": {
-          "type": "d10"
-        },
-        "min_rows": 10,
-        "max_rows": 10,
-        "multi_table_page": true,
-        "stop_before": [
-          "Who or what dwells here"
-        ]
-      }
-    },
-    {
-      "name": "DistinctiveFeatureTable",
-      "phase": 3,
-      "instance_of": "LookupTable",
-      "source_ref": "mork-borg.pdf",
-      "pages": "73",
-      "columns": [
-        {
-          "name": "d12",
-          "role": "index",
-          "position": 0
-        },
-        {
-          "name": "result",
-          "role": "result",
-          "position": 1
-        }
-      ],
-      "acceptance_rows": [],
-      "pdf_extract": {
-        "status": "verified",
-        "header_patterns": [
-          "Distinctive feature\\s*\\(d12\\)"
-        ],
-        "index": {
-          "type": "d12"
-        },
-        "min_rows": 12,
-        "max_rows": 12,
-        "multi_table_page": false
-      }
     }
-  ]
+  ],
+  "character_creation": {
+    "applies_during": "CharacterCreation",
+    "selector_table": "OptionalClassesTable",
+    "bundle_schema": "corpus/games/mork-borg/tables/optional-classes.json",
+    "materialization": {
+      "bundle_node_labels": [
+        "IngestNode",
+        "OptionalClass"
+      ],
+      "bundle_instance_of": "OptionalClass",
+      "bundle_also_labels": "SelectableBundle",
+      "relationships": [
+        {
+          "from": "CharacterCreation",
+          "rel": "USES",
+          "to": "OptionalClassesTable"
+        },
+        {
+          "from": "OptionalClassesTable row",
+          "rel": "SELECTS",
+          "to": "bundle"
+        },
+        {
+          "from": "bundle",
+          "rel": "APPLIES_DURING",
+          "to": "CharacterCreation"
+        },
+        {
+          "from": "bundle",
+          "rel": "CONTAINS",
+          "to": "nested LookupTable"
+        },
+        {
+          "from": "bundle",
+          "rel": "USES",
+          "to": "external LookupTable"
+        },
+        {
+          "from": "bundle",
+          "rel": "DOCUMENTED_BY",
+          "to": "RulePassage"
+        }
+      ]
+    },
+    "note": "Character creation only — not turn-time. Runtime filters APPLIES_DURING CharacterCreation vs Scene/Turn mechanisms."
+  }
 }

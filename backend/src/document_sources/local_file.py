@@ -107,6 +107,42 @@ def get_documents_from_file_by_path(file_path, file_name):
         raise Exception(f'Error while reading the file content or metadata, {exc}')
     return file_name, pages, file_extension
 
+
+def book_page_number(document: Document, fallback_index: int = 0) -> int | None:
+    """Return 1-based book page number from PDF metadata, or None if unknown."""
+    if document.metadata.get("page_number") is not None:
+        return int(document.metadata["page_number"])
+    if "page" in document.metadata:
+        return int(document.metadata["page"]) + 1
+    return None
+
+
+def filter_pages_by_range(
+    pages: list[Document],
+    start_page: int | None,
+    end_page: int | None,
+) -> list[Document]:
+    """Keep only pages whose book page number falls in [start_page, end_page] (inclusive, 1-based)."""
+    if start_page is None and end_page is None:
+        return pages
+    if start_page is not None and end_page is not None and start_page > end_page:
+        raise ValueError(f"start_page ({start_page}) must be <= end_page ({end_page})")
+
+    filtered: list[Document] = []
+    for i, doc in enumerate(pages):
+        page_num = book_page_number(doc, i)
+        if page_num is None:
+            continue
+        if start_page is not None and page_num < start_page:
+            continue
+        if end_page is not None and page_num > end_page:
+            continue
+        meta = dict(doc.metadata)
+        meta["page_number"] = page_num
+        filtered.append(Document(page_content=doc.page_content, metadata=meta))
+
+    return filtered
+
 def get_pages_with_page_numbers(unstructured_pages):
     """
     Groups unstructured pages into logical pages with page numbers and metadata.

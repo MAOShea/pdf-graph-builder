@@ -26,6 +26,8 @@ class SourceScanExtractParams(BaseModel):
     embedding_provider: Optional[str] = Field(None, description="Embedding provider")
     embedding_model: Optional[str] = Field(None, description="Embedding model")
     ingest_mode: Optional[str] = Field(None, description="'scaffold-diff' for top-down diff against a pre-bootstrapped scaffold, or None for default bottom-up extraction")
+    start_page: Optional[int] = Field(None, description="First PDF page to ingest (1-based, inclusive)")
+    end_page: Optional[int] = Field(None, description="Last PDF page to ingest (1-based, inclusive)")
 
 def get_source_scan_extract_params(
     source_url: Optional[str] = Form(None),
@@ -51,6 +53,8 @@ def get_source_scan_extract_params(
     embedding_provider: Optional[str] = Form(None),
     embedding_model: Optional[str] = Form(None),
     ingest_mode: Optional[str] = Form(None),
+    start_page: Optional[int] = Form(None),
+    end_page: Optional[int] = Form(None),
 ) -> SourceScanExtractParams:
     return SourceScanExtractParams(
         source_url=source_url,
@@ -76,4 +80,6 @@ def get_source_scan_extract_params(
         embedding_provider=embedding_provider,
         embedding_model=embedding_model,
         ingest_mode=ingest_mode,
+        start_page=start_page,
+        end_page=end_page,
     )

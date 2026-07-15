@@ -21,7 +21,7 @@ from src.document_sources.gcs_bucket import (
     copy_failed_file, delete_file_from_gcs, get_documents_from_gcs,
     get_gcs_bucket_files_info, merge_file_gcs, upload_file_to_gcs
 )
-from src.document_sources.local_file import get_documents_from_file_by_path
+from src.document_sources.local_file import filter_pages_by_range, get_documents_from_file_by_path
 from src.document_sources.s3_bucket import get_documents_from_s3, get_s3_files_info
 from src.document_sources.web_pages import get_documents_from_web_page
 from src.document_sources.wikipedia import get_documents_from_wikipedia
@@ -50,6 +50,7 @@ from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from src.shared.schema_extraction import schema_extraction_from_text
 from src.hand_authored_tables import materialize_hand_authored_tables
 from src.pdf_table_parser import enrich_pdf_chunks_with_tables, persist_chunk_table_metadata
+from src.bundle_materialization import materialize_character_creation_bundles
 from src.table_materialization import materialize_lookup_tables_from_chunks
 
 from langchain_community.document_loaders import WebBaseLoader
@@ -486,6 +487,25 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   response = {}  
   start_time = datetime.now()
   processing_source_start_time = time.time()
+
+  start_page = getattr(params, "start_page", None)
+  end_page = getattr(params, "end_page", None)
+  if start_page is not None or end_page is not None:
+    try:
+      pages = filter_pages_by_range(pages, start_page, end_page)
+    except ValueError as exc:
+      raise LLMGraphBuilderException(str(exc))
+    if not pages:
+      raise LLMGraphBuilderException(
+        f"No pages in range start_page={start_page} end_page={end_page} for {params.file_name}"
+      )
+    logging.info(
+      "Page range filter: start_page=%s end_page=%s → %s page(s)",
+      start_page,
+      end_page,
+      len(pages),
+    )
+
   start_create_connection = time.time()
   graph = create_graph_database_connection(credentials)
   end_create_connection = time.time()
@@ -547,6 +567,19 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
       hand_stats["tables_materialized"],
     )
     uri_latency["hand_authored_tables"] = hand_stats
+
+    bundle_stats = materialize_character_creation_bundles(
+      graph, params.file_name, scaffold_map
+    )
+    logging.info(
+      "bundle materialization: bundles=%s selects=%s contains=%s uses=%s warnings=%s",
+      bundle_stats["bundles_created"],
+      bundle_stats["selects_linked"],
+      bundle_stats["contains_linked"],
+      bundle_stats["uses_linked"],
+      bundle_stats["warnings"],
+    )
+    uri_latency["bundle_materialization"] = bundle_stats
 
   start_status_document_node = time.time()
   result = graphDb_data_Access.get_current_status_document_node(params.file_name)

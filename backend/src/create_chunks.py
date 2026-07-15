@@ -50,12 +50,20 @@ class CreateChunksofDocument:
         chunks = []
         first_metadata = self.pages[0].metadata
 
-        if 'page' in first_metadata:
-            # PDF or paginated document
+        if 'page' in first_metadata or 'page_number' in first_metadata:
+            # PDF or paginated document — preserve original book page numbers
             for i, document in enumerate(self.pages):
-                page_number = i + 1
+                meta = document.metadata
+                if meta.get("page_number") is not None:
+                    page_number = int(meta["page_number"])
+                elif "page" in meta:
+                    page_number = int(meta["page"]) + 1
+                else:
+                    page_number = i + 1
                 for chunk in text_splitter.split_documents([document]):
-                    chunks.append(Document(page_content=chunk.page_content, metadata={'page_number': page_number}))
+                    chunks.append(
+                        Document(page_content=chunk.page_content, metadata={"page_number": page_number})
+                    )
         elif 'length' in first_metadata:
             # YouTube transcript or similar
             if len(self.pages) == 1 or (len(self.pages) > 1 and self.pages[1].page_content.strip() == ''):

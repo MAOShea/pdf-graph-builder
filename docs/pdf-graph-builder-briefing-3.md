@@ -37,7 +37,7 @@ From bootstrap:
 - Row entries with cell values
 - Links: `DRTable INSTANCE_OF LookupTable`, `AbilityTest USES DRTable`, `DRTable APPLIES_TO DR`
 
-Reference contract: `games/mork-borg/ingest-manifest.json` → `lookup_tables[]`
+Reference contract: `corpus/games/mork-borg/ingest-manifest.json` → `lookup_tables[0]`
 
 Manifest sync: [ingest-manifest-sync.md](./ingest-manifest-sync.md)
 
@@ -191,8 +191,8 @@ Expected: 1 table, 2 columns, 7 rows, `AbilityTest USES DRTable`.
 | File | What |
 |---|---|
 | `corpus/seeds/families/lookup-tables.json` | Tier 1 ontology (`TableColumn`, `HAS_COLUMN`, `cells`) |
-| `games/mork-borg/ingest-manifest.json` | Tier-5 materialization + `pdf_extract` contracts |
-| [ingest-manifest-sync.md](./ingest-manifest-sync.md) | Table inventory, PDF signatures, sync workflow |
+| `corpus/games/mork-borg/ingest-manifest.json` | Tier-5 materialization contract for `DRTable` |
+| `docs/outbox/ingest-manifest-sync.md` | How to copy the manifest to pdf-graph-builder |
 | `DESIGN.md` §6.2.2 | Full model and Cypher examples |
 | `docs/outbox/pdf-graph-builder-briefing-2.md` | Prior ingest bugs (case norm, instance routing, SeedNode leakage) still apply |
 | `docs/inbox/ai-dm-assistant-handoff-1.md` | Prior ingest findings |
