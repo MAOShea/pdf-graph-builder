@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (role-based index+result; index key enumeration per table, not per die size).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -105,6 +105,170 @@
         "multi_table_page": false
       },
       "note": "Phase 1. Ingest creates :IngestNode DRTable with :HAS_COLUMN and :HAS_ENTRY rows. Extract from Chunk.table_json; validate against acceptance_rows."
+    },
+    {
+      "name": "WeaponTable",
+      "instance_of": "LookupTable",
+      "applies_during": "CharacterCreation",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "23",
+      "columns": [
+        {
+          "name": "d10",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d10": 1,
+            "result": "Femur d4"
+          }
+        },
+        {
+          "cells": {
+            "d10": 2,
+            "result": "Staff d4"
+          }
+        },
+        {
+          "cells": {
+            "d10": 3,
+            "result": "Shortsword d4"
+          }
+        },
+        {
+          "cells": {
+            "d10": 4,
+            "result": "Knife d4"
+          }
+        },
+        {
+          "cells": {
+            "d10": 5,
+            "result": "Warhammer d6"
+          }
+        },
+        {
+          "cells": {
+            "d10": 6,
+            "result": "Sword d6"
+          }
+        },
+        {
+          "cells": {
+            "d10": 7,
+            "result": "Bow d6, with Presence +10 arrows"
+          }
+        },
+        {
+          "cells": {
+            "d10": 8,
+            "result": "Flail d8"
+          }
+        },
+        {
+          "cells": {
+            "d10": 9,
+            "result": "Crossbow d8, with Presence +10 bolts"
+          }
+        },
+        {
+          "cells": {
+            "d10": 10,
+            "result": "Zweihänder d10"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Weapons\\s+d10"
+        ],
+        "stop_before": [
+          "Armor d4"
+        ],
+        "index": {
+          "type": "d10"
+        },
+        "min_rows": 10,
+        "max_rows": 10,
+        "prefer_page": 23,
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "ArmorTable",
+      "instance_of": "LookupTable",
+      "applies_during": "CharacterCreation",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "23",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": 1,
+            "result": "no armor (tier 0)"
+          }
+        },
+        {
+          "cells": {
+            "d4": 2,
+            "result": "light (fur, padded cloth, leather etc, −d2 damage, tier 1) 20s"
+          }
+        },
+        {
+          "cells": {
+            "d4": 3,
+            "result": "medium armor (scale, mail etc, −d4 damage, tier 2) 100s DR +2 on Agility tests including defence."
+          }
+        },
+        {
+          "cells": {
+            "d4": 4,
+            "result": "Heavy armor (splint, plate etc, −d6 damage, tier 3) 200s DR +4 on Agility tests, defence is DR+2. Shield −1 damage 20s."
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Armor d4"
+        ],
+        "stop_before": [
+          "Scrolls will"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "prefer_page": 23,
+        "multi_table_page": true
+      }
     },
     {
       "name": "CorpsePlunderTable",
@@ -283,7 +447,7 @@
         }
       ],
       "hand_authored": {
-        "file": "corpus/games/mork-borg/tables/corpse-plunder-d66.json",
+        "file": "games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json",
         "skip_pdf_extract": true
       },
       "note": "d66 keys use sparse notation (11-16, 21, …, 61-66). PDF parsing not viable — materialize from hand-authored JSON in pdf-graph-builder.",
@@ -299,6 +463,365 @@
         "min_rows": 30,
         "max_rows": 40,
         "multi_table_page": true
+      }
+    },
+    {
+      "name": "TrapsTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "4",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "Trap",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": 1,
+            "Trap": "Well dressed corpse, booby trapped"
+          }
+        },
+        {
+          "cells": {
+            "d12": 2,
+            "Trap": "Wall-holes shoot poisonous arrows"
+          }
+        },
+        {
+          "cells": {
+            "d12": 3,
+            "Trap": "Bells and marbles on the floor"
+          }
+        },
+        {
+          "cells": {
+            "d12": 4,
+            "Trap": "Scorpion-filled basket poised to fall"
+          }
+        },
+        {
+          "cells": {
+            "d12": 5,
+            "Trap": "Fish hooks hanging at eye level"
+          }
+        },
+        {
+          "cells": {
+            "d12": 6,
+            "Trap": "Chest marked with explosive runes"
+          }
+        },
+        {
+          "cells": {
+            "d12": 7,
+            "Trap": "Lock trapped with vial of poison gas"
+          }
+        },
+        {
+          "cells": {
+            "d12": 8,
+            "Trap": "Jewel removal leads to roof collapse"
+          }
+        },
+        {
+          "cells": {
+            "d12": 9,
+            "Trap": "Slanted floor, translucent oil, pit"
+          }
+        },
+        {
+          "cells": {
+            "d12": 10,
+            "Trap": "Snake-cages on collapsing ceiling tiles"
+          }
+        },
+        {
+          "cells": {
+            "d12": 11,
+            "Trap": "Evil urns release cold ghosts"
+          }
+        },
+        {
+          "cells": {
+            "d12": 12,
+            "Trap": "Coins coated in grime and poison"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Traps and Devilry\\s*\\(d12\\)"
+        ],
+        "stop_before": [
+          "weather\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": true
+      },
+      "note": "Page 4 chunk contains traps + weather + corpse plundering. Reference: corpus/mork-borg/tables/traps-and-weather.json"
+    },
+    {
+      "name": "WeatherTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "4",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "Weather",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": 1,
+            "Weather": "Lifeless grey"
+          }
+        },
+        {
+          "cells": {
+            "d12": 2,
+            "Weather": "Hammering rain"
+          }
+        },
+        {
+          "cells": {
+            "d12": 3,
+            "Weather": "Piercing wind"
+          }
+        },
+        {
+          "cells": {
+            "d12": 4,
+            "Weather": "Deafening storm"
+          }
+        },
+        {
+          "cells": {
+            "d12": 5,
+            "Weather": "Black as night"
+          }
+        },
+        {
+          "cells": {
+            "d12": 6,
+            "Weather": "Dead quiet"
+          }
+        },
+        {
+          "cells": {
+            "d12": 7,
+            "Weather": "Cloudburst"
+          }
+        },
+        {
+          "cells": {
+            "d12": 8,
+            "Weather": "Soup-thick mist"
+          }
+        },
+        {
+          "cells": {
+            "d12": 9,
+            "Weather": "Crackling frost"
+          }
+        },
+        {
+          "cells": {
+            "d12": 10,
+            "Weather": "Irritating drizzle"
+          }
+        },
+        {
+          "cells": {
+            "d12": 11,
+            "Weather": "Roaring thunder"
+          }
+        },
+        {
+          "cells": {
+            "d12": 12,
+            "Weather": "Gravelike cold"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "weather\\s*\\(d12\\)"
+        ],
+        "stop_before": [
+          "Corpse plundering\\s*\\(d66\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": true
+      },
+      "note": "Same page-4 chunk as TrapsTable."
+    },
+    {
+      "name": "OccultTreasuresTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "3",
+      "columns": [
+        {
+          "name": "d10",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "Treasure",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d10": 1,
+            "Treasure": "Ash-grey ring a finger-width wide. All that passes through is obliterated."
+          }
+        },
+        {
+          "cells": {
+            "d10": 2,
+            "Treasure": "The keening music of this small, vile flute animates a fetus-sized meat golem in a nearby corpse. HP 5, Morale -, No armor, Bite d4, immune to Powers."
+          }
+        },
+        {
+          "cells": {
+            "d10": 3,
+            "Treasure": "A note explains: one taste from this Famine Spoon means death from slow starvation."
+          }
+        },
+        {
+          "cells": {
+            "d10": 4,
+            "Treasure": "The image of a being in this malevolently-accurate mirror shows only the shameful truth of their soul."
+          }
+        },
+        {
+          "cells": {
+            "d10": 5,
+            "Treasure": "Vampiric phurba. Heals you as it harms your target (d3), but beware: after stealing a total of 6 HP, test Presence DR14 or become addicted."
+          }
+        },
+        {
+          "cells": {
+            "d10": 6,
+            "Treasure": "A black pearl. If dropped in darkness it rolls towards the nearest exit to day."
+          }
+        },
+        {
+          "cells": {
+            "d10": 7,
+            "Treasure": "This torch burns for an immortal hour. Hold it and live. You can lose limbs and enter negative HP but won't die unless you drop the torch or it burns out."
+          }
+        },
+        {
+          "cells": {
+            "d10": 8,
+            "Treasure": "Silver bird cage slays whatever is placed behind its bars, slowly, over one long night. That which is killed reanimates twice as strong, as a raging uncontrollable undead."
+          }
+        },
+        {
+          "cells": {
+            "d10": 9,
+            "Treasure": "Black Crown of the Crippled King. Wearing this crooks your body as you become aware that you and every creature within 100 yards gain +10 to attack rolls but −10 to defence rolls."
+          }
+        },
+        {
+          "cells": {
+            "d10": 10,
+            "Treasure": "Anyone wearing this ancient blindfold becomes invisible to those who breathe though the undead attack them obsessively and nearby corpses awaken in moaning, unholy wrath."
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Occult Treasures",
+          "d10\\s+Occult Treasures"
+        ],
+        "stop_before": [
+          "Traps and Devilry"
+        ],
+        "index": {
+          "type": "d10"
+        },
+        "min_rows": 10,
+        "max_rows": 10,
+        "multi_table_page": false
+      },
+      "note": "Full 10 rows verified from PDF p.3. corpus/mork-borg/tables/occult-treasures.json is partial (5 rows)."
+    },
+    {
+      "name": "NameTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "2",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "d8",
+          "role": "index",
+          "position": 1
+        },
+        {
+          "name": "Name",
+          "role": "result",
+          "position": 2
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "hand-authored",
+        "header_patterns": [
+          "d6\\s+d8\\s+Name",
+          "Name table"
+        ],
+        "index": {
+          "type": "d6_x_d8"
+        },
+        "min_rows": 48,
+        "max_rows": 48,
+        "multi_table_page": false
+      },
+      "note": "d6×d8 name grid — hand-authored from name-table.json; PDF side-by-side layout not reliably parseable.",
+      "hand_authored": {
+        "file": "games/mork-borg/hand-authored-overrides/name-table.json",
+        "skip_pdf_extract": true
       }
     },
     {
@@ -369,7 +892,7 @@
       ],
       "note": "Selector only. Each row SELECTS an OptionalClass bundle — do not treat nested tables as page siblings.",
       "hand_authored": {
-        "file": "games/mork-borg/tables/optional-classes.json",
+        "file": "games/mork-borg/hand-authored-overrides/optional-classes.json",
         "selector_key": "selector",
         "skip_pdf_extract": true
       },
@@ -821,12 +1344,1192 @@
         "max_rows": 8,
         "multi_table_page": false
       }
+    },
+    {
+      "name": "BasilisksDemandTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "36",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "The Basilisks Demand\\s*\\(d20\\)"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
+      }
+    },
+    {
+      "name": "ArcaneCatastrophesTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "43-45",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Arcane catastrophes\\s*\\(d20\\)"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
+      }
+    },
+    {
+      "name": "AdventureSparkTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "69-70",
+      "columns": [
+        {
+          "name": "d100",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Adventure spark\\s*\\(d100\\)"
+        ],
+        "index": {
+          "type": "d100_pairs"
+        },
+        "multi_table_page": false,
+        "min_rows": 50,
+        "max_rows": 50
+      }
+    },
+    {
+      "name": "WanderTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "68",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Where do you wander\\?\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": false
+      }
+    },
+    {
+      "name": "DwellsHereTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "72",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Who or what dwells here now\\?\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "ImminentDangerTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "72",
+      "columns": [
+        {
+          "name": "d10",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Imminent danger\\s*\\(d10\\)"
+        ],
+        "index": {
+          "type": "d10"
+        },
+        "min_rows": 10,
+        "max_rows": 10,
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "DistinctiveFeatureTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "73",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Distinctive feature\\s*\\(d12\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": false
+      }
+    },
+    {
+      "name": "BrokenTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "29",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Broken\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "InitiativeTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "30",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Initiative\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-3",
+            "4-6"
+          ]
+        },
+        "min_rows": 2,
+        "max_rows": 2,
+        "stop_before": [
+          "Agility \\+ d6"
+        ],
+        "multi_table_page": true
+      },
+      "note": "d6 range pairs, not six separate rows."
+    },
+    {
+      "name": "FoulPsychopompSummonTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "35",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Foul Psychompomp:?\\s*Summon\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [
+          "The Basilisks Demand"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "ToLeaveTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "45",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "To leave\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Optional Classes"
+        ],
+        "multi_table_page": true,
+        "dotted_index": true
+      }
+    },
+    {
+      "name": "GutterbornSpecialtyTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "49",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "one specialty\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [
+          "Eldritch Origins"
+        ],
+        "multi_table_page": true
+      },
+      "parent_bundle": "GutterbornScum"
+    },
+    {
+      "name": "EsotericHermitEquipmentTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "51",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "begin with one of the following\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [
+          "Things were going"
+        ],
+        "multi_table_page": true
+      },
+      "parent_bundle": "EsotericHermit"
+    },
+    {
+      "name": "HereticalPriestEquipmentTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "55",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "You begin with one of the following\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 5,
+        "max_rows": 6,
+        "stop_before": [
+          "Abilities"
+        ],
+        "multi_table_page": true
+      },
+      "parent_bundle": "HereticalPriest"
+    },
+    {
+      "name": "WieldsTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "59",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Wields\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcTraitTable64",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "64",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Trait\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Specialit",
+          "Specialty"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcSpecialtyTable64",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "64",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Speciality\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcValuesTable64",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "64",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcTraitTable65",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "65",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Trait\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Specialty\\s*\\(d4\\)"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcSpecialtyTable65",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "65",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Specialty\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-2",
+            "3",
+            "4"
+          ]
+        },
+        "min_rows": 3,
+        "max_rows": 3,
+        "stop_before": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcValuesTable65",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "65",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcTraitTable66",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "66",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Trait\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Specialit"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcSpecialtyTable66",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "66",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Speciality\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcValuesTable66",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "66",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcTraitTable67",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "67",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Traits?\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Specialit"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcSpecialtyTable67",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "67",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Speciality\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "NpcValuesTable67",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "67",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Values\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "StatusTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "71",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Status\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-2",
+            "3-6"
+          ]
+        },
+        "min_rows": 2,
+        "max_rows": 2,
+        "stop_before": [],
+        "multi_table_page": true
+      },
+      "note": "Row 3-6 means inactive; use InactiveBecauseTable for the d4 sub-roll."
+    },
+    {
+      "name": "InactiveBecauseTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "71",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Inactive, because\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "d6",
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "min_rows": 4,
+        "max_rows": 4,
+        "stop_before": [],
+        "multi_table_page": true
+      }
+    },
+    {
+      "name": "InscriptionMotifsTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "73",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "motifs are\\s*\\(d6\\)"
+        ],
+        "index": {
+          "type": "d6"
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "stop_before": [
+          "Bloodied beds"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Nested under Sample rooms d4/d6 matrix on p.73."
+    },
+    {
+      "name": "ShelvesWithTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "74",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Shelves with\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-2",
+            "3-4"
+          ]
+        },
+        "min_rows": 2,
+        "max_rows": 2,
+        "stop_before": [
+          "4\\s+Abyssal pits"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Sub-table when Sample rooms d6 roll is 3 on certain d4 rows."
+    },
+    {
+      "name": "SacrificialAltarTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "74",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Sacrificial altar\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-2",
+            "3-4"
+          ]
+        },
+        "min_rows": 2,
+        "max_rows": 2,
+        "stop_before": [
+          "4\\s+Remains of a throne"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Sub-table when Sample rooms d6 roll is 3 on d4 row 4."
     }
   ],
   "character_creation": {
     "applies_during": "CharacterCreation",
     "selector_table": "OptionalClassesTable",
-    "bundle_schema": "corpus/games/mork-borg/tables/optional-classes.json",
+    "bundle_schema": "games/mork-borg/hand-authored-overrides/optional-classes.json",
     "materialization": {
       "bundle_node_labels": [
         "IngestNode",

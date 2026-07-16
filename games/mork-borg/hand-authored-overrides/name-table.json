@@ -1,5 +1,5 @@
 {
-  "_note": "Hand-authored from corpus/mork-borg/tables/name-table.json",
+  "_note": "Hand-authored override — takes precedence over PDF extraction for NameTable.",
   "source": "mork-borg",
   "manifest_table": "NameTable",
   "override_pdf": true,

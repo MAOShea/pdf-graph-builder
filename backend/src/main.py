@@ -48,10 +48,7 @@ from src.shared.constants import (
 )
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from src.shared.schema_extraction import schema_extraction_from_text
-from src.hand_authored_tables import materialize_hand_authored_tables
-from src.pdf_table_parser import enrich_pdf_chunks_with_tables, persist_chunk_table_metadata
-from src.bundle_materialization import materialize_character_creation_bundles
-from src.table_materialization import materialize_lookup_tables_from_chunks
+from src.table_pipeline import resolve_pdf_path, run_lookup_table_pipeline
 
 from langchain_community.document_loaders import WebBaseLoader
 
@@ -539,47 +536,30 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   uri_latency["total_chunks"] = total_chunks
 
   if getattr(params, "ingest_mode", None) == "scaffold-diff" and scaffold_map:
-    pdf_table_stats = enrich_pdf_chunks_with_tables(chunkId_chunkDoc_list)
-    persist_chunk_table_metadata(graph, chunkId_chunkDoc_list)
-    logging.info(
-      "pdf table parser: scanned %s PDF chunk(s), found %s table(s)",
-      pdf_table_stats["chunks_scanned"],
-      pdf_table_stats["tables_found"],
-    )
-    uri_latency["pdf_table_parser"] = pdf_table_stats
+    try:
+      pipeline_pdf = resolve_pdf_path(
+        params.file_name,
+        merged_file_path=merged_file_path,
+      )
+    except FileNotFoundError as exc:
+      raise LLMGraphBuilderException(str(exc)) from exc
 
-    table_stats = materialize_lookup_tables_from_chunks(
-      graph, params.file_name, chunkId_chunkDoc_list, scaffold_map
+    pipeline_stats = run_lookup_table_pipeline(
+      graph,
+      params.file_name,
+      scaffold_map,
+      pdf_path=pipeline_pdf,
+      start_page=start_page,
+      end_page=end_page,
     )
     logging.info(
-      "table materialization: scanned %s table chunk(s), materialized %s",
-      table_stats["chunks_scanned"],
-      table_stats["tables_materialized"],
+      "lookup table pipeline: parsed=%s materialized=%s failed=%s pdf=%s",
+      pipeline_stats.get("pdf_tables_parsed"),
+      pipeline_stats.get("pdf_tables_materialized"),
+      pipeline_stats.get("pdf_tables_failed"),
+      pipeline_stats.get("pdf_path"),
     )
-    uri_latency["table_materialization"] = table_stats
-
-    hand_stats = materialize_hand_authored_tables(
-      graph, params.file_name, scaffold_map
-    )
-    logging.info(
-      "hand-authored tables: loaded %s, materialized %s",
-      hand_stats["tables_loaded"],
-      hand_stats["tables_materialized"],
-    )
-    uri_latency["hand_authored_tables"] = hand_stats
-
-    bundle_stats = materialize_character_creation_bundles(
-      graph, params.file_name, scaffold_map
-    )
-    logging.info(
-      "bundle materialization: bundles=%s selects=%s contains=%s uses=%s warnings=%s",
-      bundle_stats["bundles_created"],
-      bundle_stats["selects_linked"],
-      bundle_stats["contains_linked"],
-      bundle_stats["uses_linked"],
-      bundle_stats["warnings"],
-    )
-    uri_latency["bundle_materialization"] = bundle_stats
+    uri_latency["lookup_table_pipeline"] = pipeline_stats
 
   start_status_document_node = time.time()
   result = graphDb_data_Access.get_current_status_document_node(params.file_name)

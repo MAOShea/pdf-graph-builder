@@ -315,6 +315,38 @@ Import the perspective file into Neo4j Bloom to get a pre-configured diff view:
 
 Node colours signal coverage state: **amber** = `research-only`, **green** = `ingest-confirmed`, **blue** = `operator-verified`. Set a node to `operator-verified` by editing its `coverage` property directly in Bloom once you have reviewed it.
 
+#### Lookup tables (manifest-driven)
+
+Scaffold-diff ingest runs **two pipelines**. They are not interchangeable.
+
+| Pipeline | Produces | Needs manifest? |
+|---|---|---|
+| **LLM extraction** | Passages, `CONFIRMS_SEED`, ad-hoc `IngestNode`s | No |
+| **Lookup table materialization** | `:IngestNode` tables with `:HAS_COLUMN` / `:HAS_ENTRY` rows (e.g. `WeaponTable`, `DRTable`) | **Yes** |
+
+**Tables never appear “naturally.”** Ingesting a PDF page puts text in `:Chunk` nodes, but structured lookup tables are only created from entries in `games/<game>/ingest-manifest.json` → `lookup_tables[]`. The PDF parser and materializer both iterate that list only; a JSON file in `hand-authored-overrides/` without a manifest entry is ignored.
+
+**To add a table:**
+
+1. **Bootstrap** the game scaffold in Neo4j (seed nodes including `LookupTable`).
+2. **Declare** the table in `games/<game>/ingest-manifest.json` (`name`, `columns`, `instance_of`).
+3. **Choose extraction mode:**
+   - **PDF-parseable** — add `pdf_extract` (`status: verified`, header patterns, index type, pages).
+   - **Not PDF-parseable** — add `hand_authored.file` pointing at `games/<game>/hand-authored-overrides/…` and set `pdf_extract.status: hand-authored`.
+4. **Materialize** — run the unified lookup-table pipeline (PDF on disk → Neo4j):
+
+```powershell
+.\ingest-tables.ps1
+# or full ingest (tables + LLM):
+.\ingest-pdf.ps1 -StartPage 23 -EndPage 23
+```
+
+On scaffold-diff ingest the backend calls the same pipeline (`run_lookup_table_pipeline` in `src/table_pipeline.py`): read PDF → parse per manifest → materialize rows → hand-authored overrides → bundle wiring. **Page text for tables always comes from the PDF file**, not from Neo4j chunk storage.
+
+**Bundle wiring** (optional): set `parent_bundle` / `uses_tables` on manifest entries and ensure `character_creation` + `optional-classes.json` agree. Bundles link existing tables; they do not create row data.
+
+See `games/mork-borg/hand-authored-overrides/README.md` and `docs/pdf-graph-builder-briefing-3.md` for the Mörk Borg contract.
+
 ---
 
 ### Use Case 3 — Structured JSON ingest (hand-authored rulebook sections)
@@ -324,10 +356,10 @@ PDF extraction fails for side-by-side tables and art-heavy layouts. For rulebook
 - **One block = one chunk** — no token splitting, no 19-chunk cap
 - **Tables** stored as markdown for the LLM and as `table_json` on `:Chunk` for direct lookup
 - **Schema:** see `docs/structured-ingest-schema.md`
-- **Examples:** `corpus/mork-borg/tables/`
+- **Examples:** `games/mork-borg/hand-authored-overrides/`
 
 ```powershell
-# From workspace root — uploads every .json under corpus/mork-borg/
+# From workspace root — uploads structured-json blocks under hand-authored-overrides/
 .\ingest-morkborg-json.ps1
 ```
 

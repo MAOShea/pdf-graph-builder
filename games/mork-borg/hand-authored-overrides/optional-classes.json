@@ -31,7 +31,7 @@
       "name": "Gutterborn Scum",
       "pages": "48",
       "selector_cells": {"d6": 2},
-      "contains_tables": ["BadBirthTable"],
+      "contains_tables": ["BadBirthTable", "GutterbornSpecialtyTable"],
       "uses_tables": ["WeaponTable", "ArmorTable"]
     },
     {
@@ -39,7 +39,7 @@
       "name": "Esoteric hermit",
       "pages": "50",
       "selector_cells": {"d6": 3},
-      "contains_tables": ["EldritchOriginsTable"],
+      "contains_tables": ["EldritchOriginsTable", "EsotericHermitEquipmentTable"],
       "uses_tables": []
     },
     {
@@ -55,7 +55,7 @@
       "name": "Heretical priest",
       "pages": "54",
       "selector_cells": {"d6": 5},
-      "contains_tables": ["HereticalPriestOriginsTable"],
+      "contains_tables": ["HereticalPriestOriginsTable", "HereticalPriestEquipmentTable"],
       "uses_tables": []
     },
     {

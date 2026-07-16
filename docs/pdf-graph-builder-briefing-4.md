@@ -9,8 +9,8 @@
 | Path | Version / note |
 |---|---|
 | `games/mork-borg/ingest-manifest.json` | v0.3.1 — `DRTable` `pdf_extract` + Phase 2 table contracts |
-| `games/mork-borg/tables/optional-classes.json` | Bundle map (Phase 2 only) |
-| `mork-borg-corpse-plunder-d66.json` | Hand-authored (Phase 2 only) |
+| `games/mork-borg/hand-authored-overrides/optional-classes.json` | Bundle map (Phase 2 only) |
+| `games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json` | Hand-authored (Phase 2 only) |
 
 If missing, ask the operator to run `.\scripts\sync-ingest-manifest.ps1` and `.\scripts\sync-outbox-briefings.ps1` from AI-DM-Assistant.
 
@@ -163,7 +163,7 @@ CharacterCreation (setup phase, not turn play)
 | `lookup_tables[]` with `parent_bundle` | Nested tables belong to a class, not the page |
 | `acceptance_rows[].selects_bundle` | Selector row → bundle id |
 | `character_creation` | Materialization rules |
-| `games/mork-borg/tables/optional-classes.json` | Six bundles |
+| `games/mork-borg/hand-authored-overrides/optional-classes.json` | Six bundles |
 
 ### Six classes (d6)
 

@@ -1,0 +1,62 @@
+{
+  "weapons": [
+    [
+      1,
+      "Femur d4"
+    ],
+    [
+      2,
+      "Staff d4"
+    ],
+    [
+      3,
+      "Shortsword d4"
+    ],
+    [
+      4,
+      "Knife d4"
+    ],
+    [
+      5,
+      "Warhammer d6"
+    ],
+    [
+      6,
+      "Sword d6"
+    ],
+    [
+      7,
+      "Bow d6, with Presence +10 arrows"
+    ],
+    [
+      8,
+      "Flail d8"
+    ],
+    [
+      9,
+      "Crossbow d8, with Presence +"
+    ],
+    [
+      10,
+      "bolts 10 Zweih\u00e4nder d10"
+    ]
+  ],
+  "armor": [
+    [
+      1,
+      "no armor (tier 0)"
+    ],
+    [
+      2,
+      "light (fur, padded cloth, leather etc, \u2212d2 damage, tier 1) 20s"
+    ],
+    [
+      3,
+      "medium armor (scale, mail etc, \u2212d4 damage, tier 2) 100s DR +2 on Agility tests including defence."
+    ],
+    [
+      4,
+      "Heavy armor (splint, plate etc, \u2212d6 damage, tier 3) 200s DR +4 on Agility tets, defence is DR+2 shield \u22121 damage 20s You can choose to ignore all damage from one attack but shield breaks."
+    ]
+  ]
+}

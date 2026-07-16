@@ -1,4 +1,4 @@
-"""Sync corpus/mork-borg/tables/corpse-plunder.txt -> mork-borg-corpse-plunder-d66.json.
+"""Sync games/mork-borg/hand-authored-overrides/corpse-plunder.txt -> corpse-plunder-d66.json.
 
 Each data line uses two or more spaces between the d66 roll and the result text.
 Only the first such run is treated as the column divider; double spaces inside the
@@ -47,7 +47,7 @@ def sync(txt_path: Path, json_path: Path) -> int:
 
     doc = {
         "_note": (
-            "Generated from corpus/mork-borg/tables/corpse-plunder.txt. "
+            "Generated from games/mork-borg/hand-authored-overrides/corpse-plunder.txt. "
             "Lines use two or more spaces between d66 roll and result. "
             "Run: .\\sync-corpse-plunder.ps1 then .\\ingest-hand-table.ps1"
         ),
@@ -75,12 +75,12 @@ def main() -> None:
     parser.add_argument(
         "--txt",
         type=Path,
-        default=root / "corpus/mork-borg/tables/corpse-plunder.txt",
+        default=root / "games/mork-borg/hand-authored-overrides/corpse-plunder.txt",
     )
     parser.add_argument(
         "--json",
         type=Path,
-        default=root / "mork-borg-corpse-plunder-d66.json",
+        default=root / "games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json",
     )
     args = parser.parse_args()
     count = sync(args.txt, args.json)

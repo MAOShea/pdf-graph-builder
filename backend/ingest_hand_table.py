@@ -2,7 +2,7 @@
 """Ingest a hand-authored table JSON file (no HTTP/curl).
 
 Usage (from backend/):
-  python ingest_hand_table.py ../mork-borg-corpse-plunder-d66.json
+  python ingest_hand_table.py games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json
 
 Requires Neo4j credentials in backend/.env and an existing Document node
 (typically from a prior mork-borg.pdf ingest).
@@ -23,7 +23,7 @@ def main():
     parser = argparse.ArgumentParser(description="Ingest hand-authored lookup table JSON")
     parser.add_argument(
         "json_path",
-        help="Path to table JSON (e.g. ../mork-borg-corpse-plunder-d66.json)",
+        help="Path to table JSON (e.g. games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json)",
     )
     parser.add_argument(
         "--document",

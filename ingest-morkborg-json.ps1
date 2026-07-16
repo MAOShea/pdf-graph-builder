@@ -1,12 +1,12 @@
 # ingest-morkborg-json.ps1 — ingest hand-authored structured JSON rulebook sections.
 # Run from the workspace root: .\ingest-morkborg-json.ps1
 #
-# Each .json file under corpus/mork-borg/ becomes one Document; each block = one atomic Chunk.
+# Each .json file under games/mork-borg/hand-authored-overrides/ becomes one Document; each block = one atomic Chunk.
 # See docs/structured-ingest-schema.md
 
 $ErrorActionPreference = "Stop"
 $BackendUrl = "http://localhost:8000"
-$CorpusDir  = "$PSScriptRoot\corpus\mork-borg"
+$CorpusDir  = "$PSScriptRoot\games\mork-borg\hand-authored-overrides"
 $Model      = "ollama_llama3"
 $Uri        = "neo4j://127.0.0.1:7687"
 $User       = "neo4j"
@@ -19,7 +19,7 @@ if ($JsonFiles.Count -eq 0) {
     exit 1
 }
 
-Write-Host "Found $($JsonFiles.Count) structured JSON file(s) under corpus/mork-borg/"
+Write-Host "Found $($JsonFiles.Count) structured JSON file(s) under games/mork-borg/hand-authored-overrides/"
 
 # ------------------------------------------------------------------
 # 0. Pre-ingest cleanup — clear ingest data + old documents/chunks; keep scaffold

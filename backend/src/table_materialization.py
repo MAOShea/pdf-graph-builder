@@ -11,7 +11,6 @@ from src.ingest_manifest import (
     load_ingest_manifest,
     spec_by_name,
 )
-from src.pdf_table_parser import tables_from_chunk_metadata
 
 _MAX_LABEL_LEN = 500
 
@@ -310,63 +309,34 @@ def materialize_lookup_tables_from_chunks(
     scaffold_map: dict | None,
     *,
     game: str = "mork-borg",
+    pdf_path: str | None = None,
+    merged_file_path: str | None = None,
 ) -> dict[str, int]:
-    """Materialize lookup tables from chunk table_json using ingest manifest."""
-    stats = {"chunks_scanned": 0, "tables_materialized": 0}
+    """Deprecated: use run_lookup_table_pipeline() — PDF on disk is the text source.
 
-    if not scaffold_map or not chunk_list:
-        return stats
+    When pdf_path or merged_file_path is supplied, delegates to the unified pipeline.
+    Otherwise logs a warning and returns empty stats (Neo4j chunk text is not used).
+    """
+    from src.table_pipeline import run_lookup_table_pipeline
 
-    manifest = load_ingest_manifest(game)
-    materialized: set[str] = set()
-
-    sorted_chunks = sorted(
-        chunk_list,
-        key=lambda item: (item.get("chunk_doc") or Document(page_content="")).metadata.get(
-            "page_number", 9999
+    if pdf_path or merged_file_path:
+        stats = run_lookup_table_pipeline(
+            graph,
+            file_name,
+            scaffold_map or {},
+            pdf_path=pdf_path,
+            merged_file_path=merged_file_path,
+            game=game,
+            hand_authored=False,
+            bundles=False,
         )
-        or 9999,
+        return {
+            "chunks_scanned": stats.get("pdf_tables_parsed", 0),
+            "tables_materialized": stats.get("pdf_tables_materialized", 0),
+        }
+
+    logging.warning(
+        "materialize_lookup_tables_from_chunks: no pdf_path — skipped "
+        "(Neo4j chunk text is not used for table parsing; call run_lookup_table_pipeline)"
     )
-
-    for item in sorted_chunks:
-        chunk_id = item.get("chunk_id")
-        chunk_doc: Document = item.get("chunk_doc")
-        if not chunk_id or chunk_doc is None:
-            continue
-
-        meta = chunk_doc.metadata or {}
-        tables = tables_from_chunk_metadata(meta)
-        if not tables and meta.get("block_type") != "table":
-            continue
-
-        stats["chunks_scanned"] += 1
-
-        for table in tables:
-            if not isinstance(table, dict):
-                continue
-            spec = None
-            if table.get("manifest_name"):
-                spec = spec_by_name(manifest, table["manifest_name"])
-            if spec is None:
-                for candidate in manifest.get("lookup_tables") or []:
-                    if _table_matches_spec(table, candidate):
-                        spec = candidate
-                        table["manifest_name"] = candidate["name"]
-                        break
-            if spec is None:
-                continue
-            if spec.get("name") in materialized:
-                continue
-            pdf_status = (spec.get("pdf_extract") or {}).get("status")
-            if pdf_status == "todo":
-                continue
-            if pdf_status == "hand-authored":
-                continue
-
-            if materialize_lookup_table(
-                graph, chunk_id, table, spec, chunk_doc, file_name, scaffold_map
-            ):
-                materialized.add(spec["name"])
-                stats["tables_materialized"] += 1
-
-    return stats
+    return {"chunks_scanned": 0, "tables_materialized": 0}

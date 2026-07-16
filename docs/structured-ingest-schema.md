@@ -139,7 +139,7 @@ RETURN c.text
 
 ## Authoring workflow
 
-1. Place files under `corpus/mork-borg/` (one file per section or table).
+1. Place structured-json block files under `games/mork-borg/hand-authored-overrides/` when they override PDF extraction.
 2. Run `.\ingest-morkborg-json.ps1` from the workspace root.
 3. Review in Bloom with the Scaffold Diff perspective.
 

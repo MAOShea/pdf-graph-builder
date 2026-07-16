@@ -121,6 +121,11 @@ def _slice_body(text: str, start: int, stop_before: list[str]) -> str:
     return body[:earliest]
 
 
+def page_span(spec: dict[str, Any]) -> list[int]:
+    """Public alias for manifest page span (single page or inclusive range)."""
+    return _page_span(spec)
+
+
 def _parse_index_value(raw: str, index_type: str) -> Any:
     raw = raw.strip()
     if index_type == "dr_set":

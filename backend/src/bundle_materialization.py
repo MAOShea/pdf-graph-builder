@@ -28,7 +28,7 @@ class BundleWiringPlan:
 
 
 def bundles_schema_path(game: str = "mork-borg") -> Path:
-    return _project_root() / "games" / game / "tables" / "optional-classes.json"
+    return _project_root() / "games" / game / "hand-authored-overrides" / "optional-classes.json"
 
 
 def load_bundles_schema(game: str = "mork-borg") -> dict[str, Any] | None:
