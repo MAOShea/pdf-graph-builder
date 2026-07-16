@@ -19,12 +19,13 @@ import httpx
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
-load_dotenv()
+_BACKEND = Path(__file__).resolve().parent
+if str(_BACKEND) not in sys.path:
+    sys.path.insert(0, str(_BACKEND))
 
-INGEST_REL_DELETE = (
-    "MATCH ()-[r:OVERRIDES_SEED|POSSIBLE_OVERRIDES_SEED|CONFIRMS_SEED|DOCUMENTED_BY|"
-    "INSTANCE_OF|REFERENCES|HAS_COLUMN|HAS_ENTRY|APPLIES_TO|USES]->() DELETE r"
-)
+from src.ingest_cleanup import cleanup_ingest_driver
+
+load_dotenv()
 
 
 def _cleanup_neo4j(
@@ -34,25 +35,25 @@ def _cleanup_neo4j(
     database: str,
     *,
     file_name: str | None = None,
-    clear_chunks: bool = False,
+    start_page: int | None = None,
+    end_page: int | None = None,
 ) -> None:
     driver = GraphDatabase.driver(uri, auth=(user, password))
-    with driver.session(database=database) as session:
-        session.run(INGEST_REL_DELETE)
-        session.run("MATCH (n:IngestNode) DETACH DELETE n")
-        session.run("MATCH (n:FlaggedRelationship) DETACH DELETE n")
-        session.run("MATCH (n:FlaggedConcept) DETACH DELETE n")
-        if clear_chunks and file_name:
-            session.run(
-                """
-                MATCH (d:Document {fileName: $file_name})
-                OPTIONAL MATCH (d)<-[:PART_OF|FIRST_CHUNK]-(c:Chunk)
-                DETACH DELETE c
-                """,
-                {"file_name": file_name},
-            )
+    cleanup_ingest_driver(
+        driver,
+        database,
+        file_name=file_name,
+        start_page=start_page,
+        end_page=end_page,
+    )
     driver.close()
-    print("cleanup: ingest data cleared (scaffold preserved)")
+    scope = ""
+    if file_name:
+        if start_page or end_page:
+            scope = f" for {file_name} pages {start_page or '…'}-{end_page or '…'}"
+        else:
+            scope = f" for {file_name} (document + chunks)"
+    print(f"cleanup: ingest data cleared{scope} (scaffold preserved)")
 
 
 def _upload(client: httpx.Client, pdf_path: Path, file_name: str, model: str, creds: dict) -> dict:
@@ -115,7 +116,7 @@ def main() -> None:
     parser.add_argument(
         "--cleanup",
         action="store_true",
-        help="Clear ingest nodes/flags before upload (keeps scaffold)",
+        help="Clear ingest nodes, flags, and document chunks before upload (keeps scaffold)",
     )
     args = parser.parse_args()
 
@@ -142,7 +143,8 @@ def main() -> None:
             args.password,
             args.database,
             file_name=file_name,
-            clear_chunks=bool(args.start_page or args.end_page),
+            start_page=args.start_page,
+            end_page=args.end_page,
         )
 
     extract_opts = {
