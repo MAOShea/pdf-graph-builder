@@ -345,7 +345,7 @@ On scaffold-diff ingest the backend calls the same pipeline (`run_lookup_table_p
 
 **Bundle wiring** (optional): set `parent_bundle` / `uses_tables` on manifest entries and ensure `character_creation` + `optional-classes.json` agree. Bundles link existing tables; they do not create row data.
 
-See `games/mork-borg/hand-authored-overrides/README.md` and `docs/pdf-graph-builder-briefing-3.md` for the Mörk Borg contract.
+See `games/mork-borg/hand-authored-overrides/README.md`, `docs/pdf-graph-builder-briefing-3.md`, and `docs/roadmap.md` for the Mörk Borg contract and ingest backlog.
 
 ---
 
