@@ -12,7 +12,9 @@ The runtime assistant discovers what exists by querying Neo4j after ingest — i
 |---|---|---|---|
 | `deltas.json` | AI-DM-Assistant | 4 — ontology | `bootstrap.py` |
 | `ingest-manifest.json` | AI-DM-Assistant (source of truth) | 5 — contract | Operator; copied to pdf-graph-builder |
+| `passage-sections.json` | AI-DM-Assistant (source of truth) | 5 — contract | Operator; copied to pdf-graph-builder |
 | `games/<game>/ingest-manifest.json` | pdf-graph-builder (runtime copy) | 5 — contract | Ingest pipeline (`table_materialization.py`, etc.) |
+| `games/<game>/passage-sections.json` | pdf-graph-builder (runtime copy) | 5 — contract | Section chunking (`section_chunking.py`, etc.) |
 
 ---
 
@@ -48,9 +50,10 @@ Paste [pdf-graph-builder-briefing-3.md](./pdf-graph-builder-briefing-3.md) into 
 ## What pdf-graph-builder should do with it
 
 1. **Load** `games/mork-borg/ingest-manifest.json` at ingest startup (replace hardcoded constants in `table_materialization.py`).
-2. **Match** parsed `Chunk.table_json` against manifest `columns` and shape heuristics.
-3. **Materialize** `:IngestNode` table instances per briefing-3 / manifest `lookup_tables` entries.
-4. **Validate** extracted rows against `acceptance_rows` (operator-verified reference) — log mismatch, do not trust manifest text over PDF extraction.
+2. **Load** `games/mork-borg/passage-sections.json` for heading-anchor chunking — see [pdf-graph-builder-briefing-6.md](./pdf-graph-builder-briefing-6.md).
+3. **Match** parsed `Chunk.table_json` against manifest `columns` and shape heuristics.
+4. **Materialize** `:IngestNode` table instances per briefing-3 / manifest `lookup_tables` entries.
+5. **Validate** extracted rows against `acceptance_rows` (operator-verified reference) — log mismatch, do not trust manifest text over PDF extraction.
 
 ### Flat lookup tables — one handler, role-based columns
 
@@ -72,3 +75,5 @@ Phase 1 only needs `DRTable` `pdf_extract`. Phase 2 optional-class nested tables
 Source: [corpus/games/mork-borg/ingest-manifest.json](../corpus/games/mork-borg/ingest-manifest.json)
 
 Phase 1: `DRTable` on p.28 — 2 columns, 7 acceptance rows, links to `LookupTable`, `DR`, `AbilityTest`.
+
+Phase 1 sections: [passage-sections.json](../../corpus/games/mork-borg/passage-sections.json) — `abilities`, `ability-tests-and-dr` (heading anchors).

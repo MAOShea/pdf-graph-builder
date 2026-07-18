@@ -9,7 +9,7 @@
 | File | Role |
 |---|---|
 | `games/mork-borg/ingest-manifest.json` | `parent_bundle`, `selects_bundle`, `character_creation` block |
-| `games/mork-borg/hand-authored-overrides/optional-classes.json` | Six bundle definitions (`contains_tables`, `uses_tables`) |
+| `games/mork-borg/tables/optional-classes.json` | Six bundle definitions (`contains_tables`, `uses_tables`) |
 
 ---
 
@@ -79,7 +79,7 @@ Load:
 
 1. `manifest = load_ingest_manifest(game)`
 2. `cc = manifest.get("character_creation")` — skip if absent
-3. `bundles_path` → resolve `games/mork-borg/hand-authored-overrides/optional-classes.json` (manifest `bundle_schema` path is AI-DM-Assistant-relative; map to local `games/mork-borg/hand-authored-overrides/optional-classes.json`)
+3. `bundles_path` → resolve `games/mork-borg/tables/optional-classes.json` (manifest `bundle_schema` path is AI-DM-Assistant-relative; map to local `games/mork-borg/tables/optional-classes.json`)
 
 ### Step A — Ensure selector table linked to CharacterCreation
 

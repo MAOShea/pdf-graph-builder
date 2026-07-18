@@ -9,8 +9,8 @@
 | Path | Version / note |
 |---|---|
 | `games/mork-borg/ingest-manifest.json` | v0.3.1 — `DRTable` `pdf_extract` + Phase 2 table contracts |
-| `games/mork-borg/hand-authored-overrides/optional-classes.json` | Bundle map (Phase 2 only) |
-| `games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json` | Hand-authored (Phase 2 only) |
+| `games/mork-borg/tables/optional-classes.json` | Bundle map (Phase 2 only) |
+| `mork-borg-corpse-plunder-d66.json` | Hand-authored (Phase 2 only) |
 
 If missing, ask the operator to run `.\scripts\sync-ingest-manifest.ps1` and `.\scripts\sync-outbox-briefings.ps1` from AI-DM-Assistant.
 
@@ -49,6 +49,8 @@ MATCH (n:IngestNode) RETURN count(n) AS ingest_nodes  // 0
 ### Step 2 — Upload and extract (p.27–31)
 
 Upload the Mörk Borg rulebook PDF (or excerpt covering Tests / Abilities / DR).
+
+**Section chunking (new):** Before relying on page-sized chunks, implement [Briefing 6](./pdf-graph-builder-briefing-6.md) — `passage-sections.json` heading anchors (`ABILITIES`, `TESTS`, `VIOLENCE`). Sync via `sync-ingest-manifest.ps1`.
 
 **Allowed node labels:**
 
@@ -163,7 +165,7 @@ CharacterCreation (setup phase, not turn play)
 | `lookup_tables[]` with `parent_bundle` | Nested tables belong to a class, not the page |
 | `acceptance_rows[].selects_bundle` | Selector row → bundle id |
 | `character_creation` | Materialization rules |
-| `games/mork-borg/hand-authored-overrides/optional-classes.json` | Six bundles |
+| `games/mork-borg/tables/optional-classes.json` | Six bundles |
 
 ### Six classes (d6)
 

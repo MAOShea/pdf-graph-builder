@@ -1,4 +1,8 @@
-"""Verify Phase 1 narrow ingest (Briefing 4)."""
+"""Verify Phase 1 narrow ingest (Briefing 4).
+
+Prefer backend/check_coverage.py for a unified report; this script remains for
+narrow Phase 1 debugging.
+"""
 import os
 
 from dotenv import load_dotenv

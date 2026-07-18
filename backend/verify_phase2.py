@@ -1,4 +1,8 @@
-"""Verify Phase 2 optional-class ingest."""
+"""Verify Phase 2 optional-class ingest.
+
+Prefer backend/check_coverage.py for a unified report; this script remains for
+narrow Phase 2 debugging.
+"""
 import os
 
 from dotenv import load_dotenv

@@ -1,0 +1,99 @@
+{
+  "id": "mork-borg-passage-sections",
+  "game": "mork-borg",
+  "version": "0.1.0",
+  "status": "draft",
+  "description": "Operator-declared rulebook sections for heading-anchor chunking and RulePassage targeting. Replaces ad hoc page=chunk boundaries for declared phases. Patterns must match the PDF text layer of the verified edition.",
+  "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
+  "verified_date": "2026-07-18",
+  "verified_note": "Heading patterns below are initial drafts for Bare Bones (second printing 2019). Operator must confirm regexes against extracted text before marking status verified.",
+  "handoff": {
+    "target_repo": "pdf-graph-builder",
+    "target_path": "games/mork-borg/passage-sections.json",
+    "sync": "Copy with ingest-manifest via scripts/sync-ingest-manifest.ps1. See docs/outbox/ingest-manifest-sync.md."
+  },
+  "anchor_matching": {
+    "strategy": "heading_regex",
+    "case_insensitive": true,
+    "normalize_whitespace": true,
+    "multiline": true,
+    "notes": "Anchors match line-start headings in concatenated document text (page order). End anchor is exclusive — section text is after start through before end."
+  },
+  "sections": [
+    {
+      "id": "abilities",
+      "phase": 1,
+      "title": "Abilities",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*ABILITIES\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*TESTS\\s*$"
+      },
+      "operator_page_hint": "27",
+      "links_to_seed_labels": [
+        "AbilityScore",
+        "Agility",
+        "Strength",
+        "Presence",
+        "Toughness",
+        "Modifier"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Four abilities and modifiers at creation."
+    },
+    {
+      "id": "ability-tests-and-dr",
+      "phase": 1,
+      "title": "Tests and Difficulty Ratings",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*TESTS\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*VIOLENCE\\s*$"
+      },
+      "operator_page_hint": "28-31",
+      "links_to_seed_labels": [
+        "AbilityTest",
+        "D20Roll",
+        "DR",
+        "DifficultyRating",
+        "Test",
+        "ResolutionProcedure",
+        "Outcome"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "contains_lookup_tables": ["DRTable"],
+      "notes": "Core test procedure (d20 + mod vs DR), default DR 12, DR reference table on p.28."
+    },
+    {
+      "id": "violence-combat",
+      "phase": 2,
+      "title": "Violence (combat)",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*VIOLENCE\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*(REST|POWERS|SCROLLS|OPTIONAL|CLASSES)\\s*$"
+      },
+      "operator_page_hint": "32+",
+      "links_to_seed_labels": [
+        "MeleeAttack",
+        "RangedAttack",
+        "DefenseRoll",
+        "CreatureTest"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Phase 2 — defer until ability-test spike passes."
+    }
+  ]
+}

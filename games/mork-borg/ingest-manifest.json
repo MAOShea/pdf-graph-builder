@@ -12,6 +12,11 @@
     "target_path": "games/mork-borg/ingest-manifest.json",
     "sync": "Copy this file when the contract changes. See docs/outbox/ingest-manifest-sync.md."
   },
+  "passage_sections": {
+    "file": "passage-sections.json",
+    "target_path": "games/mork-borg/passage-sections.json",
+    "description": "Heading-anchor section contracts for chunking and RulePassage extraction — see pdf-graph-builder-briefing-6.md"
+  },
   "lookup_tables": [
     {
       "name": "DRTable",

@@ -39,3 +39,5 @@ Do **not** stop at “add a manifest entry” unless the user asked for explanat
 **Complementary questions are fine** when they unblock the work (game id, page range, hand-authored vs PDF, bundle links). Do **not** ask permission to edit the manifest or run materialization when the user already asked for the table.
 
 Contract reference: `README.md` (Use Case 2 → Lookup tables), `docs/pdf-graph-builder-briefing-3.md`, `docs/roadmap.md`, `games/mork-borg/hand-authored-overrides/README.md`.
+
+After ingest, run `.\check-coverage.ps1` for a manifest-driven coverage report.

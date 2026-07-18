@@ -1,4 +1,4 @@
-import os
+"""Spot-check a subset of lookup tables. Prefer backend/check_coverage.py for full report."""
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
