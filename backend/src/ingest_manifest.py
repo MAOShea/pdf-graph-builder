@@ -55,3 +55,19 @@ def spec_by_name(manifest: dict[str, Any], name: str) -> dict[str, Any] | None:
 
 def column_names(spec: dict[str, Any]) -> list[str]:
     return [c["name"] for c in spec.get("columns") or []]
+
+
+def passage_sections_path(game: str = DEFAULT_GAME) -> Path:
+    manifest = load_ingest_manifest(game)
+    rel = (manifest.get("passage_sections") or {}).get("file", "passage-sections.json")
+    return _project_root() / "games" / game / rel
+
+
+@lru_cache(maxsize=4)
+def load_passage_sections(game: str = DEFAULT_GAME) -> dict[str, Any]:
+    path = passage_sections_path(game)
+    if not path.is_file():
+        logging.warning("passage sections contract not found: %s", path)
+        return {"sections": []}
+    with path.open(encoding="utf-8") as f:
+        return json.load(f)

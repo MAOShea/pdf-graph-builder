@@ -6,7 +6,8 @@ Operational backlog for scaffold-diff ingest and lookup-table materialization. N
 
 ## Done (recent)
 
-- **Ingest coverage reporter** — `backend/check_coverage.py` / `.\check-coverage.ps1` (library: `backend/src/ingest_coverage.py`)
+- **Section-driven chunking** — `backend/src/section_chunking.py`, wired into scaffold-diff extract; contract `games/mork-borg/passage-sections.json` (see Briefing 6)
+- **Ingest coverage reporter** — `backend/check_coverage.py` / `.\check-coverage.ps1`
 - Unified lookup-table pipeline (`run_lookup_table_pipeline`)
 - Complete `--cleanup` on full PDF re-ingest (chunks + document)
 

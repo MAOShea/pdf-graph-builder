@@ -15,7 +15,7 @@
 
 | Path | Role |
 |---|---|
-| `games/mork-borg/passage-sections.json` | Section contracts — start/end heading regexes, seed links, phase |
+| `games/mork-borg/passage-sections.json` | Section contracts — start/end heading regexes, seed links, phase; **`index_source`** for p.75 catalog |
 | `games/mork-borg/ingest-manifest.json` | Points at `passage_sections.file`; table contracts unchanged |
 
 ---
@@ -42,6 +42,7 @@ Source of truth: `corpus/games/mork-borg/passage-sections.json` in AI-DM-Assista
 
 | Field | Purpose |
 |---|---|
+| `index_source` | p.75 three-column index — materialized as `RulebookIndex` / `IndexEntry` ([briefing-7](./pdf-graph-builder-briefing-7.md)) |
 | `anchor_matching` | Global flags: `case_insensitive`, `normalize_whitespace`, `multiline` |
 | `sections[]` | Ordered section definitions |
 
@@ -58,14 +59,17 @@ Source of truth: `corpus/games/mork-borg/passage-sections.json` in AI-DM-Assista
 | `extract_rule_passages` | no | Default true — emit `RulePassage` nodes inside section |
 | `passage_granularity` | no | `paragraph` (default) or `section` (single passage) |
 | `operator_page_hint` | no | **Verification only** — not used for boundary detection |
+| `index_title` | no | Exact RULES index label — links to `IndexEntry` after briefing-7 |
 | `contains_lookup_tables` | no | Names tables materialized inside section (e.g. `DRTable`) |
 
-### Mörk Borg Phase 1 sections (draft)
+### Mörk Borg Phase 1 sections (v0.2.1 contract)
 
-| `id` | Start anchor | End anchor | Seed links |
-|---|---|---|---|
-| `abilities` | `^\\s*ABILITIES\\s*$` | `^\\s*TESTS\\s*$` | AbilityScore, Agility, … |
-| `ability-tests-and-dr` | `^\\s*TESTS\\s*$` | `^\\s*VIOLENCE\\s*$` | AbilityTest, D20Roll, DR, … |
+| `id` | `index_title` | Start anchor | End anchor | Seed links |
+|---|---|---|---|---|
+| `abilities` | Abilities | `^\\s*Abilities\\s*$` | `^\\s*Tests\\s*$` | AbilityScore, Agility, … |
+| `tests-and-dr` | Tests | `^\\s*Tests\\s*$` | `^\\s*Carrying Capacity\\s*$` | AbilityTest, D20Roll, DR, … |
+| `carrying-capacity` | Carrying capacity | `^\\s*Carrying Capacity\\s*$` | `^\\s*Hit Points\\s*$` | Strength, Agility |
+| `hit-points-and-broken` | Hit Points | `^\\s*Hit Points\\s*$` | `^\\s*Violence\\s*$` | HitPoints, Toughness |
 
 **Operator action:** Before marking contract `status: verified`, run anchor match against extracted PDF text and adjust regexes if headings differ (font/layout variants).
 
@@ -149,8 +153,8 @@ Suggested properties:
 
 | Property | Example |
 |---|---|
-| `id` | `mork-borg.pdf#section:ability-tests-and-dr` |
-| `section_id` | `ability-tests-and-dr` |
+| `id` | `mork-borg.pdf#section:tests-and-dr` |
+| `section_id` | `tests-and-dr` |
 | `section_title` | `Tests and Difficulty Ratings` |
 | `text` | Full section text (may exceed old page chunk size) |
 | `page_number_start` | 28 |
@@ -214,7 +218,7 @@ Re-run must be **idempotent** (MERGE on stable ids).
 | PDF upload / page text | **Before** — section chunking needs page text |
 | Section chunking | **After** page text |
 | Constrained LLM extract | **After** section chunks — can use section context in prompts |
-| `enrich_pdf_tables.py` / DRTable | **After** section chunks — match `DRTable` inside `ability-tests-and-dr` |
+| `enrich_pdf_tables.py` / DRTable | **After** section chunks — match `DRTable` inside `tests-and-dr` |
 | Briefing 5 bundle materialization | **Unchanged** — Phase 2 only |
 
 ---
@@ -226,7 +230,7 @@ Run in Neo4j Browser (`:use morkborg`) after ingest + section materialization:
 ```cypher
 // Section chunks exist
 MATCH (c:Chunk)
-WHERE c.section_id IN ['abilities', 'ability-tests-and-dr']
+WHERE c.section_id IN ['abilities', 'tests-and-dr', 'carrying-capacity', 'hit-points-and-broken']
 RETURN c.section_id, c.section_title, c.page_number_start, c.page_number_end, size(c.text) AS chars
 ORDER BY c.page_number_start;
 
@@ -235,7 +239,7 @@ MATCH (at:AbilityTest:SeedNode)<-[:CONFIRMS_SEED|DOCUMENTED_BY]-(p:RulePassage)
 RETURN at.name, count(p) AS passages;
 
 // Ability-test section mentions DR / d20 (sanity)
-MATCH (c:Chunk {section_id: 'ability-tests-and-dr'})
+MATCH (c:Chunk {section_id: 'tests-and-dr'})
 RETURN c.section_id, c.text CONTAINS 'DR' AS mentions_dr, c.text CONTAINS 'd20' AS mentions_d20;
 ```
 
@@ -243,7 +247,7 @@ RETURN c.section_id, c.text CONTAINS 'DR' AS mentions_dr, c.text CONTAINS 'd20' 
 
 - Both Phase 1 sections matched (or operator documents anchor fix in contract)
 - At least one `RulePassage` linked to `AbilityTest`
-- `ability-tests-and-dr` chunk contains DR table region (for `enrich_pdf_tables.py`)
+- `tests-and-dr` chunk contains DR table region (for `enrich_pdf_tables.py`)
 - No duplicate page chunks covering the same text without a deprecation flag
 
 **Fail → operator:**

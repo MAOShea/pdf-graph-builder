@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (role-based index+result; index key enumeration per table, not per die size).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -15,7 +15,36 @@
   "passage_sections": {
     "file": "passage-sections.json",
     "target_path": "games/mork-borg/passage-sections.json",
-    "description": "Heading-anchor section contracts for chunking and RulePassage extraction — see pdf-graph-builder-briefing-6.md"
+    "index_page": 75,
+    "description": "Heading-anchor section contracts for chunking and RulePassage extraction. PDF index p.75 has three columns (THE WORLD, CREATURES, RULES); all catalogued in passage-sections.json index_source. sections[] is authored from RULES for mechanics phases. See pdf-graph-builder-briefing-6.md."
+  },
+  "rulebook_index": {
+    "file": "passage-sections.json",
+    "source_field": "index_source",
+    "target_path": "games/mork-borg/passage-sections.json",
+    "description": "p.75 three-column index → RulebookIndex + IndexEntry; entry_kind → typed instances — briefing-7 + briefing-8",
+    "materialization": {
+      "index_node_labels": ["IngestNode", "RulebookIndex"],
+      "entry_node_labels": ["IngestNode", "IndexEntry"],
+      "column_map": {
+        "THE_WORLD": "world_index",
+        "CREATURES": "creatures_index",
+        "RULES": "rules_index"
+      },
+      "entry_id_pattern": "{fileName}#index:{column}:{slug}",
+      "optional_entry_kinds": {
+        "THE_WORLD": ["place", "supporting_character", "faction", "world_lore"],
+        "CREATURES": ["creature"],
+        "RULES": ["rule_topic", "optional_class", "equipment_category", "table_topic"]
+      },
+      "entry_kind_to_seed": {
+        "place": "Place",
+        "supporting_character": "SupportingCharacter",
+        "faction": "Faction",
+        "world_lore": "WorldLore",
+        "creature": "Creature"
+      }
+    }
   },
   "lookup_tables": [
     {

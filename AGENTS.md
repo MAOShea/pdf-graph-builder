@@ -41,3 +41,7 @@ Do **not** stop at “add a manifest entry” unless the user asked for explanat
 Contract reference: `README.md` (Use Case 2 → Lookup tables), `docs/pdf-graph-builder-briefing-3.md`, `docs/roadmap.md`, `games/mork-borg/hand-authored-overrides/README.md`.
 
 After ingest, run `.\check-coverage.ps1` for a manifest-driven coverage report.
+
+Section chunking (Briefing 6): `games/<game>/passage-sections.json` via manifest `passage_sections.file`; runs automatically on scaffold-diff extract, or `backend\materialize_passage_sections.py --phase 1`.
+
+Rulebook index catalog (Briefings 7+8): `index_source` in `passage-sections.json` + `rulebook_index` in manifest → `RulebookIndex`, `IndexEntry`, typed fiction instances; runs automatically on scaffold-diff extract after section chunking, or `.\materialize-rulebook-index.ps1` (requires `:Document` for `mork-borg.pdf` in Neo4j).

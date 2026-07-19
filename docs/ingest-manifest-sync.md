@@ -14,7 +14,7 @@ The runtime assistant discovers what exists by querying Neo4j after ingest — i
 | `ingest-manifest.json` | AI-DM-Assistant (source of truth) | 5 — contract | Operator; copied to pdf-graph-builder |
 | `passage-sections.json` | AI-DM-Assistant (source of truth) | 5 — contract | Operator; copied to pdf-graph-builder |
 | `games/<game>/ingest-manifest.json` | pdf-graph-builder (runtime copy) | 5 — contract | Ingest pipeline (`table_materialization.py`, etc.) |
-| `games/<game>/passage-sections.json` | pdf-graph-builder (runtime copy) | 5 — contract | Section chunking (`section_chunking.py`, etc.) |
+| `games/<game>/passage-sections.json` | pdf-graph-builder (runtime copy) | 5 — contract | Section chunking + `index_source` catalog |
 
 ---
 
@@ -30,6 +30,8 @@ When outbox briefings or ingest manifest change:
 ```
 
 Defaults: target `d:\GitHub\pdf-graph-builder`. Override with `-PdfGraphBuilderRoot` if needed.
+
+**Note:** pdf-graph-builder may carry a **longer** `ingest-manifest.json` than this repo (extra `lookup_tables` / `pdf_extract` blocks added during ingest work). A full copy **overwrites** those extensions. When pgb is ahead, merge new top-level blocks (e.g. `rulebook_index`) by hand or patch-only sync — do not blind-copy the shorter AI-DM-Assistant file over pgb's full manifest.
 
 ### Option B — Manual copy (manifest only)
 
@@ -51,9 +53,10 @@ Paste [pdf-graph-builder-briefing-3.md](./pdf-graph-builder-briefing-3.md) into 
 
 1. **Load** `games/mork-borg/ingest-manifest.json` at ingest startup (replace hardcoded constants in `table_materialization.py`).
 2. **Load** `games/mork-borg/passage-sections.json` for heading-anchor chunking — see [pdf-graph-builder-briefing-6.md](./pdf-graph-builder-briefing-6.md).
-3. **Match** parsed `Chunk.table_json` against manifest `columns` and shape heuristics.
-4. **Materialize** `:IngestNode` table instances per briefing-3 / manifest `lookup_tables` entries.
-5. **Validate** extracted rows against `acceptance_rows` (operator-verified reference) — log mismatch, do not trust manifest text over PDF extraction.
+3. **Materialize** p.75 index from `index_source` — see [pdf-graph-builder-briefing-7.md](./pdf-graph-builder-briefing-7.md) and manifest `rulebook_index` block.
+4. **Match** parsed `Chunk.table_json` against manifest `columns` and shape heuristics.
+5. **Materialize** `:IngestNode` table instances per briefing-3 / manifest `lookup_tables` entries.
+6. **Validate** extracted rows against `acceptance_rows` (operator-verified reference) — log mismatch, do not trust manifest text over PDF extraction.
 
 ### Flat lookup tables — one handler, role-based columns
 
@@ -76,4 +79,6 @@ Source: [corpus/games/mork-borg/ingest-manifest.json](../corpus/games/mork-borg/
 
 Phase 1: `DRTable` on p.28 — 2 columns, 7 acceptance rows, links to `LookupTable`, `DR`, `AbilityTest`.
 
-Phase 1 sections: [passage-sections.json](../../corpus/games/mork-borg/passage-sections.json) — `abilities`, `ability-tests-and-dr` (heading anchors).
+Phase 1 sections: [passage-sections.json](../../corpus/games/mork-borg/passage-sections.json) v0.2.1 — `abilities`, `tests-and-dr`, `carrying-capacity`, `hit-points-and-broken` (heading anchors).
+
+Rulebook catalog: same file → `index_source` (p.75) — `rules_index` (41), `world_index` (28), `creatures_index` (12). Materialize per briefing-7.

@@ -689,6 +689,7 @@ class graphDBdataAccess:
             "Document", "Chunk", "__Entity__", "__Community__",
             # internal scaffold/ingest infrastructure — never expose to LLM prompt
             "SeedNode", "IngestNode", "FlaggedConcept", "FlaggedRelationship", "RulePassage",
+            "RulebookIndex", "IndexEntry",
         }
         seed_nodes = {}
         scaffold_labels = set()

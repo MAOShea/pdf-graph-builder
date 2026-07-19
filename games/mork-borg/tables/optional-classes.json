@@ -1,0 +1,71 @@
+{
+  "id": "optional-classes",
+  "game": "mork-borg",
+  "manifest_table": "OptionalClassesTable",
+  "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+  "pages": "46-57",
+  "applies_during": "CharacterCreation",
+  "selector": {
+    "name": "OptionalClassesTable",
+    "columns": ["d6", "result"],
+    "rows": [
+      [1, "Fanged deserter"],
+      [2, "Gutterborn Scum"],
+      [3, "Esoteric hermit"],
+      [4, "Wretched royalty"],
+      [5, "Heretical priest"],
+      [6, "Occult herbmaster"]
+    ]
+  },
+  "bundles": [
+    {
+      "id": "FangedDeserter",
+      "name": "Fanged deserter",
+      "pages": "46-47",
+      "selector_cells": {"d6": 1},
+      "contains_tables": ["EarliestMemoriesTable", "FangedDeserterEquipmentTable"],
+      "uses_tables": []
+    },
+    {
+      "id": "GutterbornScum",
+      "name": "Gutterborn Scum",
+      "pages": "48",
+      "selector_cells": {"d6": 2},
+      "contains_tables": ["BadBirthTable"],
+      "uses_tables": ["WeaponTable", "ArmorTable"]
+    },
+    {
+      "id": "EsotericHermit",
+      "name": "Esoteric hermit",
+      "pages": "50",
+      "selector_cells": {"d6": 3},
+      "contains_tables": ["EldritchOriginsTable"],
+      "uses_tables": []
+    },
+    {
+      "id": "WretchedRoyalty",
+      "name": "Wretched royalty",
+      "pages": "52-53",
+      "selector_cells": {"d6": 4},
+      "contains_tables": ["ThingsGoingWrongTable", "WretchedRoyaltyEquipmentTable"],
+      "uses_tables": []
+    },
+    {
+      "id": "HereticalPriest",
+      "name": "Heretical priest",
+      "pages": "54",
+      "selector_cells": {"d6": 5},
+      "contains_tables": ["HereticalPriestOriginsTable"],
+      "uses_tables": []
+    },
+    {
+      "id": "OccultHerbmaster",
+      "name": "Occult herbmaster",
+      "pages": "56-57",
+      "selector_cells": {"d6": 6},
+      "contains_tables": ["RaisedInTable", "HerbmasterDecoctionsTable"],
+      "uses_tables": ["WeaponTable", "ArmorTable"]
+    }
+  ],
+  "note": "Each bundle is an :IngestNode :OptionalClass with INSTANCE_OF OptionalClass, APPLIES_DURING CharacterCreation. Selector row SELECTS bundle. Nested tables are CONTAINS children, not page siblings."
+}

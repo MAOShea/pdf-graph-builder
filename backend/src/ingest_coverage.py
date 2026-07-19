@@ -53,6 +53,19 @@ class Phase1Check:
 
 
 @dataclass
+class RulebookIndexCheck:
+    index_present: bool
+    entries_total: int
+    entries_by_column: dict[str, int]
+    section_links: int
+    fiction_entities: int
+    places: int
+    creatures: int
+    ok: bool
+    issues: list[str] = field(default_factory=list)
+
+
+@dataclass
 class CoverageReport:
     game: str
     document: str
@@ -66,6 +79,7 @@ class CoverageReport:
     bundles: BundleCheck | None
     flags: dict[str, int]
     phase1: Phase1Check
+    rulebook_index: RulebookIndexCheck | None
     chunks: dict[str, Any]
     ok: bool
     summary_lines: list[str] = field(default_factory=list)
@@ -349,6 +363,93 @@ def _check_phase1(session: Session) -> Phase1Check:
     )
 
 
+def _check_rulebook_index(session: Session, document: str) -> RulebookIndexCheck:
+    index_row = session.run(
+        """
+        MATCH (d:Document {fileName: $fn})-[:HAS_INDEX]->(idx:RulebookIndex)
+        RETURN idx.id AS id
+        LIMIT 1
+        """,
+        {"fn": document},
+    ).single()
+    index_present = bool(index_row)
+
+    by_column: dict[str, int] = {}
+    entries_total = 0
+    if index_present:
+        rows = session.run(
+            """
+            MATCH (:RulebookIndex)-[:HAS_ENTRY]->(e:IndexEntry)
+            RETURN e.column AS column, count(e) AS n
+            ORDER BY column
+            """
+        )
+        for row in rows:
+            col = str(row["column"])
+            count = int(row["n"])
+            by_column[col] = count
+            entries_total += count
+
+    section_links = int(
+        session.run(
+            "MATCH (:IndexEntry)-[:MAPS_TO_SECTION]->(:Chunk) RETURN count(*) AS c"
+        ).single()["c"]
+    )
+    fiction_entities = int(
+        session.run(
+            """
+            MATCH (:IndexEntry)-[:DENOTES]->(x:IngestNode)
+            RETURN count(x) AS c
+            """
+        ).single()["c"]
+    )
+    places = int(
+        session.run(
+            """
+            MATCH (:IndexEntry {column: 'THE_WORLD', entry_kind: 'place'})-[:DENOTES]->(x)
+            MATCH (x)-[:INSTANCE_OF]->(:Place:SeedNode)
+            RETURN count(x) AS c
+            """
+        ).single()["c"]
+    )
+    creatures = int(
+        session.run(
+            """
+            MATCH (:IndexEntry {column: 'CREATURES'})-[:DENOTES]->(x)
+            MATCH (x)-[:INSTANCE_OF]->(:Creature:SeedNode)
+            RETURN count(x) AS c
+            """
+        ).single()["c"]
+    )
+
+    issues: list[str] = []
+    if not index_present:
+        issues.append("no RulebookIndex linked to document")
+    else:
+        expected = {"THE_WORLD": 28, "CREATURES": 12, "RULES": 41}
+        for col, exp in expected.items():
+            got = by_column.get(col, 0)
+            if got != exp:
+                issues.append(f"{col}: {got} entries (expected {exp})")
+        if places < 13:
+            issues.append(f"typed places: {places} (expected >=13)")
+        if creatures < 12:
+            issues.append(f"typed creatures: {creatures} (expected >=12)")
+
+    ok = index_present and not issues
+    return RulebookIndexCheck(
+        index_present=index_present,
+        entries_total=entries_total,
+        entries_by_column=by_column,
+        section_links=section_links,
+        fiction_entities=fiction_entities,
+        places=places,
+        creatures=creatures,
+        ok=ok,
+        issues=issues,
+    )
+
+
 def _check_chunks(session: Session, document: str) -> dict[str, Any]:
     row = session.run(
         """
@@ -387,6 +488,13 @@ def _build_summary(report: CoverageReport) -> list[str]:
         f"{f' -> {p1.dr_applies_to}' if p1.dr_applies_to else ''}, "
         f"RulePassage {p1.rule_passage_count}, AbilityTest {p1.ability_test_count}"
     )
+    if report.rulebook_index:
+        ri = report.rulebook_index
+        cols = ", ".join(f"{k}={v}" for k, v in sorted(ri.entries_by_column.items()))
+        lines.append(
+            f"Index:     entries={ri.entries_total} ({cols}), "
+            f"section_links={ri.section_links}, fiction={ri.fiction_entities}"
+        )
     ch = report.chunks
     lines.append(
         f"Chunks:    {ch['count']} "
@@ -415,6 +523,7 @@ def run_coverage_report(
     flags = _check_flags(session)
     bundles = _check_bundles(session, manifest, game) if include_bundles else None
     phase1 = _check_phase1(session)
+    rulebook_index = _check_rulebook_index(session, document)
     chunks = _check_chunks(session, document)
 
     tables_ok = sum(1 for t in table_checks if t.ok)
@@ -422,6 +531,7 @@ def run_coverage_report(
         tables_ok == len(table_checks)
         and (bundles.ok if bundles else True)
         and phase1.ok
+        and rulebook_index.ok
     )
 
     report = CoverageReport(
@@ -437,6 +547,7 @@ def run_coverage_report(
         bundles=bundles,
         flags=flags,
         phase1=phase1,
+        rulebook_index=rulebook_index,
         chunks=chunks,
         ok=ok,
     )
@@ -465,6 +576,11 @@ def format_report_text(report: CoverageReport, *, verbose: bool = False) -> str:
             lines.append("")
             lines.append("Phase 1 notes:")
             for issue in report.phase1.issues:
+                lines.append(f"  - {issue}")
+        if report.rulebook_index and report.rulebook_index.issues:
+            lines.append("")
+            lines.append("Rulebook index notes:")
+            for issue in report.rulebook_index.issues:
                 lines.append(f"  - {issue}")
         lines.append("")
         lines.append("PASS" if report.ok else "FAIL")

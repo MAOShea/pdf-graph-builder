@@ -906,6 +906,14 @@ INGEST_REL_TYPES = {
     "SELECTS",
     "CONTAINS",
     "APPLIES_DURING",
+    # Rulebook catalog (briefing-7 / briefing-8)
+    "HAS_INDEX",
+    "HAS_ENTRY",
+    "INDEXED_IN",
+    "MAPS_TO_SECTION",
+    "ALSO_INDEXED_AS",
+    "DENOTES",
+    "OCCURS_IN",
 }
 
 SCAFFOLD_DIFF_INSTRUCTIONS = """You are ingesting a rulebook PDF against a pre-existing knowledge graph scaffold.

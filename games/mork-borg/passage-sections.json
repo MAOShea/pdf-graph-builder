@@ -1,36 +1,502 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "status": "draft",
-  "description": "Operator-declared rulebook sections for heading-anchor chunking and RulePassage targeting. Replaces ad hoc page=chunk boundaries for declared phases. Patterns must match the PDF text layer of the verified edition.",
+  "description": "Rulebook sections for heading-anchor chunking and RulePassage extraction. PDF index p.75 three columns catalogued in index_source with entry_kind for Tier-5 INSTANCE_OF routing. sections[] authored from RULES for mechanics phases.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-07-18",
-  "verified_note": "Heading patterns below are initial drafts for Bare Bones (second printing 2019). Operator must confirm regexes against extracted text before marking status verified.",
+  "verified_note": "All three index columns parsed from p.75. entry_kind on index rows authored 2026-07-19 for briefing-8 typed instance wiring (operator may amend). Section boundaries for mechanics from RULES column + heading probe. Index page numbers are hints only.",
   "handoff": {
     "target_repo": "pdf-graph-builder",
     "target_path": "games/mork-borg/passage-sections.json",
     "sync": "Copy with ingest-manifest via scripts/sync-ingest-manifest.ps1. See docs/outbox/ingest-manifest-sync.md."
+  },
+  "index_source": {
+    "page": 75,
+    "layout": "three_columns",
+    "columns": [
+      "THE WORLD",
+      "CREATURES",
+      "RULES"
+    ],
+    "world_index": [
+      {
+        "page": 15,
+        "title": "Anthelia",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 10,
+        "title": "Anuk Schleger",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 11,
+        "title": "Arkh",
+        "entry_kind": "place"
+      },
+      {
+        "page": 10,
+        "title": "Basilisks, the",
+        "entry_kind": "faction"
+      },
+      {
+        "page": 11,
+        "title": "Bergen Chrypt",
+        "entry_kind": "place"
+      },
+      {
+        "page": 17,
+        "title": "Calendar of Nechrubel, the",
+        "entry_kind": "world_lore"
+      },
+      {
+        "page": 10,
+        "title": "Creton (order)",
+        "entry_kind": "faction"
+      },
+      {
+        "page": 11,
+        "title": "Endless Sea, the",
+        "entry_kind": "place"
+      },
+      {
+        "page": 16,
+        "title": "Fathmu IX",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 12,
+        "title": "Galgenbeck",
+        "entry_kind": "place"
+      },
+      {
+        "page": 11,
+        "title": "Gorgh",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 12,
+        "title": "Graven-Tosk",
+        "entry_kind": "place"
+      },
+      {
+        "page": 14,
+        "title": "Grift",
+        "entry_kind": "place"
+      },
+      {
+        "page": 12,
+        "title": "Josilfa Migol",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 12,
+        "title": "Kergüs",
+        "entry_kind": "place"
+      },
+      {
+        "page": 11,
+        "title": "Lusi",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 12,
+        "title": "Nechrubel",
+        "entry_kind": "world_lore"
+      },
+      {
+        "page": 17,
+        "title": "Prophecy, the",
+        "entry_kind": "world_lore"
+      },
+      {
+        "page": 12,
+        "title": "Sarkash",
+        "entry_kind": "place"
+      },
+      {
+        "page": 14,
+        "title": "Sigfúm the kind",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 13,
+        "title": "Shadow King, the",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 13,
+        "title": "Shadow King's Palace, the",
+        "entry_kind": "place"
+      },
+      {
+        "page": 12,
+        "title": "Tveland",
+        "entry_kind": "place"
+      },
+      {
+        "page": 10,
+        "title": "Two-Headed Basilisks, the",
+        "entry_kind": "faction"
+      },
+      {
+        "page": 16,
+        "title": "Valley of the Unfortunate Undead",
+        "entry_kind": "place"
+      },
+      {
+        "page": 11,
+        "title": "Verhu",
+        "entry_kind": "supporting_character"
+      },
+      {
+        "page": 15,
+        "title": "Western Kingdom, the",
+        "entry_kind": "place"
+      },
+      {
+        "page": 15,
+        "title": "Wästland",
+        "entry_kind": "place"
+      }
+    ],
+    "creatures_index": [
+      {
+        "page": 59,
+        "title": "Berserker",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 60,
+        "title": "Blood-drenched skeleton",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 58,
+        "title": "Goblin",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 62,
+        "title": "Grotesque",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 58,
+        "title": "Scum",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 60,
+        "title": "Troll",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 61,
+        "title": "Undead doll",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 60,
+        "title": "Undead necromancer",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 62,
+        "title": "Wickhead knife-wielder",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 59,
+        "title": "Wraith",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 62,
+        "title": "Wyvern",
+        "entry_kind": "creature"
+      },
+      {
+        "page": 61,
+        "title": "Zombie",
+        "entry_kind": "creature"
+      }
+    ],
+    "rules_index": [
+      {
+        "page": 27,
+        "title": "Abilities",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 43,
+        "title": "Arcane catastrophes",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 23,
+        "title": "Armor",
+        "entry_kind": "equipment_category"
+      },
+      {
+        "page": 30,
+        "title": "Attack",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 40,
+        "title": "Bad habit",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 29,
+        "title": "Broken (0 HP)",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 39,
+        "title": "Broken bodies",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 17,
+        "title": "Calendar of Nechrubel",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 28,
+        "title": "Carrying capacity",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 30,
+        "title": "Combat",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 21,
+        "title": "Create a character",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 31,
+        "title": "Crit",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 30,
+        "title": "Defence",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 24,
+        "title": "Equipment",
+        "entry_kind": "equipment_category"
+      },
+      {
+        "page": 50,
+        "title": "Esoteric hermit",
+        "entry_kind": "optional_class"
+      },
+      {
+        "page": 46,
+        "title": "Fanged deserter",
+        "entry_kind": "optional_class"
+      },
+      {
+        "page": 31,
+        "title": "Fumble",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 33,
+        "title": "Getting better (or worse)",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 48,
+        "title": "Gutterborn scum",
+        "entry_kind": "optional_class"
+      },
+      {
+        "page": 54,
+        "title": "Heretical priest",
+        "entry_kind": "optional_class"
+      },
+      {
+        "page": 63,
+        "title": "Hirelings",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 29,
+        "title": "Hit Points",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 31,
+        "title": "Infection",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 30,
+        "title": "Initiative",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 30,
+        "title": "Melee attack",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 32,
+        "title": "Morale",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 56,
+        "title": "Occult herbmaster",
+        "entry_kind": "optional_class"
+      },
+      {
+        "page": 37,
+        "title": "Omens",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 63,
+        "title": "Outcasts",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 34,
+        "title": "Powers",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 30,
+        "title": "Ranged attack",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 32,
+        "title": "Reaction",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 31,
+        "title": "Resting",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 34,
+        "title": "Scrolls",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 21,
+        "title": "Starting equipment",
+        "entry_kind": "equipment_category"
+      },
+      {
+        "page": 38,
+        "title": "Terrible traits",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 28,
+        "title": "Tests",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 41,
+        "title": "Troubling tales",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 30,
+        "title": "Violence",
+        "entry_kind": "rule_topic"
+      },
+      {
+        "page": 23,
+        "title": "Weapons",
+        "entry_kind": "equipment_category"
+      },
+      {
+        "page": 52,
+        "title": "Wretched royalty",
+        "entry_kind": "optional_class"
+      }
+    ]
   },
   "anchor_matching": {
     "strategy": "heading_regex",
     "case_insensitive": true,
     "normalize_whitespace": true,
     "multiline": true,
-    "notes": "Anchors match line-start headings in concatenated document text (page order). End anchor is exclusive — section text is after start through before end."
+    "notes": "Whole-line regex anchors. Future: add min_font_size_ratio from PyMuPDF spans to disambiguate body mentions. Index page hints are not used for matching."
   },
   "sections": [
+    {
+      "id": "character-creation",
+      "phase": 2,
+      "title": "Create a character",
+      "index_title": "Create a character",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Create a Player Character\\s*\\(PC\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Equipment\\s*$"
+      },
+      "operator_page_hint": "21-23",
+      "links_to_seed_labels": [
+        "PlayerCharacter",
+        "CharacterCreation"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "contains_lookup_tables": [
+        "WeaponTable",
+        "ArmorTable"
+      ],
+      "notes": "PC creation steps; weapon/armor tables on pp.23."
+    },
+    {
+      "id": "equipment",
+      "phase": 2,
+      "title": "Equipment",
+      "index_title": "Equipment",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Equipment\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Abilities\\s*$"
+      },
+      "operator_page_hint": "24-26",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "General equipment list before abilities chapter."
+    },
     {
       "id": "abilities",
       "phase": 1,
       "title": "Abilities",
+      "index_title": "Abilities",
       "start_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*ABILITIES\\s*$"
+        "pattern": "^\\s*Abilities\\s*$"
       },
       "end_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*TESTS\\s*$"
+        "pattern": "^\\s*Tests\\s*$"
       },
       "operator_page_hint": "27",
       "links_to_seed_labels": [
@@ -43,21 +509,22 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "notes": "Four abilities and modifiers at creation."
+      "notes": "Four abilities and what they are used for."
     },
     {
-      "id": "ability-tests-and-dr",
+      "id": "tests-and-dr",
       "phase": 1,
-      "title": "Tests and Difficulty Ratings",
+      "title": "Tests",
+      "index_title": "Tests",
       "start_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*TESTS\\s*$"
+        "pattern": "^\\s*Tests\\s*$"
       },
       "end_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*VIOLENCE\\s*$"
+        "pattern": "^\\s*Carrying Capacity\\s*$"
       },
-      "operator_page_hint": "28-31",
+      "operator_page_hint": "28",
       "links_to_seed_labels": [
         "AbilityTest",
         "D20Roll",
@@ -69,31 +536,277 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "contains_lookup_tables": ["DRTable"],
-      "notes": "Core test procedure (d20 + mod vs DR), default DR 12, DR reference table on p.28."
+      "contains_lookup_tables": [
+        "DRTable"
+      ],
+      "notes": "Core d20 + mod vs DR procedure and DR reference table."
+    },
+    {
+      "id": "carrying-capacity",
+      "phase": 1,
+      "title": "Carrying capacity",
+      "index_title": "Carrying capacity",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Carrying Capacity\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Hit Points\\s*$"
+      },
+      "operator_page_hint": "28",
+      "links_to_seed_labels": [
+        "Strength",
+        "Agility"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section",
+      "notes": "Single short rule block on p.28 after DR table."
+    },
+    {
+      "id": "hit-points-and-broken",
+      "phase": 1,
+      "title": "Hit Points",
+      "index_title": "Hit Points",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Hit Points\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Violence\\s*$"
+      },
+      "operator_page_hint": "29",
+      "links_to_seed_labels": [
+        "HitPoints",
+        "Toughness"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "contains_lookup_tables": [
+        "BrokenTable"
+      ],
+      "notes": "HP, broken at 0, Broken (d4) table; index also lists Broken (0 HP) p.29."
     },
     {
       "id": "violence-combat",
       "phase": 2,
-      "title": "Violence (combat)",
+      "title": "Violence",
+      "index_title": "Violence",
       "start_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*VIOLENCE\\s*$"
+        "pattern": "^\\s*Violence\\s*$"
       },
       "end_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*(REST|POWERS|SCROLLS|OPTIONAL|CLASSES)\\s*$"
+        "pattern": "^\\s*Crit\\s*\\(natural 20\\)\\s*$"
       },
-      "operator_page_hint": "32+",
+      "operator_page_hint": "30",
       "links_to_seed_labels": [
         "MeleeAttack",
         "RangedAttack",
         "DefenseRoll",
-        "CreatureTest"
+        "Initiative"
       ],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "notes": "Phase 2 — defer until ability-test spike passes."
+      "contains_lookup_tables": [
+        "InitiativeTable"
+      ],
+      "notes": "Combat chapter opening: initiative, melee/ranged/defence (index lists Attack/Combat/Defence p.30 under this span)."
+    },
+    {
+      "id": "crit-fumble-rest",
+      "phase": 2,
+      "title": "Crit, fumble, and rest",
+      "index_title": "Crit",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Crit\\s*\\(natural 20\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Reaction\\s*\\(2D6\\)\\s*$"
+      },
+      "operator_page_hint": "31",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Crit, fumble, round length, Rest (index: Resting, Infection p.31)."
+    },
+    {
+      "id": "reaction-morale",
+      "phase": 2,
+      "title": "Reaction and morale",
+      "index_title": "Reaction",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Reaction\\s*\\(2D6\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Getting Better\\s*$"
+      },
+      "operator_page_hint": "32",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Reaction (2D6) and Morale rules."
+    },
+    {
+      "id": "getting-better-or-worse",
+      "phase": 2,
+      "title": "Getting better (or worse)",
+      "index_title": "Getting better (or worse)",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Getting Better\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Powers\\s*$"
+      },
+      "operator_page_hint": "33",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Title spans two lines in PDF ('Getting Better' / 'or worse')."
+    },
+    {
+      "id": "powers-and-scrolls",
+      "phase": 2,
+      "title": "Powers",
+      "index_title": "Powers",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Powers\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Optional Rules\\s*$"
+      },
+      "operator_page_hint": "34-36",
+      "links_to_seed_labels": [
+        "Power",
+        "Scroll"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Powers and scroll usage (index lists Scrolls p.34)."
+    },
+    {
+      "id": "optional-rules-omens",
+      "phase": 3,
+      "title": "Optional rules — Omens",
+      "index_title": "Omens",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Optional Rules\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Optional Tables\\s*$"
+      },
+      "operator_page_hint": "37",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Omens optional rule."
+    },
+    {
+      "id": "optional-tables-traits",
+      "phase": 3,
+      "title": "Optional tables — Terrible traits",
+      "index_title": "Terrible traits",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Optional Tables\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Broken Bodies, d20\\s*$"
+      },
+      "operator_page_hint": "38",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Terrible Traits d20 table intro."
+    },
+    {
+      "id": "optional-broken-bodies",
+      "phase": 3,
+      "title": "Broken bodies",
+      "index_title": "Broken bodies",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Broken Bodies, d20\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Bad Habits, d20\\s*$"
+      },
+      "operator_page_hint": "39",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph"
+    },
+    {
+      "id": "optional-bad-habits",
+      "phase": 3,
+      "title": "Bad habits",
+      "index_title": "Bad habit",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Bad Habits, d20\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Troubling Tales, d20\\s*$"
+      },
+      "operator_page_hint": "40",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph"
+    },
+    {
+      "id": "troubling-tales",
+      "phase": 3,
+      "title": "Troubling tales",
+      "index_title": "Troubling tales",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Troubling Tales, d20\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Arcane Catastrophes\\s*$"
+      },
+      "operator_page_hint": "41-42",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph"
+    },
+    {
+      "id": "arcane-catastrophes",
+      "phase": 3,
+      "title": "Arcane catastrophes",
+      "index_title": "Arcane catastrophes",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Arcane Catastrophes\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Optional Classes\\s*\\(D6\\)\\s*$"
+      },
+      "operator_page_hint": "43-45",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "contains_lookup_tables": [
+        "ArcaneCatastrophesTable"
+      ],
+      "notes": "End anchor is Optional Classes (p.46); adjust if anchor misses."
     }
   ]
 }

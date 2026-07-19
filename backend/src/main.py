@@ -49,6 +49,12 @@ from src.shared.constants import (
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from src.shared.schema_extraction import schema_extraction_from_text
 from src.table_pipeline import resolve_pdf_path, run_lookup_table_pipeline
+from src.section_chunking import (
+    filter_chunks_for_llm,
+    materialize_passage_sections,
+    section_chunks_for_llm,
+)
+from src.index_materialization import materialize_rulebook_catalog
 
 from langchain_community.document_loaders import WebBaseLoader
 
@@ -534,6 +540,38 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   logging.info(f'Time taken to create list chunkids with chunk document: {elapsed_get_chunkId_chunkDoc_list:.2f} seconds')
   uri_latency["create_list_chunk_and_document"] = f'{elapsed_get_chunkId_chunkDoc_list:.2f}'
   uri_latency["total_chunks"] = total_chunks
+
+  section_phase = getattr(params, "section_phase", None) or 1
+  if getattr(params, "ingest_mode", None) == "scaffold-diff":
+    section_stats = materialize_passage_sections(
+      graph,
+      params.file_name,
+      game="mork-borg",
+      phase=section_phase,
+      pages=pages,
+      pdf_path=merged_file_path,
+    )
+    logging.info("section_chunking: %s", section_stats)
+    uri_latency["section_chunking"] = section_stats
+
+    index_stats = materialize_rulebook_catalog(
+      graph,
+      params.file_name,
+      game="mork-borg",
+      link_sections=True,
+      fiction=True,
+      section_phase=section_phase,
+    )
+    logging.info("rulebook_catalog: %s", index_stats)
+    uri_latency["rulebook_catalog"] = index_stats
+
+    section_chunk_list = section_chunks_for_llm(
+      graph, params.file_name, game="mork-borg", phase=section_phase
+    )
+    page_chunk_list = filter_chunks_for_llm(graph, params.file_name, chunkId_chunkDoc_list)
+    chunkId_chunkDoc_list = section_chunk_list + page_chunk_list
+    total_chunks = len(chunkId_chunkDoc_list)
+    uri_latency["total_chunks"] = total_chunks
 
   if getattr(params, "ingest_mode", None) == "scaffold-diff" and scaffold_map:
     try:

@@ -24,6 +24,7 @@ def cleanup_ingest_graph(
     session.run("MATCH (n:IngestNode) DETACH DELETE n")
     session.run("MATCH (n:FlaggedRelationship) DETACH DELETE n")
     session.run("MATCH (n:FlaggedConcept) DETACH DELETE n")
+    session.run("MATCH (n:RulePassage) DETACH DELETE n")
 
     if not file_name:
         return
