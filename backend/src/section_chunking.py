@@ -134,11 +134,23 @@ def _load_page_texts(
     pages: list[Document] | None = None,
     pdf_path: str | None = None,
 ) -> dict[int, str]:
+    """Load page text for heading-anchor matching.
+
+    Prefer PyMuPDF (same as validate_passage_anchors.py). LangChain page splits
+    from /extract often omit or reshape headings, so anchors validated against the
+    PDF will not match when we use pages alone.
+    """
+    try:
+        resolved = resolve_pdf_path(file_name, pdf_path=pdf_path)
+        return load_pdf_text_by_page(resolved)
+    except FileNotFoundError:
+        pass
     from_docs = _page_texts_from_documents(pages)
     if from_docs:
         return from_docs
-    resolved = resolve_pdf_path(file_name, pdf_path=pdf_path)
-    return load_pdf_text_by_page(resolved)
+    raise FileNotFoundError(
+        f"Cannot load page text for {file_name!r}: PDF not on disk and no pages provided"
+    )
 
 
 def _merge_section_chunk(

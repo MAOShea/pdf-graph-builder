@@ -321,42 +321,73 @@ def link_index_entries_to_sections(
     return stats
 
 
-def _find_seed_node(graph, seed_label: str) -> dict[str, Any] | None:
+def _count_seed_nodes_by_label(graph, seed_label: str) -> int:
     rows = execute_graph_query(
         graph,
         """
         MATCH (n:SeedNode)
         WHERE $label IN labels(n)
-        RETURN coalesce(n.seed_id, n.id, n.name) AS seed_id, n.name AS name
-        LIMIT 1
+        RETURN count(n) AS n
         """,
         {"label": seed_label},
     )
-    return rows[0] if rows else None
+    return int(rows[0]["n"]) if rows else 0
 
 
-def _require_fiction_seeds(
+def _require_fiction_seed_labels(
     graph,
     entry_kind_to_seed: dict[str, str],
 ) -> dict[str, str]:
-    """Return entry_kind -> seed_id map; raise if any required seed is missing."""
+    """
+    Return entry_kind -> seed label for INSTANCE_OF.
+    Abort if a required label is missing or matches more than one SeedNode.
+    """
     missing: list[str] = []
+    ambiguous: list[str] = []
     resolved: dict[str, str] = {}
     for entry_kind, seed_label in entry_kind_to_seed.items():
         if entry_kind not in _FICTION_ENTRY_KINDS:
             continue
-        row = _find_seed_node(graph, seed_label)
-        if not row or not row.get("seed_id"):
+        count = _count_seed_nodes_by_label(graph, seed_label)
+        if count == 0:
             missing.append(seed_label)
+        elif count > 1:
+            ambiguous.append(f"{seed_label}({count})")
         else:
-            resolved[entry_kind] = str(row["seed_id"])
+            resolved[entry_kind] = seed_label
+    problems: list[str] = []
     if missing:
+        problems.append("missing: " + ", ".join(sorted(set(missing))))
+    if ambiguous:
+        problems.append("ambiguous: " + ", ".join(sorted(ambiguous)))
+    if problems:
         raise RuntimeError(
-            "fiction instance materialization: missing scaffold SeedNodes: "
-            + ", ".join(sorted(set(missing)))
+            "fiction instance materialization: scaffold SeedNode lookup failed — "
+            + "; ".join(problems)
             + ". Run bootstrap first (briefing-8 prerequisite)."
         )
     return resolved
+
+
+def _strip_fiction_instance_of(graph, file_name: str) -> int:
+    """Remove all INSTANCE_OF edges from fiction entities (Briefing 9 repair)."""
+    rows = execute_graph_query(
+        graph,
+        """
+        MATCH (e:IndexEntry)-[:DENOTES]->(x:IngestNode)-[r:INSTANCE_OF]->(:SeedNode)
+        WHERE (e.source = $file_name OR e.id STARTS WITH $file_prefix)
+          AND e.entry_kind IN $fiction_kinds
+        WITH collect(r) AS rels
+        FOREACH (r IN rels | DELETE r)
+        RETURN size(rels) AS n
+        """,
+        {
+            "file_name": file_name,
+            "file_prefix": f"{file_name}#index:",
+            "fiction_kinds": list(_FICTION_ENTRY_KINDS),
+        },
+    )
+    return int(rows[0]["n"]) if rows else 0
 
 
 def materialize_fiction_instances(
@@ -369,12 +400,16 @@ def materialize_fiction_instances(
     """
     For each WORLD/CREATURES IndexEntry with a fiction entry_kind, MERGE typed
     IngestNode instances and DENOTES / INSTANCE_OF / OCCURS_IN edges (Briefing 8).
+
+    INSTANCE_OF targets exactly one SeedNode whose labels include
+    entry_kind_to_seed[entry_kind] (Briefing 9 — no fan-out).
     """
     stats: dict[str, Any] = {
         "entities_created": 0,
         "by_entry_kind": {},
         "denotes_links": 0,
         "occurs_in_links": 0,
+        "instance_of_stripped": 0,
         "warnings": [],
     }
 
@@ -389,33 +424,40 @@ def materialize_fiction_instances(
         return stats
 
     try:
-        seed_ids = _require_fiction_seeds(graph, entry_kind_to_seed)
+        seed_labels = _require_fiction_seed_labels(graph, entry_kind_to_seed)
     except RuntimeError as exc:
         stats["warnings"].append(str(exc))
         logger.error("%s", exc)
         return stats
 
-    setting_seed = _find_seed_node(graph, "Setting")
-    setting_seed_id: str | None = None
-    if not setting_seed or not setting_seed.get("seed_id"):
-        stats["warnings"].append("Setting:SeedNode not found — WORLD OCCURS_IN skipped")
+    stats["instance_of_stripped"] = _strip_fiction_instance_of(graph, file_name)
+
+    setting_label = "Setting"
+    if _count_seed_nodes_by_label(graph, setting_label) != 1:
+        stats["warnings"].append("Setting:SeedNode missing or ambiguous — WORLD OCCURS_IN skipped")
+        has_setting = False
     else:
-        setting_seed_id = str(setting_seed["seed_id"])
+        has_setting = True
         execute_graph_query(
             graph,
             """
             MERGE (s:IngestNode {id: $setting_id})
             SET s.name = $setting_name, s.tier = 5, s.source = $file_name
             WITH s
+            OPTIONAL MATCH (s)-[old:INSTANCE_OF]->(:SeedNode)
+            DELETE old
+            WITH DISTINCT s
             MATCH (seed:SeedNode)
-            WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($setting_seed_id)
+            WHERE $seed_label IN labels(seed)
+            WITH s, seed
+            LIMIT 1
             MERGE (s)-[:INSTANCE_OF]->(seed)
             """,
             {
                 "setting_id": f"{file_name}#setting",
                 "setting_name": setting_name,
                 "file_name": file_name,
-                "setting_seed_id": setting_seed_id,
+                "seed_label": setting_label,
             },
         )
 
@@ -438,10 +480,9 @@ def materialize_fiction_instances(
 
     for row in rows:
         entry_kind = row.get("entry_kind")
-        if entry_kind not in seed_ids:
+        if entry_kind not in seed_labels:
             continue
-        seed_label = entry_kind_to_seed[entry_kind]
-        seed_id = seed_ids[entry_kind]
+        seed_label = seed_labels[entry_kind]
         title = row["title"]
         entity_id = _entity_id(file_name, entry_kind, title)
 
@@ -465,41 +506,49 @@ def materialize_fiction_instances(
             MERGE (e)-[:DENOTES]->(entity)
             WITH entity
             MATCH (seed:SeedNode)
-            WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($seed_id)
+            WHERE $seed_label IN labels(seed)
+            WITH entity, seed
+            LIMIT 1
             MERGE (entity)-[:INSTANCE_OF]->(seed)
             """,
             {
                 "entity_id": entity_id,
                 "props": props,
                 "entry_id": row["entry_id"],
-                "seed_id": seed_id,
+                "seed_label": seed_label,
             },
         )
         stats["entities_created"] += 1
         stats["by_entry_kind"][entry_kind] = stats["by_entry_kind"].get(entry_kind, 0) + 1
         stats["denotes_links"] += 1
 
-        if row.get("column") in _WORLD_COLUMNS and setting_seed_id:
+        if row.get("column") in _WORLD_COLUMNS and has_setting:
             execute_graph_query(
                 graph,
                 """
                 MATCH (entity:IngestNode {id: $entity_id})
+                OPTIONAL MATCH (entity)-[old:OCCURS_IN]->(:SeedNode)
+                DELETE old
+                WITH DISTINCT entity
                 MATCH (seed:SeedNode)
-                WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($setting_seed_id)
+                WHERE $seed_label IN labels(seed)
+                WITH entity, seed
+                LIMIT 1
                 MERGE (entity)-[:OCCURS_IN]->(seed)
                 """,
                 {
                     "entity_id": entity_id,
-                    "setting_seed_id": setting_seed_id,
+                    "seed_label": setting_label,
                 },
             )
             stats["occurs_in_links"] += 1
 
     logger.info(
-        "fiction_instances: entities=%s by_kind=%s occurs_in=%s",
+        "fiction_instances: entities=%s by_kind=%s occurs_in=%s stripped_instance_of=%s",
         stats["entities_created"],
         stats["by_entry_kind"],
         stats["occurs_in_links"],
+        stats["instance_of_stripped"],
     )
     return stats
 
@@ -511,10 +560,19 @@ def materialize_rulebook_catalog(
     game: str = "mork-borg",
     link_sections: bool = True,
     fiction: bool = True,
+    entity_passages: bool = True,
     section_phase: int | None = None,
+    pdf_path: str | None = None,
 ) -> dict[str, Any]:
-    """Run briefing-7 catalog + optional section links + briefing-8 fiction instances."""
-    result: dict[str, Any] = {"index": {}, "sections": {}, "fiction": {}}
+    """Run briefing-7 catalog + section links + fiction + entity passages (8–10)."""
+    from src.entity_passage_materialization import materialize_entity_passages
+
+    result: dict[str, Any] = {
+        "index": {},
+        "sections": {},
+        "fiction": {},
+        "entity_passages": {},
+    }
     result["index"] = materialize_rulebook_index(graph, file_name, game=game)
     if result["index"].get("entries_created", 0) == 0:
         if link_sections:
@@ -531,6 +589,11 @@ def materialize_rulebook_catalog(
                 "occurs_in_links": 0,
                 "warnings": ["skipped — no index entries materialized"],
             }
+        if entity_passages:
+            result["entity_passages"] = {
+                "passages_created": 0,
+                "warnings": ["skipped — no index entries materialized"],
+            }
         return result
     if link_sections:
         result["sections"] = link_index_entries_to_sections(
@@ -538,4 +601,8 @@ def materialize_rulebook_catalog(
         )
     if fiction:
         result["fiction"] = materialize_fiction_instances(graph, file_name, game=game)
+    if entity_passages:
+        result["entity_passages"] = materialize_entity_passages(
+            graph, file_name, game=game, pdf_path=pdf_path
+        )
     return result

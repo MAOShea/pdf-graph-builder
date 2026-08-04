@@ -1,12 +1,12 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "status": "draft",
-  "description": "Rulebook sections for heading-anchor chunking and RulePassage extraction. PDF index p.75 three columns catalogued in index_source with entry_kind for Tier-5 INSTANCE_OF routing. sections[] authored from RULES for mechanics phases.",
+  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-07-18",
-  "verified_note": "All three index columns parsed from p.75. entry_kind on index rows authored 2026-07-19 for briefing-8 typed instance wiring (operator may amend). Section boundaries for mechanics from RULES column + heading probe. Index page numbers are hints only.",
+  "verified_date": "2026-08-04",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies); operator PDF pass welcome to amend labels/patterns.",
   "handoff": {
     "target_repo": "pdf-graph-builder",
     "target_path": "games/mork-borg/passage-sections.json",
@@ -438,6 +438,32 @@
     "normalize_whitespace": true,
     "multiline": true,
     "notes": "Whole-line regex anchors. Future: add min_font_size_ratio from PyMuPDF spans to disambiguate body mentions. Index page hints are not used for matching."
+  },
+  "entity_passage": {
+    "enabled": true,
+    "columns": [
+      "CREATURES"
+    ],
+    "notes": "Design: entity-scoped RulePassage boundaries live in this contract (same spirit as sections[] anchors and lookup_tables.pdf_extract.stop_before). Python only compiles/matches. Start = creature heading on page; end = min(next index title on page, first stop_before hit). Optional per creatures_index row: text_end_hint (exclusive literal or regex) when shared stop_before is wrong.",
+    "end_detection": {
+      "order": [
+        "next_index_title_on_page",
+        "stop_before"
+      ],
+      "stop_before": [
+        {
+          "type": "line_regex",
+          "pattern": "^(?:Head|Captured|Dead|Skull|Corpse|Horn|Remains|Ectoplasm|Destroyed|Decapitated\\s+lantern|Poison\\s+gland|Tail\\s+spike|Blood(?:\\s*,\\s*per\\s+litre)?)\\s+\\d+(?:\\s*[–\\-]\\s*\\d+)?s(?:\\s*\\([^)]*\\))?\\s*$",
+          "notes": "Label then silver tally, e.g. Head 7s / Captured 50-120s (...)"
+        },
+        {
+          "type": "line_regex",
+          "pattern": "^\\d+(?:\\s*[–\\-]\\s*\\d+)?s\\s+(?:Head|Captured|Dead|Skull|Corpse|Horn|Remains|Ectoplasm|Destroyed|Decapitated\\s+lantern|Poison\\s+gland|Tail\\s+spike|Blood(?:\\s*,\\s*per\\s+litre)?)(?:\\s*\\([^)]*\\))?\\s*$",
+          "notes": "Silver then label, e.g. 200s Captured"
+        }
+      ],
+      "stop_before_flags": "im"
+    }
   },
   "sections": [
     {

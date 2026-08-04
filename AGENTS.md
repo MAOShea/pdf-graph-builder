@@ -44,4 +44,8 @@ After ingest, run `.\check-coverage.ps1` for a manifest-driven coverage report.
 
 Section chunking (Briefing 6): `games/<game>/passage-sections.json` via manifest `passage_sections.file`; runs automatically on scaffold-diff extract, or `backend\materialize_passage_sections.py --phase 1`.
 
+**Boundary contract (design):** Chunk/passage spans are operator-maintained JSON, not Python hardcodes — `sections[].start_anchor`/`end_anchor` (RULES), `entity_passage.end_detection.stop_before` (CREATURES prose), and lookup-table `pdf_extract.stop_before`. Amend the JSON after a PDF pass; re-materialize. Optional per `creatures_index` row: `text_end_hint`. Field guide: `games/mork-borg/README.md`.
+
 Rulebook index catalog (Briefings 7+8): `index_source` in `passage-sections.json` + `rulebook_index` in manifest → `RulebookIndex`, `IndexEntry`, typed fiction instances; runs automatically on scaffold-diff extract after section chunking, or `.\materialize-rulebook-index.ps1` (requires `:Document` for `mork-borg.pdf` in Neo4j).
+
+Entity-scoped creature prose (Briefings 10–11): CREATURES index rows → per-creature `:RulePassage` (`MAPS_TO_PASSAGE` / entity `DOCUMENTED_BY`); end cuts from `entity_passage` in the same JSON; runs in the catalog pass, or `backend\materialize_rulebook_index.py --entity-passages-only`.

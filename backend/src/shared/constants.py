@@ -914,6 +914,8 @@ INGEST_REL_TYPES = {
     "ALSO_INDEXED_AS",
     "DENOTES",
     "OCCURS_IN",
+    # Entity-scoped prose (briefing-10)
+    "MAPS_TO_PASSAGE",
 }
 
 SCAFFOLD_DIFF_INSTRUCTIONS = """You are ingesting a rulebook PDF against a pre-existing knowledge graph scaffold.

@@ -1,4 +1,9 @@
+from unittest.mock import patch
+
+from langchain_core.documents import Document
+
 from src.section_chunking import (
+    _load_page_texts,
     build_page_indexed_stream,
     normalize_stream_text,
     resolve_section_span,
@@ -71,3 +76,14 @@ def test_build_page_indexed_stream():
     assert "aaa" in stream and "bbb" in stream
     assert len(spans) == 2
     assert spans[0]["page_number"] == 1
+
+
+def test_load_page_texts_prefers_pdf_over_langchain_pages():
+    pages = [Document(page_content="langchain text", metadata={"page_number": 1})]
+    with patch(
+        "src.section_chunking.load_pdf_text_by_page",
+        return_value={27: "Abilities"},
+    ) as load_pdf:
+        result = _load_page_texts("mork-borg.pdf", pages=pages, pdf_path="/tmp/x.pdf")
+    load_pdf.assert_called_once()
+    assert result == {27: "Abilities"}

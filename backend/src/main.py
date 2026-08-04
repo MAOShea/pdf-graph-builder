@@ -560,7 +560,9 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
       game="mork-borg",
       link_sections=True,
       fiction=True,
+      entity_passages=True,
       section_phase=section_phase,
+      pdf_path=merged_file_path,
     )
     logging.info("rulebook_catalog: %s", index_stats)
     uri_latency["rulebook_catalog"] = index_stats

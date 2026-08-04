@@ -36,6 +36,8 @@ Today the ingest pipeline typically emits **`Chunk` nodes ~aligned to PDF pages*
 
 ## Contract: `passage-sections.json`
 
+**Operator field guide (keywords / schema):** [games/mork-borg/README.md](../games/mork-borg/README.md).
+
 Source of truth: `corpus/games/mork-borg/passage-sections.json` in AI-DM-Assistant.
 
 ### Top-level fields
@@ -44,6 +46,7 @@ Source of truth: `corpus/games/mork-borg/passage-sections.json` in AI-DM-Assista
 |---|---|
 | `index_source` | p.75 three-column index — materialized as `RulebookIndex` / `IndexEntry` ([briefing-7](./pdf-graph-builder-briefing-7.md)) |
 | `anchor_matching` | Global flags: `case_insensitive`, `normalize_whitespace`, `multiline` |
+| `entity_passage` | CREATURES prose end rules (`stop_before` line regexes) — Briefings 10–11; boundaries stay in JSON |
 | `sections[]` | Ordered section definitions |
 
 ### Per-section fields

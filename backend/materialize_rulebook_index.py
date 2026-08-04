@@ -20,7 +20,11 @@ _BACKEND = Path(__file__).resolve().parent
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
-from src.index_materialization import materialize_rulebook_catalog
+from src.entity_passage_materialization import materialize_entity_passages
+from src.index_materialization import (
+    materialize_fiction_instances,
+    materialize_rulebook_catalog,
+)
 
 load_dotenv()
 
@@ -32,6 +36,16 @@ def main() -> int:
     parser.add_argument("--phase", type=int, default=None, help="Max section phase for MAPS_TO_SECTION")
     parser.add_argument("--no-sections", action="store_true", help="Skip MAPS_TO_SECTION links")
     parser.add_argument("--no-fiction", action="store_true", help="Skip fiction instance materialization")
+    parser.add_argument(
+        "--fiction-only",
+        action="store_true",
+        help="Repair/re-run fiction instances only (Briefing 9)",
+    )
+    parser.add_argument(
+        "--entity-passages-only",
+        action="store_true",
+        help="Materialize CREATURES entity-scoped RulePassages only (Briefing 10)",
+    )
     parser.add_argument("--database", default=os.getenv("NEO4J_DATABASE", "morkborg"))
     args = parser.parse_args()
 
@@ -41,12 +55,22 @@ def main() -> int:
         password=os.getenv("NEO4J_PASSWORD"),
         database=args.database,
     )
+    if args.fiction_only:
+        stats = materialize_fiction_instances(graph, args.document, game=args.game)
+        print(json.dumps(stats, indent=2))
+        return 0 if stats.get("entities_created", 0) > 0 else 1
+    if args.entity_passages_only:
+        stats = materialize_entity_passages(graph, args.document, game=args.game)
+        print(json.dumps(stats, indent=2))
+        return 0 if stats.get("passages_created", 0) > 0 else 1
+
     stats = materialize_rulebook_catalog(
         graph,
         args.document,
         game=args.game,
         link_sections=not args.no_sections,
         fiction=not args.no_fiction,
+        entity_passages=True,
         section_phase=args.phase,
     )
     print(json.dumps(stats, indent=2))
