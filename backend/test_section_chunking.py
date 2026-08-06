@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 
 from src.section_chunking import (
     _load_page_texts,
+    apply_text_filters,
     build_page_indexed_stream,
     normalize_stream_text,
     resolve_section_span,
@@ -78,12 +79,75 @@ def test_build_page_indexed_stream():
     assert spans[0]["page_number"] == 1
 
 
+def test_resolve_page_range_section():
+    page_texts = {
+        5: "Corpse leftovers",
+        6: "Colophon\nPelle Nilsson",
+        7: "Music that helped\nBand names",
+        8: "Should not appear",
+    }
+    stream, spans = build_page_indexed_stream(
+        {p: normalize_stream_text(t) for p, t in page_texts.items()}
+    )
+    section = {
+        "id": "front-matter-colophon-credits",
+        "start_anchor": {
+            "type": "page_range",
+            "start_page": 6,
+            "end_page": 7,
+        },
+    }
+    span = resolve_section_span(
+        stream, section, anchor_matching={}, page_spans=spans
+    )
+    assert span is not None
+    start, end = span
+    text = stream[start:end]
+    assert "Colophon" in text
+    assert "Music that helped" in text
+    assert "Should not appear" not in text
+    assert "Corpse leftovers" not in text
+
+
 def test_load_page_texts_prefers_pdf_over_langchain_pages():
     pages = [Document(page_content="langchain text", metadata={"page_number": 1})]
     with patch(
         "src.section_chunking.load_pdf_text_by_page",
         return_value={27: "Abilities"},
     ) as load_pdf:
-        result = _load_page_texts("mork-borg.pdf", pages=pages, pdf_path="/tmp/x.pdf")
+        result = _load_page_texts(
+            "mork-borg.pdf",
+            pages=pages,
+            pdf_path="/tmp/x.pdf",
+            text_filters={},
+            normalize_whitespace=True,
+        )
     load_pdf.assert_called_once()
     assert result == {27: "Abilities"}
+
+
+def test_apply_text_filters_strips_bare_bones_footer():
+    filters = {
+        "drop_line_patterns": [
+            r"^M[ÖO]RK\s+BORG\s+BARE\s+BONES\s+EDITION\s*$"
+        ],
+        "strip_inline_patterns": [
+            r"\s*M[ÖO]RK\s+BORG\s+BARE\s+BONES\s+EDITION(?:\s+\d+)?\s*"
+        ],
+        "drop_edge_page_number": True,
+    }
+    raw = (
+        "27\n"
+        "Abilities\n"
+        "AGILITY defend stuff\n"
+        "MÖRK BORG BARE BONES EDITION\n"
+        "1\n"
+        "mid-page table key stays\n"
+        "27\n"
+    )
+    out = apply_text_filters(raw, filters, page_number=27)
+    assert "MÖRK BORG" not in out
+    assert "Abilities" in out
+    assert out.splitlines()[0] != "27"
+    assert out.splitlines()[-1] != "27"
+    assert "1" in out  # mid-page index kept

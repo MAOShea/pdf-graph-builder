@@ -1,16 +1,26 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.4.0",
+  "version": "0.5.4",
   "status": "draft",
-  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks.",
+  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-04",
-  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies); operator PDF pass welcome to amend labels/patterns.",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. Operator PDF pass welcome to amend.",
   "handoff": {
     "target_repo": "pdf-graph-builder",
     "target_path": "games/mork-borg/passage-sections.json",
     "sync": "Copy with ingest-manifest via scripts/sync-ingest-manifest.ps1. See docs/outbox/ingest-manifest-sync.md."
+  },
+  "text_filters": {
+    "notes": "Running header/footer on Bare Bones pages. Applied per page in the shared extract path (document_extract / section_chunking / table pipeline). Not table-specific — lives here, not ingest-manifest.",
+    "drop_line_patterns": [
+      "^M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION\\s*$"
+    ],
+    "strip_inline_patterns": [
+      "\\s*M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION(?:\\s+\\d+)?\\s*"
+    ],
+    "drop_edge_page_number": true
   },
   "index_source": {
     "page": 75,
@@ -466,6 +476,64 @@
     }
   },
   "sections": [
+    {
+      "id": "character-names",
+      "phase": 2,
+      "title": "Man? Woman? Lost souls all.",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Man\\?\\s*Woman\\?\\s*Lost souls all\\.\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*d10\\s+Occult Treasures\\s*$"
+      },
+      "operator_page_hint": "2",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": false,
+      "contains_lookup_tables": [
+        "NameTable"
+      ],
+      "content_source": {
+        "type": "hand_authored_file",
+        "file": "hand-authored-overrides/name-table.json",
+        "skip_pdf_text": true,
+        "render": "blocks",
+        "notes": "Same file as ingest-manifest NameTable hand_authored. PDF two-column d6×d8 grid is not usable as get_text() stream."
+      },
+      "notes": "Name lookup (d6×d8). Anchors locate the span to skip in PDF extract; body comes from content_source.file."
+    },
+    {
+      "id": "occult-treasures",
+      "phase": 2,
+      "title": "Occult Treasures",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*d10\\s+Occult Treasures\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Traps and Devilry"
+      },
+      "operator_page_hint": "3",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": false,
+      "notes": "d10 Occult Treasures. Table shape comes from default auto-detect (ingest-manifest OccultTreasuresTable pdf_extract) — no contains_lookup_tables / content_source override needed."
+    },
+    {
+      "id": "front-matter-colophon-credits",
+      "phase": 2,
+      "title": "Colophon and credits",
+      "start_anchor": {
+        "type": "page_range",
+        "start_page": 6,
+        "end_page": 7
+      },
+      "operator_page_hint": "6-7",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": false,
+      "notes": "Whole pages 6–7 (Colophon, credits, 'Music that helped', etc.) — not rules/lore. page_range bounds; end_anchor unused."
+    },
     {
       "id": "character-creation",
       "phase": 2,

@@ -150,6 +150,31 @@ def _parse_index_value(raw: str, index_type: str) -> Any:
     return raw
 
 
+def _clean_pdf_heading(raw: str) -> str:
+    return " ".join(_CONTROL_CHAR_RE.sub(" ", raw).split()).strip()
+
+
+def table_display_title(
+    spec: dict[str, Any],
+    *,
+    matched_header: str | None = None,
+) -> str:
+    """
+    Human/PDF-facing title for a lookup table.
+
+    Priority: manifest ``title`` → matched PDF heading → technical ``name``.
+    Stable graph id remains ``spec["name"]`` (e.g. TrapsTable).
+    """
+    explicit = str(spec.get("title") or "").strip()
+    if explicit:
+        return explicit
+    if matched_header:
+        cleaned = _clean_pdf_heading(matched_header)
+        if cleaned:
+            return cleaned
+    return str(spec.get("name") or "table")
+
+
 def extract_table_from_text(
     text: str,
     spec: dict[str, Any],
@@ -180,6 +205,7 @@ def extract_table_from_text(
     if not header:
         return None
 
+    pdf_heading = _clean_pdf_heading(header.group(0))
     body = _slice_body(text, header.end(), pdf_extract.get("stop_before") or [])
     index_cfg = pdf_extract.get("index") or {}
     index_type = index_cfg.get("type") or ""
@@ -208,7 +234,8 @@ def extract_table_from_text(
 
     return {
         "manifest_name": spec["name"],
-        "title": spec["name"],
+        "title": table_display_title(spec, matched_header=pdf_heading),
+        "pdf_heading": pdf_heading,
         "columns": cols,
         "rows": rows,
     }

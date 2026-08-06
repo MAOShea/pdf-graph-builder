@@ -10,6 +10,7 @@ from langchain_core.documents import Document
 from src.document_sources.structured_json import load_structured_json_documents
 from src.ingest_manifest import _project_root, column_names, load_ingest_manifest, spec_by_name
 from src.make_relationships import create_relation_between_chunks
+from src.pdf_table_parser import table_display_title
 from src.table_materialization import materialize_lookup_table
 
 
@@ -42,6 +43,8 @@ def table_from_document(doc: Document, spec: dict[str, Any]) -> dict:
         raise ValueError("Document has no table_json metadata")
     table["manifest_name"] = spec["name"]
     table["columns"] = column_names(spec)
+    block_title = str(doc.metadata.get("title") or table.get("title") or "").strip()
+    table["title"] = table_display_title(spec, matched_header=block_title or None)
     return table
 
 
@@ -67,6 +70,9 @@ def load_hand_authored_table(spec: dict[str, Any]) -> dict | None:
             return None
         return {
             "manifest_name": spec["name"],
+            "title": table_display_title(
+                spec, matched_header=str(selector.get("title") or envelope.get("title") or "") or None
+            ),
             "columns": column_names(spec),
             "rows": selector["rows"],
         }
@@ -120,11 +126,15 @@ def materialize_hand_authored_tables(
     *,
     game: str = "mork-borg",
     table_name: str | None = None,
+    skip_names: set[str] | None = None,
 ) -> dict[str, int]:
     """Load manifest hand-authored files and materialize (skip PDF for those tables)."""
     stats = {"tables_loaded": 0, "tables_materialized": 0}
     for spec in hand_authored_specs(game):
-        if table_name and spec.get("name") != table_name:
+        name = spec.get("name")
+        if table_name and name != table_name:
+            continue
+        if skip_names and name in skip_names:
             continue
         path = resolve_hand_authored_path(spec)
         if not path:

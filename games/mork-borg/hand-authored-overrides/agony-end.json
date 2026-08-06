@@ -1,0 +1,39 @@
+{
+  "_note": "Hand-authored — label→die chooser (not index-first). PDF stream alternates label/die with BEL-prefixed labels; pdf_table_parser cannot extract it.",
+  "source": "mork-borg",
+  "manifest_table": "AgonyEndTable",
+  "override_pdf": true,
+  "title": "When will all this agony end?",
+  "blocks": [
+    {
+      "type": "table",
+      "title": "When will all this agony end?",
+      "columns": [
+        "duration",
+        "die"
+      ],
+      "rows": [
+        [
+          "Years of pain",
+          "d100"
+        ],
+        [
+          "A bleak half-year",
+          "d20"
+        ],
+        [
+          "A fall in anguish",
+          "d10"
+        ],
+        [
+          "A cruel month",
+          "d6"
+        ],
+        [
+          "The end is nigh!",
+          "d2"
+        ]
+      ]
+    }
+  ]
+}

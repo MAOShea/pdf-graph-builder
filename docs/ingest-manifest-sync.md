@@ -64,10 +64,14 @@ Do **not** create per-die handlers (`d6_result`, `d8_result`, …). One material
 
 | Manifest field | Purpose |
 |---|---|
+| `name` | Stable technical id (e.g. `TrapsTable`) — graph node `id` / `name` |
+| `title` | Optional human/PDF title override. If omitted, extract uses the **matched PDF heading** (e.g. `Traps and Devilry (d12)`) so wording stays consistent with the book |
 | `columns[].role: index` | Lookup key column (name may be `DR`, `d6`, `d66`, …) |
 | `columns[].role: result` | Outcome text column |
 | `pdf_extract.index` | How to enumerate index keys for PDF parsing (`dr_set`, `d6`, `d8`, sparse ranges, …) |
 | `pdf_extract.header_patterns` | Where the table starts in chunk text |
+
+Graph nodes store `title` (+ `pdf_heading` when from PDF). Do not rename `name` to match book wording — keep ids stable.
 
 Phase 1 only needs `DRTable` `pdf_extract`. Phase 2 optional-class nested tables reuse the same handler; `parent_bundle` is graph wiring after materialize.
 

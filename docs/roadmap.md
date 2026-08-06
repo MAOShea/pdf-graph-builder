@@ -28,6 +28,8 @@ Operational backlog for scaffold-diff ingest and lookup-table materialization. N
 
 Until that pass lands, treat boundary regexes as a first-stab draft.
 
+**Helper:** [`tools/pdf-as-md`](../tools/pdf-as-md) dumps the same runtime PDF read path to Markdown (no Neo4j) so you can compare extract text to the original PDF while editing the contract.
+
 ---
 
 ## Planned

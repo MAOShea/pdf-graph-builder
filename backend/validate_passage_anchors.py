@@ -26,7 +26,12 @@ def main() -> int:
     failed = 0
     for section in contract.get("sections") or []:
         sid = section.get("id")
-        span = resolve_section_span(stream, section, anchor_matching=anchor_matching)
+        span = resolve_section_span(
+            stream,
+            section,
+            anchor_matching=anchor_matching,
+            page_spans=spans,
+        )
         if span is None:
             print(f"FAIL  {sid}: start anchor not found (hint p.{section.get('operator_page_hint')})")
             failed += 1

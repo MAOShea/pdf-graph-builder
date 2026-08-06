@@ -484,13 +484,15 @@
         "file": "games/mork-borg/hand-authored-overrides/corpse-plunder-d66.json",
         "skip_pdf_extract": true
       },
-      "note": "d66 keys use sparse notation (11-16, 21, …, 61-66). PDF parsing not viable — materialize from hand-authored JSON in pdf-graph-builder.",
+      "note": "d66 keys use sparse notation (11-16, 21, …, 61-66). PDF parsing not viable — materialize from hand-authored JSON. stop_before Colophon (p.6) so substitutes do not swallow world/lore pages.",
       "pdf_extract": {
         "status": "hand-authored",
         "header_patterns": [
           "Corpse plundering\\s*\\(d66\\)"
         ],
-        "stop_before": [],
+        "stop_before": [
+          "Colophon"
+        ],
         "index": {
           "type": "d66"
         },
@@ -855,6 +857,85 @@
       "note": "d6×d8 name grid — hand-authored from name-table.json; PDF side-by-side layout not reliably parseable.",
       "hand_authored": {
         "file": "games/mork-borg/hand-authored-overrides/name-table.json",
+        "skip_pdf_extract": true
+      }
+    },
+    {
+      "name": "AgonyEndTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "17",
+      "columns": [
+        {
+          "name": "duration",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "die",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "duration": "Years of pain",
+            "die": "d100"
+          }
+        },
+        {
+          "cells": {
+            "duration": "A bleak half-year",
+            "die": "d20"
+          }
+        },
+        {
+          "cells": {
+            "duration": "A fall in anguish",
+            "die": "d10"
+          }
+        },
+        {
+          "cells": {
+            "duration": "A cruel month",
+            "die": "d6"
+          }
+        },
+        {
+          "cells": {
+            "duration": "The end is nigh!",
+            "die": "d2"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "hand-authored",
+        "header_patterns": [
+          "When will all this agony end\\?"
+        ],
+        "stop_before": [
+          "The Calendar of Nechrubel"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "Years of pain",
+            "A bleak half-year",
+            "A fall in anguish",
+            "A cruel month",
+            "The end is nigh!"
+          ]
+        },
+        "min_rows": 5,
+        "max_rows": 5,
+        "prefer_page": 17,
+        "multi_table_page": true
+      },
+      "note": "Campaign-length chooser (label→die), not a dice-index lookup. Hand-authored: PDF lines alternate duration/die with BEL-prefixed labels.",
+      "hand_authored": {
+        "file": "games/mork-borg/hand-authored-overrides/agony-end.json",
         "skip_pdf_extract": true
       }
     },

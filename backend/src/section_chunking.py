@@ -29,6 +29,73 @@ def normalize_stream_text(text: str, *, normalize_whitespace: bool = True) -> st
     return "\n".join(lines)
 
 
+def apply_text_filters(
+    text: str,
+    text_filters: dict[str, Any] | None,
+    *,
+    page_number: int | None = None,
+) -> str:
+    """
+    Apply passage-sections.json ``text_filters`` to one page (or a span).
+
+    - drop_line_patterns: remove whole lines matching any regex (fullmatch)
+    - strip_inline_patterns: remove matching substrings within lines
+    - drop_edge_page_number: if page_number set, drop a first/last line that is only that number
+      (avoids stripping mid-page table indices like a lone \"1\")
+    """
+    if not text_filters or not text:
+        return text
+
+    drop_line_res = [
+        re.compile(p, re.IGNORECASE)
+        for p in (text_filters.get("drop_line_patterns") or [])
+        if p
+    ]
+    strip_inline_res = [
+        re.compile(p, re.IGNORECASE)
+        for p in (text_filters.get("strip_inline_patterns") or [])
+        if p
+    ]
+    drop_edge = bool(text_filters.get("drop_edge_page_number"))
+
+    kept: list[str] = []
+    for raw in text.splitlines():
+        line = raw
+        for pat in strip_inline_res:
+            line = pat.sub(" ", line)
+        line = re.sub(r"\s+", " ", line).strip()
+        if not line:
+            continue
+        if any(p.fullmatch(line) for p in drop_line_res):
+            continue
+        kept.append(line)
+
+    if drop_edge and page_number is not None and kept:
+        page_token = str(page_number)
+        if kept[0] == page_token:
+            kept = kept[1:]
+        if kept and kept[-1] == page_token:
+            kept = kept[:-1]
+
+    return "\n".join(kept)
+
+
+def filter_page_texts(
+    page_texts: dict[int, str],
+    text_filters: dict[str, Any] | None,
+    *,
+    normalize_whitespace: bool = True,
+) -> dict[int, str]:
+    """Normalize + apply text_filters to each page (shared extract hygiene)."""
+    out: dict[int, str] = {}
+    for page_number, text in page_texts.items():
+        cleaned = apply_text_filters(text, text_filters, page_number=page_number)
+        out[page_number] = normalize_stream_text(
+            cleaned, normalize_whitespace=normalize_whitespace
+        )
+    return out
+
+
 def build_page_indexed_stream(
     page_texts: dict[int, str],
 ) -> tuple[str, list[dict[str, int]]]:
@@ -71,21 +138,61 @@ def _anchor_pattern(anchor: dict[str, Any]) -> str:
     return str(anchor["pattern"])
 
 
+def _page_span_offsets(
+    page_spans: list[dict[str, int]],
+    start_page: int,
+    end_page: int,
+) -> tuple[int, int] | None:
+    """Inclusive page range → [start, end) char offsets in the page-indexed stream."""
+    if start_page > end_page:
+        return None
+    by_page = {s["page_number"]: s for s in page_spans}
+    if start_page not in by_page or end_page not in by_page:
+        return None
+    return by_page[start_page]["start"], by_page[end_page]["end"]
+
+
 def resolve_section_span(
     stream: str,
     section: dict[str, Any],
     *,
     anchor_matching: dict[str, Any],
+    page_spans: list[dict[str, int]] | None = None,
 ) -> tuple[int, int] | None:
-    """Return (content_start, content_end) offsets in stream; end is exclusive."""
+    """Return (content_start, content_end) offsets in stream; end is exclusive.
+
+    Anchor types:
+    - ``heading_regex`` — start after matched heading; end before end heading (exclusive).
+    - ``page_range`` — whole pages ``start_page``..``end_page`` inclusive
+      (declared on ``start_anchor``; ``end_anchor`` unused). Requires ``page_spans``.
+    """
+    start_anchor = section.get("start_anchor") or {}
+    anchor_type = start_anchor.get("type")
+
+    if anchor_type == "page_range":
+        if not page_spans:
+            return None
+        try:
+            start_page = int(start_anchor["start_page"])
+            end_page = int(start_anchor.get("end_page", start_page))
+        except (KeyError, TypeError, ValueError):
+            return None
+        return _page_span_offsets(page_spans, start_page, end_page)
+
+    if anchor_type != "heading_regex":
+        raise ValueError(f"unsupported start_anchor type: {anchor_type!r}")
+
     flags = _regex_flags(anchor_matching)
-    start_pat = _anchor_pattern(section["start_anchor"])
+    start_pat = _anchor_pattern(start_anchor)
     start_m = re.search(start_pat, stream, flags=flags)
     if not start_m:
         return None
 
     content_start = start_m.end()
-    end_pat = _anchor_pattern(section["end_anchor"])
+    end_anchor = section.get("end_anchor") or {}
+    if not end_anchor:
+        return content_start, len(stream)
+    end_pat = _anchor_pattern(end_anchor)
     end_m = re.search(end_pat, stream[content_start:], flags=flags)
     if not end_m:
         return content_start, len(stream)
@@ -133,24 +240,43 @@ def _load_page_texts(
     *,
     pages: list[Document] | None = None,
     pdf_path: str | None = None,
+    game: str = "mork-borg",
+    text_filters: dict[str, Any] | None = None,
+    normalize_whitespace: bool = True,
 ) -> dict[int, str]:
     """Load page text for heading-anchor matching.
 
     Prefer PyMuPDF (same as validate_passage_anchors.py). LangChain page splits
     from /extract often omit or reshape headings, so anchors validated against the
     PDF will not match when we use pages alone.
+
+    Applies passage-sections.json ``text_filters`` (running headers/footers).
     """
     try:
         resolved = resolve_pdf_path(file_name, pdf_path=pdf_path)
-        return load_pdf_text_by_page(resolved)
+        raw = load_pdf_text_by_page(resolved)
     except FileNotFoundError:
-        pass
-    from_docs = _page_texts_from_documents(pages)
-    if from_docs:
-        return from_docs
-    raise FileNotFoundError(
-        f"Cannot load page text for {file_name!r}: PDF not on disk and no pages provided"
-    )
+        raw = None
+    if raw is None:
+        from_docs = _page_texts_from_documents(pages)
+        if from_docs:
+            raw = from_docs
+    if raw is None:
+        raise FileNotFoundError(
+            f"Cannot load page text for {file_name!r}: PDF not on disk and no pages provided"
+        )
+    filters = text_filters
+    normalize_ws = normalize_whitespace
+    if filters is None:
+        try:
+            contract = load_passage_sections(game)
+            filters = contract.get("text_filters")
+            normalize_ws = (contract.get("anchor_matching") or {}).get(
+                "normalize_whitespace", True
+            )
+        except Exception:
+            filters = None
+    return filter_page_texts(raw, filters, normalize_whitespace=normalize_ws)
 
 
 def _merge_section_chunk(
@@ -354,21 +480,30 @@ def materialize_passage_sections(
         return stats
 
     try:
-        page_texts = _load_page_texts(file_name, pages=pages, pdf_path=pdf_path)
+        page_texts = _load_page_texts(
+            file_name,
+            pages=pages,
+            pdf_path=pdf_path,
+            game=game,
+            text_filters=contract.get("text_filters"),
+            normalize_whitespace=anchor_matching.get("normalize_whitespace", True),
+        )
     except FileNotFoundError as exc:
         stats["warnings"].append(str(exc))
         return stats
 
     stream, spans = build_page_indexed_stream(page_texts)
-    stream = normalize_stream_text(
-        stream, normalize_whitespace=anchor_matching.get("normalize_whitespace", True)
-    )
 
     chunk_ids: list[str] = []
     position = 0
     for section in sections:
         section_id = section.get("id", "?")
-        span = resolve_section_span(stream, section, anchor_matching=anchor_matching)
+        span = resolve_section_span(
+            stream,
+            section,
+            anchor_matching=anchor_matching,
+            page_spans=spans,
+        )
         if span is None:
             hint = section.get("operator_page_hint", "?")
             msg = f"start anchor not found for section {section_id!r} (operator_page_hint={hint})"
@@ -378,6 +513,27 @@ def materialize_passage_sections(
 
         content_start, content_end = span
         section_text = stream[content_start:content_end].strip()
+
+        # Contract override: same content_source path as document_extract / pdf-as-md.
+        cs = section.get("content_source")
+        if isinstance(cs, dict) and cs.get("skip_pdf_text", True):
+            from src.document_extract import content_source_plain_text
+
+            plain = content_source_plain_text(game, cs)
+            if plain:
+                section_text = plain
+                logger.info(
+                    "section_chunking: %s using content_source file (PDF text skipped)",
+                    section_id,
+                )
+            else:
+                msg = (
+                    f"content_source failed for section {section_id!r} — "
+                    "falling back to PDF text"
+                )
+                logger.warning("section_chunking: %s", msg)
+                stats["warnings"].append(msg)
+
         if not section_text:
             msg = f"empty section text for {section_id!r}"
             logger.warning("section_chunking: %s", msg)

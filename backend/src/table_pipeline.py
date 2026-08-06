@@ -15,7 +15,7 @@ from langchain_core.documents import Document
 
 from src.bundle_materialization import materialize_character_creation_bundles
 from src.hand_authored_tables import materialize_hand_authored_tables, skip_pdf_extract
-from src.ingest_manifest import _project_root, load_ingest_manifest
+from src.ingest_manifest import _project_root, load_ingest_manifest, spec_by_name
 from src.make_relationships import create_relation_between_chunks
 from src.pdf_table_parser import (
     _attach_table_to_chunk,
@@ -141,9 +141,99 @@ def run_lookup_table_pipeline(
     by_page = load_pdf_text_by_page(resolved)
     manifest = load_ingest_manifest(game)
 
+    # Same normalized stream + table resolve as document_extract / pdf-as-md.
+    # Lazy imports avoid section_chunking ↔ table_pipeline circular import.
+    from src.document_extract import resolve_tables_in_span
+    from src.ingest_manifest import load_passage_sections
+    from src.section_chunking import (
+        build_page_indexed_stream,
+        filter_page_texts,
+        page_at_offset,
+    )
+
+    try:
+        ps_contract = load_passage_sections(game)
+        text_filters = ps_contract.get("text_filters")
+        normalize_ws = (ps_contract.get("anchor_matching") or {}).get(
+            "normalize_whitespace", True
+        )
+    except Exception:
+        text_filters = None
+        normalize_ws = True
+    page_texts = filter_page_texts(
+        by_page, text_filters, normalize_whitespace=normalize_ws
+    )
+    stream, page_spans = build_page_indexed_stream(page_texts)
+    hits, resolve_warnings = resolve_tables_in_span(
+        stream, game=game, names_filter=table_names
+    )
+    stats["resolve_warnings"] = resolve_warnings
+    for w in resolve_warnings:
+        logger.warning("lookup table pipeline: %s", w)
+
     chunk_items: list[dict] = []
     materialized: set[str] = set()
 
+    for hit in hits:
+        name = hit.manifest_name
+        if name in materialized:
+            continue
+        page = page_at_offset(page_spans, hit.start)
+        if start_page is not None and page is not None and page < start_page:
+            continue
+        if end_page is not None and page is not None and page > end_page:
+            continue
+        spec = spec_by_name(manifest, name)
+        if not spec:
+            stats["pdf_tables_failed"] += 1
+            stats["failures"].append(f"{name}: not in manifest")
+            continue
+
+        table = hit.table
+        stats["pdf_tables_parsed"] += 1
+        source_format = "hand-authored" if hit.source == "hand_authored" else "pdf"
+        chunk_doc = Document(
+            page_content=stream[hit.start : hit.end],
+            metadata={
+                "page_number": page,
+                "source_format": source_format,
+                "table_title": table.get("title"),
+                "pdf_heading": table.get("pdf_heading"),
+            },
+        )
+        meta = chunk_doc.metadata
+        _attach_table_to_chunk(meta, chunk_doc, [table])
+        chunk_doc.metadata = meta
+
+        chunk_list = create_relation_between_chunks(graph, file_name, [chunk_doc])
+        if not chunk_list:
+            stats["pdf_tables_failed"] += 1
+            stats["failures"].append(f"{name}: no Document node for {file_name}")
+            continue
+
+        chunk_id = chunk_list[0]["chunk_id"]
+        chunk_items.append(
+            {"chunk_id": chunk_id, "chunk_doc": chunk_doc, **chunk_list[0]}
+        )
+
+        if materialize_lookup_table(
+            graph, chunk_id, table, spec, chunk_doc, file_name, scaffold_map
+        ):
+            materialized.add(name)
+            stats["pdf_tables_materialized"] += 1
+            logger.info(
+                "lookup table pipeline: %s materialized (%s rows, page≈%s, %s)",
+                name,
+                len(table.get("rows") or []),
+                page,
+                hit.note,
+            )
+        else:
+            stats["pdf_tables_failed"] += 1
+            stats["failures"].append(f"{name}: materialize_lookup_table returned false")
+
+    # Fallback: page-span PDF extract for verified tables not found by stream resolve
+    # (header/layout edge cases). Same extract_table_from_text as document_extract.
     for spec in _pdf_extractable_specs(
         manifest,
         table_names=table_names,
@@ -154,7 +244,7 @@ def run_lookup_table_pipeline(
         if name in materialized:
             continue
         span = page_span(spec)
-        merged_text = " ".join(by_page.get(p, "") for p in span)
+        merged_text = "\n".join(page_texts.get(p, "") for p in span)
         table = extract_table_from_text(
             merged_text,
             spec,
@@ -193,7 +283,7 @@ def run_lookup_table_pipeline(
             materialized.add(name)
             stats["pdf_tables_materialized"] += 1
             logger.info(
-                "lookup table pipeline: %s materialized (%s rows, pages %s)",
+                "lookup table pipeline: %s materialized via page-span fallback (%s rows, pages %s)",
                 name,
                 len(table.get("rows") or []),
                 span,
@@ -211,6 +301,7 @@ def run_lookup_table_pipeline(
             scaffold_map,
             game=game,
             table_name=table_names[0] if table_names and len(table_names) == 1 else None,
+            skip_names=materialized,
         )
         stats["hand_authored"] = ha_stats
 

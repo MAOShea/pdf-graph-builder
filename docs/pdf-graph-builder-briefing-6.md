@@ -56,8 +56,8 @@ Source of truth: `corpus/games/mork-borg/passage-sections.json` in AI-DM-Assista
 | `id` | yes | Stable id stored on graph nodes (`section_id`) |
 | `phase` | yes | Ingest phase gate (1 = ability-test spike) |
 | `title` | yes | Human label for logs / operator review |
-| `start_anchor` | yes | `{ "type": "heading_regex", "pattern": "..." }` — inclusive |
-| `end_anchor` | yes | Same shape — **exclusive** (section ends before this heading) |
+| `start_anchor` | yes | `heading_regex` + `pattern`, or `page_range` + `start_page`/`end_page` (inclusive whole pages) |
+| `end_anchor` | if heading | Same `heading_regex` shape — exclusive. Unused when `start_anchor.type` is `page_range` |
 | `links_to_seed_labels` | yes | Seed node labels for `CONFIRMS_SEED` / `DOCUMENTED_BY` wiring |
 | `extract_rule_passages` | no | Default true — emit `RulePassage` nodes inside section |
 | `passage_granularity` | no | `paragraph` (default) or `section` (single passage) |

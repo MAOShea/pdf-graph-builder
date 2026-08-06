@@ -10,6 +10,7 @@ Referenced from `ingest-manifest.json` via `hand_authored.file` or used by `bund
 | `corpse-plunder-d66.json` | Ingest-ready; `CorpsePlunderTable` |
 | `optional-classes.json` | Optional-class selector + bundle map |
 | `name-table.json` | `NameTable` — hand-authored (manifest `hand_authored.file`) |
+| `agony-end.json` | `AgonyEndTable` — label→die chooser on p.17 (not index-first) |
 | `traps-and-weather.json` | Reference copy; `TrapsTable` / `WeatherTable` materialize from PDF p.4 |
 | `occult-treasures.json` | Reference copy (5/10 rows); graph uses PDF parse (10 rows) |
 

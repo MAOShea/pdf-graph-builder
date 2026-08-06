@@ -164,12 +164,22 @@ def materialize_lookup_table(
     columns = column_names(spec)
     col_defs = spec.get("columns") or []
 
+    # id/name stay as stable technical key (TrapsTable); title/pdf_heading keep PDF wording.
+    display_title = (
+        str(table.get("title") or "").strip()
+        or str(spec.get("title") or "").strip()
+        or table_name
+    )
     table_props: dict[str, Any] = {
         "id": table_name,
         "name": table_name,
+        "title": display_title,
         "tier": 5,
         "source": file_name,
     }
+    pdf_heading = str(table.get("pdf_heading") or "").strip()
+    if pdf_heading:
+        table_props["pdf_heading"] = pdf_heading
     if page is not None:
         table_props["page"] = page
 
