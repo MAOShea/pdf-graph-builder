@@ -541,8 +541,16 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   uri_latency["create_list_chunk_and_document"] = f'{elapsed_get_chunkId_chunkDoc_list:.2f}'
   uri_latency["total_chunks"] = total_chunks
 
-  section_phase = getattr(params, "section_phase", None) or 1
+  raw_section_phase = getattr(params, "section_phase", None)
+  try:
+    section_phase = int(raw_section_phase) if raw_section_phase is not None else 1
+  except (TypeError, ValueError):
+    logging.warning("invalid section_phase %r — defaulting to 1", raw_section_phase)
+    section_phase = 1
+  if section_phase < 1:
+    section_phase = 1
   if getattr(params, "ingest_mode", None) == "scaffold-diff":
+    logging.info("section_phase=%s (materialize sections with phase <= this)", section_phase)
     section_stats = materialize_passage_sections(
       graph,
       params.file_name,

@@ -33,27 +33,64 @@ def _parse_table_json(raw: Any) -> dict | None:
     return None
 
 
-def _find_seed_id(scaffold_map: dict, label: str, graph=None) -> str | None:
+def _seed_label_exists(scaffold_map: dict, label: str, graph=None) -> bool:
+    """True if a SeedNode with this concept label exists.
+
+    Do **not** match on ``seed_id`` alone — bootstrap stores the *file* id
+    (e.g. ``mork-borg-deltas``) on every node from that file, so seed_id match
+    fans out USES / CONFIRMS_SEED to all siblings (Briefing 12).
+    """
     label_lower = label.lower()
     for entry in scaffold_map.get("seed_nodes", {}).values():
         if any(lbl.lower() == label_lower for lbl in entry.get("labels", [])):
-            return entry.get("seed_id")
+            return True
+        concept = str(entry.get("concept_label") or "").lower()
+        if concept == label_lower:
+            return True
     if graph is not None:
         try:
             rows = graph.query(
                 """
                 MATCH (n:SeedNode)
                 WHERE $label IN labels(n)
-                RETURN coalesce(n.seed_id, n.id, n.name) AS seed_id
+                RETURN 1 AS ok
                 LIMIT 1
                 """,
                 {"label": label},
             )
-            if rows:
-                return rows[0].get("seed_id")
+            return bool(rows)
         except Exception as e:
             logging.error("table materialization: seed lookup failed for %s: %s", label, e)
-    return None
+    return False
+
+
+def _merge_seed_rel_by_label(
+    graph,
+    *,
+    seed_label: str,
+    rel: str,
+    direction: str,
+    other_match: str,
+    other_params: dict[str, Any],
+) -> None:
+    """MERGE (seed)-[:REL]->(other) or reverse, matching seed by concept label only."""
+    if direction == "seed_to_other":
+        q = f"""
+            MATCH (seed:SeedNode)
+            WHERE $seed_label IN labels(seed)
+            {other_match}
+            MERGE (seed)-[:{rel}]->(other)
+            """
+    elif direction == "other_to_seed":
+        q = f"""
+            MATCH (seed:SeedNode)
+            WHERE $seed_label IN labels(seed)
+            {other_match}
+            MERGE (other)-[:{rel}]->(seed)
+            """
+    else:
+        raise ValueError(f"bad direction: {direction!r}")
+    graph.query(q, {"seed_label": seed_label, **other_params})
 
 
 def _row_cells(row: list[Any], columns: list[str]) -> dict[str, Any]:
@@ -149,9 +186,7 @@ def materialize_lookup_table(
     """Create one lookup table instance from manifest spec. Idempotent."""
     table_name = spec["name"]
     lookup_label = spec.get("instance_of", "LookupTable")
-    lookup_seed = _find_seed_id(scaffold_map, lookup_label, graph)
-
-    if not lookup_seed:
+    if not _seed_label_exists(scaffold_map, lookup_label, graph):
         logging.warning(
             "table materialization: %s seed not found — skipping %s",
             lookup_label,
@@ -189,8 +224,8 @@ def materialize_lookup_table(
             MERGE (t:IngestNode:{table_name} {{id: $table_id}})
             SET t += $props
             WITH t
-            MATCH (lt)
-            WHERE toLower(coalesce(lt.seed_id, lt.id, '')) = toLower($lookup_seed)
+            MATCH (lt:SeedNode)
+            WHERE $lookup_label IN labels(lt)
             MERGE (t)-[:INSTANCE_OF]->(lt)
             WITH t
             OPTIONAL MATCH (t)-[r:HAS_ENTRY]->(:TableEntry)
@@ -199,7 +234,7 @@ def materialize_lookup_table(
             {
                 "table_id": table_name,
                 "props": table_props,
-                "lookup_seed": lookup_seed,
+                "lookup_label": lookup_label,
             },
         )
 
@@ -249,31 +284,32 @@ def materialize_lookup_table(
             )
 
         applies_to = spec.get("applies_to")
-        if applies_to:
-            target_seed = _find_seed_id(scaffold_map, applies_to, graph)
-            if target_seed:
-                graph.query(
-                    f"""
-                    MATCH (t:{table_name} {{id: $table_id}})
-                    MATCH (target)
-                    WHERE toLower(coalesce(target.seed_id, target.id, '')) = toLower($target_seed)
-                    MERGE (t)-[:APPLIES_TO]->(target)
-                    """,
-                    {"table_id": table_name, "target_seed": target_seed},
-                )
+        if applies_to and _seed_label_exists(scaffold_map, applies_to, graph):
+            _merge_seed_rel_by_label(
+                graph,
+                seed_label=applies_to,
+                rel="APPLIES_TO",
+                direction="other_to_seed",
+                other_match=f"MATCH (other:{table_name} {{id: $table_id}})",
+                other_params={"table_id": table_name},
+            )
 
         for user_label in spec.get("used_by") or []:
-            user_seed = _find_seed_id(scaffold_map, user_label, graph)
-            if user_seed:
-                graph.query(
-                    f"""
-                    MATCH (t:{table_name} {{id: $table_id}})
-                    MATCH (user)
-                    WHERE toLower(coalesce(user.seed_id, user.id, '')) = toLower($user_seed)
-                    MERGE (user)-[:USES]->(t)
-                    """,
-                    {"table_id": table_name, "user_seed": user_seed},
+            if not _seed_label_exists(scaffold_map, user_label, graph):
+                logging.warning(
+                    "table materialization: used_by seed %r not found for %s",
+                    user_label,
+                    table_name,
                 )
+                continue
+            _merge_seed_rel_by_label(
+                graph,
+                seed_label=user_label,
+                rel="USES",
+                direction="seed_to_other",
+                other_match=f"MATCH (other:{table_name} {{id: $table_id}})",
+                other_params={"table_id": table_name},
+            )
 
         graph.query(
             f"""
@@ -288,14 +324,14 @@ def materialize_lookup_table(
             graph.query(
                 """
                 MATCH (c:Chunk {id: $chunk_id})
-                MATCH (lt)
-                WHERE toLower(coalesce(lt.seed_id, lt.id, '')) = toLower($lookup_seed)
+                MATCH (lt:SeedNode)
+                WHERE $lookup_label IN labels(lt)
                 MERGE (c)-[:CONFIRMS_SEED]->(lt)
                 SET lt.coverage = CASE lt.coverage
                     WHEN 'research-only' THEN 'ingest-confirmed'
                     ELSE lt.coverage END
                 """,
-                {"chunk_id": chunk_id, "lookup_seed": lookup_seed},
+                {"chunk_id": chunk_id, "lookup_label": lookup_label},
             )
 
         _validate_rows(table, spec)

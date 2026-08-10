@@ -7,7 +7,9 @@ Operational backlog for scaffold-diff ingest and lookup-table materialization. N
 ## Done (recent)
 
 - **Section-driven chunking** — `backend/src/section_chunking.py`, wired into scaffold-diff extract; contract `games/mork-borg/passage-sections.json` (see Briefing 6)
-- **Contract-owned passage boundaries** — RULES `sections[]` anchors + CREATURES `entity_passage.stop_before` in `passage-sections.json` (v0.4.0); Python matches only (Briefings 10–11). Prefer amending JSON after a PDF pass over hardcoding cuts in code.
+- **Contract-owned passage boundaries** — RULES + THE WORLD `sections[]` anchors, `text_filters`, `subheading_regex` / `passage_split`, `page_range`, `content_source`; CREATURES `entity_passage.stop_before` (v0.5.5). Python matches only (Briefings 6, 10–11). Prefer amending JSON after a PDF pass over hardcoding cuts in code.
+- **Shared extract + pdf-as-md** — `document_extract.py` + `tools/pdf-as-md` (Markdown sink, no Neo4j) for contract/PDF comparison
+- **AgonyEndTable** — hand-authored label→die chooser (p.17); ADA handoff-8 for `USES` / retrieval wiring
 - **Ingest coverage reporter** — `backend/check_coverage.py` / `.\check-coverage.ps1`
 - Unified lookup-table pipeline (`run_lookup_table_pipeline`)
 - Complete `--cleanup` on full PDF re-ingest (chunks + document)
@@ -16,14 +18,14 @@ Operational backlog for scaffold-diff ingest and lookup-table materialization. N
 
 ## Waiting on operator
 
-### PDF pass — review `passage-sections.json` (v0.4.0)
+### PDF pass — review `passage-sections.json` (v0.5.5)
 
-**Milestone:** Briefings 6–11 code paths are in place (section anchors, index/fiction, entity passages, contract-owned `stop_before`). **Next quality step is yours**, not further agent hardcoding.
+**Milestone:** Briefings 6–11 code paths are in place (section anchors incl. THE WORLD, `text_filters`, index/fiction, entity passages, contract-owned `stop_before`). **Next quality step is yours**, not further agent hardcoding.
 
-1. Open Bare Bones PDF alongside [`games/mork-borg/passage-sections.json`](../games/mork-borg/passage-sections.json).
-2. Check RULES `sections[]` `start_anchor` / `end_anchor` against real headings.
+1. Open Bare Bones PDF alongside [`games/mork-borg/passage-sections.json`](../games/mork-borg/passage-sections.json) and/or [`tools/pdf-as-md` output](../tools/pdf-as-md).
+2. Check RULES + THE WORLD `sections[]` `start_anchor` / `end_anchor` (incl. two-line titles, Western Kingdom pp.15–16, Kergüs / Ambivalence split).
 3. Check CREATURES blocks vs `entity_passage.stop_before` (and add `text_end_hint` on a `creatures_index` row if one creature still bleeds).
-4. Spot-check `entry_kind` on index rows.
+4. Spot-check `entry_kind` on index rows; confirm footers are stripped (`text_filters`).
 5. Use the field guide: [`games/mork-borg/README.md`](../games/mork-borg/README.md). When happy, bump `verified_note` / set `status: verified`, then re-ingest (or `--entity-passages-only` / section materialize for a targeted refresh).
 
 Until that pass lands, treat boundary regexes as a first-stab draft.
@@ -51,7 +53,8 @@ Terminal ingest and web UI must use the **same** `/extract` scaffold-diff path �
 **Follow-ups:**
 
 - Document or demote `materialize-*` scripts explicitly as **dev-only / recovery** (not operator workflow).
-- Expose **`section_phase`** on full ingest (`ingest_pdf.py` / `/extract`) so full runs are not stuck at phase 1 by default.
+
+**Done (ops):** `section_phase` is on `POST /extract` + `ingest_pdf.py` / `.\ingest-morkborg.ps1 -SectionPhase` (CLI default **2** so THE WORLD sections land; backend omits → still 1).
 
 ---
 

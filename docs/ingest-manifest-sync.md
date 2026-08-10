@@ -1,62 +1,77 @@
-# Ingest manifest sync — AI-DM-Assistant → pdf-graph-builder
+# Ingest contract sync — AI-DM-Assistant ↔ pdf-graph-builder
 
-Tier-5 **materialization contracts** live in `corpus/games/<game>/ingest-manifest.json`. They are separate from Tier-4 seeds (`deltas.json`) and are **not** read by bootstrap.
+Tier-5 **materialization contracts** are separate from Tier-4 seeds (`deltas.json`) and are **not** read by bootstrap. The runtime assistant discovers what exists by querying Neo4j after ingest — it does not read these files at chat time.
 
-The runtime assistant discovers what exists by querying Neo4j after ingest — it does not read this file.
+---
+
+## Authorship = source of truth
+
+**Rule:** The project where a file is **authored** owns the SoT. The other project may keep a **copy** (mirror). Do not call the mirror “SoT” just because it lives under `corpus/`.
+
+| File | Authored in (SoT) | Other repo | Sync after authoring |
+|---|---|---|---|
+| `deltas.json` / seed stack | **ADA** | pgb may read/copy if needed | Stay in ADA; bootstrap here |
+| `passage-sections.json` | **pgb** | ADA `corpus/…` **mirror** | `sync-passage-sections-from-pgb.ps1` (pgb → ADA only) |
+| `ingest-manifest.json` | **pgb** | ADA `corpus/…` **mirror** | `sync-ingest-contracts-from-pgb.ps1` (pgb → ADA only) |
+| `hand-authored-overrides/*.json` | **pgb** | ADA mirror | Same as ingest-manifest (pgb → ADA) |
+| Outbox briefings | **ADA** | pgb `docs/` copy | `sync-outbox-briefings.ps1` |
+| Inbox handoffs | **pgb** | ADA `docs/inbox/` copy | Manual copy into inbox |
+
+**There is no script that pushes `ingest-manifest.json` (or hand-authored overrides) from ADA → pgb.** Edit the SoT in pdf-graph-builder; promote the mirror here. If an ADA agent notes a needed manifest change, put it in an **outbox briefing** for pgb — do not edit the ADA mirror as if it were SoT (or expect a reverse sync).
+
+**Tables in chat CONTEXT:** declare `used_by` on SoT manifest rows + Tier-4 `(Seed)-[:USES]->(:LookupTable)`. Runtime matches table names/pages in the KG — avoid synonym lists in `retrieval_hints.py`.
 
 ---
 
 ## What lives where
 
-| File | Repo | Tier | Read by |
+| File | SoT repo | Mirror | Read by |
 |---|---|---|---|
-| `deltas.json` | AI-DM-Assistant | 4 — ontology | `bootstrap.py` |
-| `ingest-manifest.json` | AI-DM-Assistant (source of truth) | 5 — contract | Operator; copied to pdf-graph-builder |
-| `passage-sections.json` | AI-DM-Assistant (source of truth) | 5 — contract | Operator; copied to pdf-graph-builder |
-| `games/<game>/ingest-manifest.json` | pdf-graph-builder (runtime copy) | 5 — contract | Ingest pipeline (`table_materialization.py`, etc.) |
-| `games/<game>/passage-sections.json` | pdf-graph-builder (runtime copy) | 5 — contract | Section anchors + `index_source` + `entity_passage` end rules |
+| `deltas.json` | ADA | — | `bootstrap.py` |
+| `passage-sections.json` | pgb `games/<game>/` | ADA `corpus/games/<game>/` | pgb section / entity materializers |
+| `ingest-manifest.json` | pgb `games/<game>/` | ADA `corpus/games/<game>/` | pgb ingest; ADA agents/docs (mirror) |
+| `hand-authored-overrides/*` | pgb | ADA | pgb table materialization |
 
 ---
 
-## How to sync to pdf-graph-builder
+## How to sync
 
-### Option A — Sync scripts (recommended)
+### After a pgb session that edited `passage-sections.json`
 
-When outbox briefings or ingest manifest change:
+```powershell
+# From AI-DM-Assistant repo root
+.\scripts\sync-passage-sections-from-pgb.ps1
+# Preview only:
+.\scripts\sync-passage-sections-from-pgb.ps1 -WhatIf
+```
+
+### After a pgb session that edited `ingest-manifest.json` / hand-authored overrides
+
+```powershell
+.\scripts\sync-ingest-contracts-from-pgb.ps1
+# or: .\scripts\sync-ingest-manifest.ps1   # delegates to the same from-pgb script
+```
+
+### Briefings (ADA → pgb docs only — not contracts)
 
 ```powershell
 .\scripts\sync-outbox-briefings.ps1
-.\scripts\sync-ingest-manifest.ps1
 ```
 
-Defaults: target `d:\GitHub\pdf-graph-builder`. Override with `-PdfGraphBuilderRoot` if needed.
+### Agent paste
 
-**Note:** pdf-graph-builder may carry a **longer** `ingest-manifest.json` than this repo (extra `lookup_tables` / `pdf_extract` blocks added during ingest work). A full copy **overwrites** those extensions. When pgb is ahead, merge new top-level blocks (e.g. `rulebook_index`) by hand or patch-only sync — do not blind-copy the shorter AI-DM-Assistant file over pgb's full manifest.
-
-### Option B — Manual copy (manifest only)
-
-```powershell
-Copy-Item `
-  "d:\GitHub\AI-DM-Assistant\corpus\games\mork-borg\ingest-manifest.json" `
-  "d:\GitHub\pdf-graph-builder\games\mork-borg\ingest-manifest.json"
-```
-
-Create `games/mork-borg/` in pdf-graph-builder if it does not exist yet.
-
-### Option C — Agent paste only
-
-Paste [pdf-graph-builder-briefing-3.md](./pdf-graph-builder-briefing-3.md) into a pdf-graph-builder session when implementing ingest code. Use sync scripts when files have changed.
+Paste outbox briefings into a pdf-graph-builder session when implementing ingest code. Use the **from-pgb** scripts when pgb files have changed.
 
 ---
 
-## What pdf-graph-builder should do with it
+## What pdf-graph-builder should do with the contracts
 
-1. **Load** `games/mork-borg/ingest-manifest.json` at ingest startup (replace hardcoded constants in `table_materialization.py`).
-2. **Load** `games/mork-borg/passage-sections.json` for heading-anchor chunking **and** entity-passage end rules — field guide [games/mork-borg/README.md](../games/mork-borg/README.md); briefings 6 / 10–11. Boundaries stay in the JSON (`sections[]` anchors, `entity_passage.stop_before`); Python only matches.
-3. **Materialize** p.75 index from `index_source` — see [pdf-graph-builder-briefing-7.md](./pdf-graph-builder-briefing-7.md) and manifest `rulebook_index` block.
+1. **Load** `games/mork-borg/ingest-manifest.json` at ingest startup.
+2. **Load** `games/mork-borg/passage-sections.json` for heading-anchor chunking **and** entity-passage end rules — see [pdf-graph-builder-briefing-6.md](./pdf-graph-builder-briefing-6.md) / Briefings 10–11. Boundaries stay in the JSON; Python only matches.
+3. **Materialize** p.75 index from `index_source` — see [pdf-graph-builder-briefing-7.md](./pdf-graph-builder-briefing-7.md).
 4. **Match** parsed `Chunk.table_json` against manifest `columns` and shape heuristics.
-5. **Materialize** `:IngestNode` table instances per briefing-3 / manifest `lookup_tables` entries.
-6. **Validate** extracted rows against `acceptance_rows` (operator-verified reference) — log mismatch, do not trust manifest text over PDF extraction.
+5. **Materialize** `:IngestNode` table instances per briefing-3 / manifest `lookup_tables`.
+6. **Validate** extracted rows against `acceptance_rows` — log mismatch, do not trust manifest text over PDF extraction.
 
 ### Flat lookup tables — one handler, role-based columns
 
@@ -64,27 +79,14 @@ Do **not** create per-die handlers (`d6_result`, `d8_result`, …). One material
 
 | Manifest field | Purpose |
 |---|---|
-| `name` | Stable technical id (e.g. `TrapsTable`) — graph node `id` / `name` |
-| `title` | Optional human/PDF title override. If omitted, extract uses the **matched PDF heading** (e.g. `Traps and Devilry (d12)`) so wording stays consistent with the book |
 | `columns[].role: index` | Lookup key column (name may be `DR`, `d6`, `d66`, …) |
 | `columns[].role: result` | Outcome text column |
-| `pdf_extract.index` | How to enumerate index keys for PDF parsing (`dr_set`, `d6`, `d8`, sparse ranges, …) |
+| `pdf_extract.index` | How to enumerate index keys for PDF parsing |
 | `pdf_extract.header_patterns` | Where the table starts in chunk text |
-
-Graph nodes store `title` (+ `pdf_heading` when from PDF). Do not rename `name` to match book wording — keep ids stable.
-
-Phase 1 only needs `DRTable` `pdf_extract`. Phase 2 optional-class nested tables reuse the same handler; `parent_bundle` is graph wiring after materialize.
 
 ---
 
-## Mörk Borg — current contract
+## Mörk Borg — current contract pointers
 
-Source: [corpus/games/mork-borg/ingest-manifest.json](../corpus/games/mork-borg/ingest-manifest.json)
-
-Phase 1: `DRTable` on p.28 — 2 columns, 7 acceptance rows, links to `LookupTable`, `DR`, `AbilityTest`.
-
-Phase 1 sections: [passage-sections.json](../../corpus/games/mork-borg/passage-sections.json) v0.4.0 — `abilities`, `tests-and-dr`, `carrying-capacity`, `hit-points-and-broken` (heading anchors).
-
-Rulebook catalog: same file → `index_source` (p.75) — `rules_index` (41), `world_index` (28), `creatures_index` (12). Materialize per briefing-7.
-
-Entity passages: same file → `entity_passage.end_detection.stop_before` (bounty/loot line regexes). Operator PDF pass can amend patterns or add per-row `text_end_hint` on `creatures_index`.
+- Manifest (mirror): [corpus/games/mork-borg/ingest-manifest.json](../../corpus/games/mork-borg/ingest-manifest.json) — SoT in pgb `games/mork-borg/`
+- Passage sections (mirror): [corpus/games/mork-borg/passage-sections.json](../../corpus/games/mork-borg/passage-sections.json) — promote from pgb with `sync-passage-sections-from-pgb.ps1`

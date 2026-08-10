@@ -1,12 +1,14 @@
 # Mörk Borg ingest contracts
 
-Tier-5 materialization contracts for this game. Source of truth for these files is AI-DM-Assistant `corpus/games/mork-borg/`; sync with `scripts/sync-ingest-manifest.ps1` (see [docs/ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md)).
+Tier-5 materialization contracts for this game. Sync policy: [docs/ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md).
 
-| File | Role |
-|---|---|
-| [`ingest-manifest.json`](./ingest-manifest.json) | Lookup tables, `pdf_extract`, bundles, `passage_sections.file`, `rulebook_index` |
-| [`passage-sections.json`](./passage-sections.json) | Section anchors, p.75 index catalog, entity-passage end rules |
-| [`hand-authored-overrides/`](./hand-authored-overrides/) | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
+| File | Source of truth | Role |
+|---|---|---|
+| [`passage-sections.json`](./passage-sections.json) | **This repo** (`games/mork-borg/`) | Section anchors, `text_filters`, p.75 index, entity-passage end rules |
+| [`ingest-manifest.json`](./ingest-manifest.json) | AI-DM-Assistant `corpus/games/mork-borg/` (runtime copy here) | Lookup tables, `pdf_extract`, bundles, pointers |
+| [`hand-authored-overrides/`](./hand-authored-overrides/) | This repo (with ADA mirrors as needed) | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
+
+Edit **`passage-sections.json` here**; copy **pgb → ADA** when ADA needs a mirror. Do not overwrite this file from an older ADA copy.
 
 **Design:** passage/table **boundaries live in JSON**, not hardcoded in Python. Amend the contract after a PDF pass; re-run ingest or the relevant materializer.
 
@@ -88,10 +90,14 @@ Graph column enums use underscores: `THE_WORLD`, `CREATURES`, `RULES`.
 | `index_title` | no | Exact RULES index label → `IndexEntry` link |
 | `operator_page_hint` | no | Verification only — **not** used for boundary detection |
 | `extract_rule_passages` | no | Default true |
-| `passage_granularity` | no | `paragraph` (default) or `section` |
+| `passage_granularity` | no | `paragraph` (default), `section`, or `subheading_regex` |
+| `passage_split` | if `subheading_regex` | `{ "type": "heading_regex", "pattern": "..." }` — each match starts a passage (inclusive); preamble before first match kept |
+| `column` | no | Index column hint (`THE_WORLD`, `RULES`, …) for operator/tools |
 | `contains_lookup_tables` | no | **Override allowlist** — if set, only try these manifest tables on this span. Default (omit): auto-detect any verified `pdf_extract` table |
 | `content_source` | no | **Override** when PDF text cannot represent the span (see below) |
 | `notes` | no | Operator comments |
+
+**THE WORLD place blocks (v0.5.5):** gothic titles are ordinary `heading_regex` sections on the concatenated stream (so “The Western Kingdom” may start on p.15 and end on p.16). Two-line titles use `\\n` in the pattern (`What Was Written` / `Must Be Known`, `Valley of the` / `Unfortunate Undead`). Nested smaller heads use `passage_granularity: subheading_regex` (Roman I–IV under What Was Written; `Anthelia’s Ambivalence` under Kergüs).
 
 Match against **PDF text on disk**, not Neo4j chunk text.
 
@@ -140,7 +146,7 @@ After editing: re-run full ingest, or recovery
 3. Confirm creature blocks stop before bounty lines; amend `stop_before` or add `text_end_hint` if a label is missing.
 4. Confirm `entry_kind` on index rows (wrong kind → wrong `INSTANCE_OF` seed).
 5. Bump `version` / `verified_note` when you change boundaries; set `status: verified` when happy.
-6. Sync ADA ↔ pgb if you edit the SoT copy.
+6. After edits here, copy `passage-sections.json` **pgb → ADA** corpus mirror when ADA should stay aligned (see [ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md)).
 
 **Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Do not add parse logic in the tool.
 

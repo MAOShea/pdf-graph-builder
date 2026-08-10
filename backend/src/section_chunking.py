@@ -199,12 +199,44 @@ def resolve_section_span(
     return content_start, content_start + end_m.start()
 
 
-def split_passages(text: str, granularity: str) -> list[str]:
+def split_passages(
+    text: str,
+    granularity: str,
+    *,
+    split_pattern: str | None = None,
+    flags: int = re.MULTILINE | re.IGNORECASE,
+) -> list[str]:
+    """Split section body into passages.
+
+    Granularity:
+    - ``section`` — one passage (whole body)
+    - ``paragraph`` — blank-line paragraphs (default)
+    - ``subheading_regex`` — contract ``passage_split.pattern``; each match starts a
+      passage (inclusive). Text before the first match is kept as its own passage
+      when non-empty (e.g. Kergüs body before ``Anthelia's Ambivalence``).
+    """
     text = text.strip()
     if not text:
         return []
     if granularity == "section":
         return [text]
+    if granularity == "subheading_regex":
+        if not split_pattern:
+            return [text]
+        matches = list(re.finditer(split_pattern, text, flags=flags))
+        if not matches:
+            return [text]
+        parts: list[str] = []
+        if matches[0].start() > 0:
+            pre = text[: matches[0].start()].strip()
+            if pre:
+                parts.append(pre)
+        for i, match in enumerate(matches):
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            chunk = text[match.start() : end].strip()
+            if chunk:
+                parts.append(chunk)
+        return parts or [text]
     parts = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if parts:
         return parts
@@ -569,8 +601,17 @@ def materialize_passage_sections(
 
         if section.get("extract_rule_passages", True):
             granularity = section.get("passage_granularity", "paragraph")
+            split_cfg = section.get("passage_split") or {}
+            split_pat = split_cfg.get("pattern") if granularity == "subheading_regex" else None
             seed_labels = section.get("links_to_seed_labels") or []
-            for i, para in enumerate(split_passages(section_text, granularity)):
+            for i, para in enumerate(
+                split_passages(
+                    section_text,
+                    granularity,
+                    split_pattern=split_pat,
+                    flags=_regex_flags(anchor_matching),
+                )
+            ):
                 para_offset = content_start + section_text.find(para)
                 page_num = page_at_offset(spans, para_offset)
                 _, seed_links = _merge_rule_passage(

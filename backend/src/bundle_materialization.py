@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from src.ingest_manifest import _project_root, load_ingest_manifest, spec_by_name
-from src.table_materialization import _find_seed_id, _row_index_key
+from src.table_materialization import _row_index_key, _seed_label_exists
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ def _merge_bundle_node(
     graph,
     bundle: dict[str, Any],
     file_name: str,
-    instance_of_seed: str,
+    instance_of_label: str,
 ) -> None:
     bundle_id = bundle["id"]
     labels = ["IngestNode", "OptionalClass", "SelectableBundle", bundle_id]
@@ -133,13 +133,13 @@ def _merge_bundle_node(
         SET bundle += $props
         WITH bundle
         MATCH (seed:SeedNode)
-        WHERE toLower(coalesce(seed.seed_id, seed.id, seed.name, '')) = toLower($instance_of_seed)
+        WHERE $instance_of_label IN labels(seed)
         MERGE (bundle)-[:INSTANCE_OF]->(seed)
         """,
         {
             "bundle_id": bundle_id,
             "props": props,
-            "instance_of_seed": instance_of_seed,
+            "instance_of_label": instance_of_label,
         },
     )
 
@@ -235,8 +235,7 @@ def apply_bundle_wiring_plan(
 
     mat_cfg = cc_config.get("materialization") or {}
     instance_of_label = mat_cfg.get("bundle_instance_of", "OptionalClass")
-    instance_of_seed = _find_seed_id(scaffold_map, instance_of_label, graph)
-    if not instance_of_seed:
+    if not _seed_label_exists(scaffold_map, instance_of_label, graph):
         plan.warnings.append(f"bundle seed not found: {instance_of_label}")
         stats["warnings"] = len(plan.warnings)
         logger.warning(
@@ -245,7 +244,7 @@ def apply_bundle_wiring_plan(
         )
     else:
         for bundle in plan.bundles:
-            _merge_bundle_node(graph, bundle, file_name, instance_of_seed)
+            _merge_bundle_node(graph, bundle, file_name, instance_of_label)
             stats["bundles_created"] += 1
 
     if plan.character_creation_uses_selector:

@@ -272,11 +272,14 @@ curl -X POST http://localhost:8000/extract \
   -F "source_type=local file" \
   -F "model=ollama_llama3" \
   -F "ingest_mode=scaffold-diff" \
+  -F "section_phase=2" \
   -F "uri=bolt://localhost:7687" \
   -F "userName=neo4j" \
   -F "password=<password>" \
   -F "database=morkborg"
 ```
+
+`section_phase` (optional): max `passage-sections.json` phase to materialize / send to LLM. Omit → backend default **1**. CLI wrappers default to **2** (THE WORLD).
 
 The backend will:
 
@@ -338,6 +341,8 @@ Scaffold-diff ingest runs **two pipelines**. They are not interchangeable.
 ```powershell
 .\ingest-tables.ps1
 # or full ingest (tables + LLM):
+.\ingest-morkborg.ps1                  # section_phase default 2 (RULES + THE WORLD)
+.\ingest-pdf.ps1 -SectionPhase 2       # same flag on the generic wrapper
 .\ingest-pdf.ps1 -StartPage 23 -EndPage 23
 ```
 

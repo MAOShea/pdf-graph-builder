@@ -1,16 +1,18 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "status": "draft",
-  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream.",
+  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-04",
-  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. Operator PDF pass welcome to amend.",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. Operator PDF pass welcome to amend.",
   "handoff": {
-    "target_repo": "pdf-graph-builder",
-    "target_path": "games/mork-borg/passage-sections.json",
-    "sync": "Copy with ingest-manifest via scripts/sync-ingest-manifest.ps1. See docs/outbox/ingest-manifest-sync.md."
+    "source_of_truth": "pdf-graph-builder",
+    "path": "games/mork-borg/passage-sections.json",
+    "mirror_repo": "AI-DM-Assistant",
+    "mirror_path": "corpus/games/mork-borg/passage-sections.json",
+    "sync": "SoT is pdf-graph-builder. After edits here, copy pgb → ADA mirror. Do not overwrite this file from ADA. See docs/ingest-manifest-sync.md. ingest-manifest.json remains ADA SoT (ADA → pgb)."
   },
   "text_filters": {
     "notes": "Running header/footer on Bare Bones pages. Applied per page in the shared extract path (document_extract / section_chunking / table pipeline). Not table-specific — lives here, not ingest-manifest.",
@@ -533,6 +535,191 @@
       "links_to_seed_labels": [],
       "extract_rule_passages": false,
       "notes": "Whole pages 6–7 (Colophon, credits, 'Music that helped', etc.) — not rules/lore. page_range bounds; end_anchor unused."
+    },
+    {
+      "id": "what-was-written",
+      "phase": 2,
+      "title": "What Was Written Must Be Known",
+      "column": "THE_WORLD",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*What Was Written\\s*\\n\\s*Must Be Known\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Galgenbeck\\s*$"
+      },
+      "operator_page_hint": "10-11",
+      "links_to_seed_labels": [
+        "WorldLore",
+        "Faction"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*[IVXLCDM]+\\s*$",
+        "notes": "Roman numeral subsections I–IV (Bare Bones cosmology)."
+      },
+      "notes": "Title is two PDF lines. Body spans pp.10–11; stream match (not page-local). Subheads I–IV via passage_split."
+    },
+    {
+      "id": "galgenbeck",
+      "phase": 2,
+      "title": "Galgenbeck",
+      "column": "THE_WORLD",
+      "index_title": "Galgenbeck",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Galgenbeck\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Sarkash\\s*$"
+      },
+      "operator_page_hint": "12",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section",
+      "notes": "Gothic place title. Ends before Sarkash (bridge line 'In Tveland also lies' stays in this span)."
+    },
+    {
+      "id": "sarkash",
+      "phase": 2,
+      "title": "Sarkash",
+      "column": "THE_WORLD",
+      "index_title": "Sarkash",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Sarkash\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Palace of the Shadow King\\s*$"
+      },
+      "operator_page_hint": "12-13",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section",
+      "notes": "Includes Graven-Tosk mention and the bridge sentence into the Palace title."
+    },
+    {
+      "id": "palace-of-the-shadow-king",
+      "phase": 2,
+      "title": "Palace of the Shadow King",
+      "column": "THE_WORLD",
+      "index_title": "Shadow King's Palace, the",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Palace of the Shadow King\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Grift\\s*$"
+      },
+      "operator_page_hint": "13",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section",
+      "notes": "Index label differs from PDF heading (Shadow King's Palace, the)."
+    },
+    {
+      "id": "grift",
+      "phase": 2,
+      "title": "Grift",
+      "column": "THE_WORLD",
+      "index_title": "Grift",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Grift\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Kerg[üu]s\\s*$"
+      },
+      "operator_page_hint": "14",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section"
+    },
+    {
+      "id": "kergus",
+      "phase": 2,
+      "title": "Kergüs",
+      "column": "THE_WORLD",
+      "index_title": "Kergüs",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Kerg[üu]s\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*The Western Kingdom\\s*$"
+      },
+      "operator_page_hint": "15",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Anthelia[''\u2019]s\\s+Ambivalence\\s*$",
+        "notes": "Smaller non-gothic subhead inside Kergüs (not a sibling place block)."
+      },
+      "notes": "Two passages: Kergüs body, then Anthelia's Ambivalence subsection."
+    },
+    {
+      "id": "western-kingdom",
+      "phase": 2,
+      "title": "The Western Kingdom",
+      "column": "THE_WORLD",
+      "index_title": "Western Kingdom, the",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*The Western Kingdom\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Valley of the\\s*\\n\\s*Unfortunate Undead\\s*$"
+      },
+      "operator_page_hint": "15-16",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section",
+      "notes": "Heading on p.15; body continues onto p.16. Resolved on the concatenated page stream — no page_range needed."
+    },
+    {
+      "id": "valley-of-the-unfortunate-undead",
+      "phase": 2,
+      "title": "Valley of the Unfortunate Undead",
+      "column": "THE_WORLD",
+      "index_title": "Valley of the Unfortunate Undead",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Valley of the\\s*\\n\\s*Unfortunate Undead\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*The Calendar of Nechrubel\\s*$"
+      },
+      "operator_page_hint": "16",
+      "links_to_seed_labels": [
+        "Place"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "section",
+      "notes": "Title is two PDF lines."
     },
     {
       "id": "character-creation",

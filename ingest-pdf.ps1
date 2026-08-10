@@ -3,6 +3,7 @@
 #
 # Examples:
 #   .\ingest-pdf.ps1
+#   .\ingest-pdf.ps1 -SectionPhase 2
 #   .\ingest-pdf.ps1 -StartPage 27 -EndPage 31
 #   .\ingest-pdf.ps1 -PdfPath .\mork-borg.pdf -AdditionalInstructions "Extract RulePassage nodes..."
 
@@ -10,6 +11,7 @@ param(
     [string]$PdfPath = "$PSScriptRoot\mork-borg.pdf",
     [int]$StartPage = 0,
     [int]$EndPage = 0,
+    [int]$SectionPhase = 2,
     [string]$BackendUrl = "http://localhost:8000",
     [string]$Model = "ollama_llama3",
     [string]$IngestMode = "scaffold-diff",
@@ -26,7 +28,8 @@ $args = @(
     $PdfPath,
     "--backend-url", $BackendUrl,
     "--model", $Model,
-    "--ingest-mode", $IngestMode
+    "--ingest-mode", $IngestMode,
+    "--section-phase", $SectionPhase
 )
 if ($Cleanup) { $args += "--cleanup" }
 if ($StartPage -gt 0) { $args += @("--start-page", $StartPage) }

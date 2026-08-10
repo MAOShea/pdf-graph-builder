@@ -662,7 +662,9 @@ class graphDBdataAccess:
 
         Returns a dict with three keys:
             scaffold_labels  – set of distinct node labels carried by scaffold nodes
-            seed_nodes       – {lower(seed_id): {"seed_id": str, "labels": list, "coverage": str}}
+            seed_nodes       – keyed by lower(concept label) and lower(name);
+                               each entry has concept_label (unique match key).
+                               ``seed_id`` is file provenance only — do not MATCH on it alone.
             scaffold_rel_types – set of relationship type names present between scaffold nodes
         """
         logging.info("scaffold-diff: fetching scaffold node map from Neo4j")
@@ -671,7 +673,7 @@ class graphDBdataAccess:
             WHERE n.tier IS NOT NULL OR n.seed_id IS NOT NULL
             RETURN labels(n) AS labels,
                    coalesce(n.seed_id, n.id, elementId(n)) AS seed_id,
-                   coalesce(n.name, n.seed_id, n.id) AS display_id,
+                   coalesce(n.name, n.id) AS display_id,
                    coalesce(n.coverage, 'research-only') AS coverage
         """
         rel_query = """
@@ -697,16 +699,25 @@ class graphDBdataAccess:
         for row in node_rows:
             raw_labels = [lbl for lbl in (row.get("labels") or []) if lbl not in system_labels]
             seed_id = str(row.get("seed_id") or "").strip()
-            display_id = str(row.get("display_id") or seed_id).strip()
+            display_id = str(row.get("display_id") or "").strip()
             coverage = str(row.get("coverage") or "research-only")
-            if not seed_id:
+            if not raw_labels and not seed_id:
                 continue
+            # Prefer a single primary concept label (first non-system label).
+            concept_label = raw_labels[0] if raw_labels else (display_id or seed_id)
             entry = {
                 "seed_id": seed_id,
+                "concept_label": concept_label,
                 "labels": raw_labels,
                 "coverage": coverage,
             }
-            for key in {display_id.lower(), seed_id.lower()}:
+            keys = {concept_label.lower()}
+            for lbl in raw_labels:
+                keys.add(lbl.lower())
+            if display_id:
+                keys.add(display_id.lower())
+            # Do NOT key solely by shared file-level seed_id (mork-borg-deltas, …).
+            for key in keys:
                 if key:
                     seed_nodes[key] = entry
             scaffold_labels.update(raw_labels)

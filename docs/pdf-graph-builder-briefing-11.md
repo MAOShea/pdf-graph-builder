@@ -50,15 +50,20 @@ Same quality bar applies when you later add THE_WORLD entity passages: place blo
 
 ## Required approach
 
-**Design direction (required):** put end markers in `passage-sections.json` → `entity_passage.end_detection.stop_before` (same spirit as `sections[].end_anchor` and table `pdf_extract.stop_before`). Python only compiles/matches. Do **not** leave bounty vocabulary hardcoded in the materializer.
+Improve **deterministic** end detection in `entity_passage_materialization.py` (preferred), and/or operator contract hints if the layout is ambiguous.
 
 Suggested end markers (combine; first match wins after start):
 
-1. **Next creature heading** — e.g. `Bent, Scum`, next `IndexEntry` title on page.
-2. **`entity_passage.stop_before`** — whole-line regexes for trailing loot / bounty tallies (`Head …s`, `Captured …s`, `Dead …s`, reversed `200s Captured`, …). Exclusive cut.
-3. Optional per-row override: `text_end_hint` on a `creatures_index` entry when shared patterns fail.
+1. **Next creature heading** (already implemented) — e.g. `Bent, Scum`, next `IndexEntry` title on page.
+2. **Trailing loot / bounty line patterns** — lines that look like silver/reward tallies, not HP/Morale/Special, e.g.:
+   - `Head \d+s`
+   - `Captured \d+s`
+   - `Dead \d+s`
+   - Similar `…\d+s` bounty rows used on MB creature pages  
+   End the passage **before** the first such line (exclusive).
+3. Optional contract override: `text_end_hint` / exclusive end regex per entry in an `entity-passages` contract (briefing-10 already sketched this) when heuristics fail.
 
-Operator PDF pass can amend the JSON; re-run materialization **idempotently** (overwrite passage `text` for existing ids).
+Document the chosen rules in code comments + handoff. Re-run materialization **idempotently** (overwrite passage `text` for existing ids).
 
 **Do not** leave acceptance as “has_scoped = true” alone — that already passed while bounty lines remained.
 

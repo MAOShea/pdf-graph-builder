@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 from langchain_core.documents import Document
@@ -124,6 +125,76 @@ def test_load_page_texts_prefers_pdf_over_langchain_pages():
         )
     load_pdf.assert_called_once()
     assert result == {27: "Abilities"}
+
+
+def test_split_passages_subheading_regex_keeps_preamble():
+    body = (
+        "Desolation rolls over Kergüs.\n"
+        "Anthelia’s Ambivalence\n"
+        "Anthelia is well aware time is short.\n"
+    )
+    parts = split_passages(
+        body,
+        "subheading_regex",
+        split_pattern=r"^Anthelia[''\u2019]s\s+Ambivalence\s*$",
+    )
+    assert len(parts) == 2
+    assert parts[0].startswith("Desolation")
+    assert "Ambivalence" in parts[1]
+    assert "time is short" in parts[1]
+
+
+def test_split_passages_roman_subheadings():
+    body = "I\nFirst block.\nII\nSecond block.\nIII\nThird.\nIV\nFourth.\n"
+    parts = split_passages(
+        body, "subheading_regex", split_pattern=r"^\s*[IVXLCDM]+\s*$"
+    )
+    assert len(parts) == 4
+    assert parts[0].startswith("I")
+    assert parts[3].startswith("IV")
+
+
+def test_resolve_world_sections_from_contract_stream():
+    """THE WORLD gothic titles + cross-page Western Kingdom on real PDF extract."""
+    from src.document_extract import load_document_extract
+
+    ex = load_document_extract("mork-borg.pdf", game="mork-borg")
+    by_id = {rs.section["id"]: rs for rs in ex.sections}
+    for sid in (
+        "what-was-written",
+        "galgenbeck",
+        "sarkash",
+        "palace-of-the-shadow-king",
+        "grift",
+        "kergus",
+        "western-kingdom",
+        "valley-of-the-unfortunate-undead",
+    ):
+        assert sid in by_id, f"missing section {sid}; warnings={ex.warnings}"
+
+    www = by_id["what-was-written"]
+    www_text = ex.stream[www.content_start : www.content_end]
+    assert re.search(r"^\s*I\s*$", www_text, re.M)
+    assert re.search(r"^\s*IV\s*$", www_text, re.M)
+    # Body may mention Galgenbeck; the place heading must not be inside the span.
+    assert not re.search(r"^\s*Galgenbeck\s*$", www_text, re.M)
+
+    wk = by_id["western-kingdom"]
+    assert wk.page_start == 15
+    assert wk.page_end == 16
+    wk_text = ex.stream[wk.content_start : wk.content_end]
+    assert "Wästland" in wk_text or "Wastland" in wk_text or "stland" in wk_text
+    assert not re.search(r"^\s*Valley of the\s*$", wk_text, re.M)
+
+    kergus = by_id["kergus"]
+    k_text = ex.stream[kergus.content_start : kergus.content_end]
+    parts = split_passages(
+        k_text,
+        "subheading_regex",
+        split_pattern=by_id["kergus"].section["passage_split"]["pattern"],
+    )
+    assert len(parts) == 2
+    assert "Ambivalence" in parts[1]
 
 
 def test_apply_text_filters_strips_bare_bones_footer():

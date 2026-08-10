@@ -317,33 +317,47 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
                 continue
 
             if node_id_lower in seed_nodes:
-                # Exact seed match — CONFIRMS_SEED + coverage upgrade + DOCUMENTED_BY per chunk
-                seed_id = seed_nodes[node_id_lower]["seed_id"]
-                logging.info(f"scaffold-diff: CONFIRMS_SEED for seed '{seed_id}'")
+                # Exact seed match — CONFIRMS_SEED + DOCUMENTED_BY per chunk.
+                # Match by concept label only (Briefing 12): seed_id is file provenance
+                # shared by all nodes from the same bootstrap file.
+                entry = seed_nodes[node_id_lower]
+                concept_label = str(
+                    entry.get("concept_label")
+                    or next(iter(entry.get("labels") or []), node_id)
+                )
+                logging.info(
+                    "scaffold-diff: CONFIRMS_SEED for seed label %r (extracted id %r)",
+                    concept_label,
+                    node_id,
+                )
                 try:
                     graph.query(
                         """
-                        MATCH (seed)
-                        WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($seed_id)
+                        MATCH (seed:SeedNode)
+                        WHERE $concept_label IN labels(seed)
                         SET seed.coverage = CASE seed.coverage
                             WHEN 'research-only' THEN 'ingest-confirmed'
                             ELSE seed.coverage END
                         """,
-                        {"seed_id": seed_id},
+                        {"concept_label": concept_label},
                     )
                     for chunk_id in chunk_ids:
                         graph.query(
                             """
                             MATCH (c:Chunk {id: $chunk_id})
-                            MATCH (seed)
-                            WHERE toLower(coalesce(seed.seed_id, seed.id, '')) = toLower($seed_id)
+                            MATCH (seed:SeedNode)
+                            WHERE $concept_label IN labels(seed)
                             MERGE (c)-[:DOCUMENTED_BY]->(seed)
                             MERGE (c)-[:CONFIRMS_SEED]->(seed)
                             """,
-                            {"chunk_id": chunk_id, "seed_id": seed_id},
+                            {"chunk_id": chunk_id, "concept_label": concept_label},
                         )
                 except Exception as e:
-                    logging.error(f"scaffold-diff: error writing CONFIRMS_SEED for {seed_id}: {e}")
+                    logging.error(
+                        "scaffold-diff: error writing CONFIRMS_SEED for %s: %s",
+                        concept_label,
+                        e,
+                    )
             else:
                 # Bug 2 fix: label matches scaffold but ID is a new proper noun → :IngestNode
                 # Use canonical_label (correct casing) for the scaffold MATCH
@@ -410,12 +424,25 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
                     logging.error(f"scaffold-diff: error flagging NEW_REL {rel_type}: {e}")
                 continue
 
-            # Known rel type — write normally between the two nodes if both exist
+            # Known rel type — resolve endpoints by concept label / id, never by
+            # shared file-level seed_id alone (Briefing 12 fan-out).
             try:
                 graph.query(
                     f"""
-                    MATCH (a) WHERE toLower(coalesce(a.seed_id, a.id, '')) = toLower($src_id)
-                    MATCH (b) WHERE toLower(coalesce(b.seed_id, b.id, '')) = toLower($tgt_id)
+                    MATCH (a)
+                    WHERE (
+                        $src_id IN labels(a)
+                        OR toLower(coalesce(a.name, a.id, '')) = toLower($src_id)
+                    )
+                      AND (a:SeedNode OR a:IngestNode)
+                    WITH a LIMIT 1
+                    MATCH (b)
+                    WHERE (
+                        $tgt_id IN labels(b)
+                        OR toLower(coalesce(b.name, b.id, '')) = toLower($tgt_id)
+                    )
+                      AND (b:SeedNode OR b:IngestNode)
+                    WITH a, b LIMIT 1
                     MERGE (a)-[:{rel_type}]->(b)
                     """,
                     {"src_id": src_id, "tgt_id": tgt_id},

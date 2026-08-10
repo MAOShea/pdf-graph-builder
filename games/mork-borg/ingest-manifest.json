@@ -24,8 +24,14 @@
     "target_path": "games/mork-borg/passage-sections.json",
     "description": "p.75 three-column index → RulebookIndex + IndexEntry; entry_kind → typed instances — briefing-7 + briefing-8",
     "materialization": {
-      "index_node_labels": ["IngestNode", "RulebookIndex"],
-      "entry_node_labels": ["IngestNode", "IndexEntry"],
+      "index_node_labels": [
+        "IngestNode",
+        "RulebookIndex"
+      ],
+      "entry_node_labels": [
+        "IngestNode",
+        "IndexEntry"
+      ],
       "column_map": {
         "THE_WORLD": "world_index",
         "CREATURES": "creatures_index",
@@ -33,9 +39,21 @@
       },
       "entry_id_pattern": "{fileName}#index:{column}:{slug}",
       "optional_entry_kinds": {
-        "THE_WORLD": ["place", "supporting_character", "faction", "world_lore"],
-        "CREATURES": ["creature"],
-        "RULES": ["rule_topic", "optional_class", "equipment_category", "table_topic"]
+        "THE_WORLD": [
+          "place",
+          "supporting_character",
+          "faction",
+          "world_lore"
+        ],
+        "CREATURES": [
+          "creature"
+        ],
+        "RULES": [
+          "rule_topic",
+          "optional_class",
+          "equipment_category",
+          "table_topic"
+        ]
       },
       "entry_kind_to_seed": {
         "place": "Place",
@@ -608,7 +626,10 @@
         "max_rows": 12,
         "multi_table_page": true
       },
-      "note": "Page 4 chunk contains traps + weather + corpse plundering. Reference: corpus/mork-borg/tables/traps-and-weather.json"
+      "note": "Page 4 chunk contains traps + weather + corpse plundering. Reference: corpus/mork-borg/tables/traps-and-weather.json",
+      "used_by": [
+        "Trap"
+      ]
     },
     {
       "name": "WeatherTable",
@@ -937,7 +958,10 @@
       "hand_authored": {
         "file": "games/mork-borg/hand-authored-overrides/agony-end.json",
         "skip_pdf_extract": true
-      }
+      },
+      "used_by": [
+        "Misery"
+      ]
     },
     {
       "name": "OptionalClassesTable",

@@ -5,6 +5,7 @@ Requires the backend running (e.g. .\\start.ps1) and Neo4j credentials in backen
 
 Examples (from workspace root):
   backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --ingest-mode scaffold-diff --cleanup
+  backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --section-phase 2 --cleanup
   backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --start-page 27 --end-page 31 --ingest-mode scaffold-diff --cleanup
 """
 from __future__ import annotations
@@ -107,6 +108,13 @@ def main() -> None:
     parser.add_argument("--ingest-mode", default="scaffold-diff")
     parser.add_argument("--start-page", type=int, default=None, help="First PDF page (1-based, inclusive)")
     parser.add_argument("--end-page", type=int, default=None, help="Last PDF page (1-based, inclusive)")
+    parser.add_argument(
+        "--section-phase",
+        type=int,
+        default=2,
+        help="Max passage-sections.json phase to materialize / send to LLM (inclusive). "
+        "Default 2 includes RULES phase-1 and THE WORLD. Use 1 for phase-1 only; 3 for later RULES.",
+    )
     parser.add_argument("--token-chunk-size", type=int, default=512)
     parser.add_argument("--chunk-overlap", type=int, default=100)
     parser.add_argument("--chunks-to-combine", type=int, default=1)
@@ -151,6 +159,7 @@ def main() -> None:
         "ingest_mode": args.ingest_mode,
         "start_page": args.start_page,
         "end_page": args.end_page,
+        "section_phase": args.section_phase,
         "token_chunk_size": args.token_chunk_size,
         "chunk_overlap": args.chunk_overlap,
         "chunks_to_combine": args.chunks_to_combine,
@@ -163,7 +172,10 @@ def main() -> None:
     if args.start_page or args.end_page:
         page_note = f" pages {args.start_page or '…'}-{args.end_page or '…'}"
 
-    print(f"ingest_pdf: {pdf_path.name}{page_note} -> {args.backend_url} ({args.database})")
+    print(
+        f"ingest_pdf: {pdf_path.name}{page_note} -> {args.backend_url} "
+        f"({args.database}, section_phase={args.section_phase})"
+    )
 
     with httpx.Client(base_url=args.backend_url.rstrip("/")) as client:
         upload_body = _upload(client, pdf_path, file_name, args.model, creds)

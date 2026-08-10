@@ -42,7 +42,7 @@ Contract reference: `README.md` (Use Case 2 → Lookup tables), `docs/pdf-graph-
 
 After ingest, run `.\check-coverage.ps1` for a manifest-driven coverage report.
 
-Section chunking (Briefing 6): `games/<game>/passage-sections.json` via manifest `passage_sections.file`; runs automatically on scaffold-diff extract, or `backend\materialize_passage_sections.py --phase 1`.
+Section chunking (Briefing 6): `games/<game>/passage-sections.json` via manifest `passage_sections.file`; **pdf-graph-builder is source of truth** for that file (not ADA). Runs automatically on scaffold-diff extract, or `backend\materialize_passage_sections.py --phase 1`. Sync policy: `docs/ingest-manifest-sync.md`.
 
 **Boundary contract (design):** Chunk/passage spans are operator-maintained JSON, not Python hardcodes — `sections[].start_anchor`/`end_anchor` (RULES), `entity_passage.end_detection.stop_before` (CREATURES prose), and lookup-table `pdf_extract.stop_before`. Amend the JSON after a PDF pass; re-materialize. Optional per `creatures_index` row: `text_end_hint`. Field guide: `games/mork-borg/README.md`.
 
