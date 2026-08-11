@@ -8,6 +8,8 @@ from src.section_chunking import (
     apply_text_filters,
     build_page_indexed_stream,
     normalize_stream_text,
+    page_at_offset,
+    page_range_for_span,
     resolve_section_span,
     split_passages,
 )
@@ -78,6 +80,61 @@ def test_build_page_indexed_stream():
     assert "aaa" in stream and "bbb" in stream
     assert len(spans) == 2
     assert spans[0]["page_number"] == 1
+
+
+def test_page_at_offset_interpage_gap_uses_previous_page():
+    stream, spans = build_page_indexed_stream({30: "Violence\nbody", 31: "Crit (natural 20)"})
+    # Join newline sits at spans[0]["end"] — must not fall through to page 1.
+    assert page_at_offset(spans, spans[0]["end"]) == 30
+    start_page, end_page = page_range_for_span(spans, spans[0]["start"], spans[0]["end"] + 1)
+    assert start_page == 30
+    assert end_page == 30
+    assert "Crit" in stream
+
+
+def test_violence_subheading_split():
+    text = (
+        "Initiative (d6)\nenemies go first\n"
+        "Melee\nTest Strength DR12\n"
+        "Ranged\nTest Presence DR12\n"
+        "Defence\nTest Agility DR12\n"
+        "If you fail the enemy hits you."
+    )
+    parts = split_passages(
+        text,
+        "subheading_regex",
+        split_pattern=r"^\s*(Melee|Ranged|Defence)\s*$",
+    )
+    assert len(parts) == 4
+    assert parts[0].startswith("Initiative")
+    assert "Strength" in parts[1] and "Presence" not in parts[1]
+    assert "Presence" in parts[2]
+    assert "Agility" in parts[3] and "Crit" not in parts[3]
+
+
+def test_crit_fumble_rest_subheading_split():
+    text = (
+        "Attack:\nDouble damage, armor/protection is also reduced one tier.\n"
+        "Defence: PC gains a free attack.\n"
+        "Fumble (natural 1)\n"
+        "Attack:\nThe weapon breaks or is lost.\n"
+        "How long is a round?\n"
+        "A round is enough time to make an attack.\n"
+        "Rest\n"
+        "Catch your breath, have a drink. Restore d4 HP.\n"
+        "An infected character does not benefit from resting."
+    )
+    parts = split_passages(
+        text,
+        "subheading_regex",
+        split_pattern=r"^\s*(Fumble\s*\(natural 1\)|How long is a round\?|Rest)\s*$",
+    )
+    assert len(parts) == 4
+    assert "Double damage" in parts[0] and "Fumble" not in parts[0]
+    assert "weapon breaks" in parts[1]
+    assert "round" in parts[2].lower()
+    assert "d4 HP" in parts[3] and "infected" in parts[3].lower()
+    assert "Reaction" not in "".join(parts)
 
 
 def test_resolve_page_range_section():

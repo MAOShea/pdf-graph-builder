@@ -1749,7 +1749,7 @@
     },
     {
       "name": "InitiativeTable",
-      "phase": 3,
+      "phase": 2,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "30",
@@ -1765,7 +1765,20 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "1-3",
+            "result": "enemies go first"
+          }
+        },
+        {
+          "cells": {
+            "d6": "4-6",
+            "result": "PCs go first"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -1785,7 +1798,7 @@
         ],
         "multi_table_page": true
       },
-      "note": "d6 range pairs, not six separate rows."
+      "note": "Slice 2a (Briefing 14): d6 range pairs, not six separate rows. No used_by yet — scaffold has no Initiative SeedNode (ADA may add)."
     },
     {
       "name": "FoulPsychopompSummonTable",

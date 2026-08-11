@@ -1,12 +1,12 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.5",
+  "version": "0.5.7",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-08-04",
-  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. Operator PDF pass welcome to amend.",
+  "verified_date": "2026-08-10",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. Operator PDF pass welcome to amend.",
   "handoff": {
     "source_of_truth": "pdf-graph-builder",
     "path": "games/mork-borg/passage-sections.json",
@@ -886,15 +886,19 @@
       "links_to_seed_labels": [
         "MeleeAttack",
         "RangedAttack",
-        "DefenseRoll",
-        "Initiative"
+        "DefenseRoll"
       ],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph",
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*(Melee|Ranged|Defence)\\s*$",
+        "notes": "Bare Bones procedure heads on p.30 (British spelling Defence). Intro before Melee keeps initiative prose."
+      },
       "contains_lookup_tables": [
         "InitiativeTable"
       ],
-      "notes": "Combat chapter opening: initiative, melee/ranged/defence (index lists Attack/Combat/Defence p.30 under this span)."
+      "notes": "Slice 2a (Briefing 14): initiative + melee/ranged/defence; stop before Crit. Index lists Attack/Combat/Defence p.30 under this span."
     },
     {
       "id": "crit-fumble-rest",
@@ -912,8 +916,13 @@
       "operator_page_hint": "31",
       "links_to_seed_labels": [],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph",
-      "notes": "Crit, fumble, round length, Rest (index: Resting, Infection p.31)."
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*(Fumble\\s*\\(natural 1\\)|How long is a round\\?|Rest)\\s*$",
+        "notes": "Bare Bones p.31 subheads. Intro before Fumble is Crit attack/defence prose (start heading stripped from Chunk body)."
+      },
+      "notes": "Slice 2b (Briefing 15): Crit, fumble, round length, Rest/infection (index: Resting, Infection p.31). No seed labels — section Chunk / RulePassage only."
     },
     {
       "id": "reaction-morale",

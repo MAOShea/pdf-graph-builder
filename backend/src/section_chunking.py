@@ -116,19 +116,32 @@ def build_page_indexed_stream(
 
 
 def page_at_offset(spans: list[dict[str, int]], char_offset: int) -> int | None:
-    for span in spans:
+    """Map a stream offset to a PDF page.
+
+    Inter-page join newlines sit in gaps ``[span.end, next.start)`` and are not
+    inside any half-open page span — attribute those to the preceding page so
+    section ends do not fall through to page 1.
+    """
+    if not spans:
+        return None
+    for i, span in enumerate(spans):
         if span["start"] <= char_offset < span["end"]:
             return span["page_number"]
-    if spans and char_offset >= spans[-1]["end"]:
+        next_start = spans[i + 1]["start"] if i + 1 < len(spans) else None
+        if char_offset == span["end"] or (
+            next_start is not None and span["end"] <= char_offset < next_start
+        ):
+            return span["page_number"]
+    if char_offset >= spans[-1]["end"]:
         return spans[-1]["page_number"]
-    return spans[0]["page_number"] if spans else None
+    return spans[0]["page_number"]
 
 
 def page_range_for_span(
     spans: list[dict[str, int]], start: int, end: int
 ) -> tuple[int | None, int | None]:
     start_page = page_at_offset(spans, start)
-    end_page = page_at_offset(spans, max(start, end - 1))
+    end_page = page_at_offset(spans, max(start, end - 1) if end > start else start)
     return start_page, end_page
 
 
