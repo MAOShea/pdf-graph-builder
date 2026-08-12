@@ -3,6 +3,7 @@
 
 from src.index_materialization import (
     _iter_index_rows,
+    index_titles_for_section,
     normalize_index_title,
     slug_title,
 )
@@ -37,3 +38,18 @@ def test_iter_index_rows_counts():
     rows = _iter_index_rows(index_source, column_map)
     assert len(rows) == 3
     assert {r["column"] for r in rows} == {"THE_WORLD", "CREATURES", "RULES"}
+
+
+def test_index_titles_for_section_compound_and_singular():
+    assert index_titles_for_section({"index_title": "Crit"}) == ["Crit"]
+    assert index_titles_for_section(
+        {
+            "index_title": "Crit",
+            "index_titles": ["Crit", "Fumble", "Resting", "Infection", "Crit"],
+        }
+    ) == ["Crit", "Fumble", "Resting", "Infection"]
+    assert index_titles_for_section({"index_titles": ["Attack", "Defence"]}) == [
+        "Attack",
+        "Defence",
+    ]
+    assert index_titles_for_section({}) == []

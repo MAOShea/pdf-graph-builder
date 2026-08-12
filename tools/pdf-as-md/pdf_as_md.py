@@ -26,6 +26,30 @@ from src.document_extract import (  # noqa: E402
 )
 
 
+def _passage_table_filters(
+    game: str, section_id: str, passage_count: int
+) -> list[list[str]] | None:
+    """Per-passage table allowlists for known compound sections (optional classes)."""
+    if section_id != "optional-classes":
+        return None
+    path = (
+        _REPO_ROOT
+        / "games"
+        / game
+        / "hand-authored-overrides"
+        / "optional-classes.json"
+    )
+    if not path.is_file():
+        return None
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    bundles = data.get("bundles") or []
+    if len(bundles) != passage_count:
+        return None
+    return [list(b.get("contains_tables") or []) for b in bundles]
+
+
 def _md_escape_heading(text: str) -> str:
     return text.replace("\n", " ").strip()
 
@@ -153,6 +177,8 @@ def _append_section_md(
     extract: DocumentExtract,
     warnings: list[str],
 ) -> None:
+    from src.section_chunking import split_passages
+
     section = item.section
     title = _md_escape_heading(str(section.get("title") or section.get("id") or "section"))
     sid = section.get("id", "?")
@@ -205,9 +231,55 @@ def _append_section_md(
             lines.append("")
         return
 
-    pdf_span = extract.stream[item.heading_start : item.content_end]
     raw_names = section.get("contains_lookup_tables") or []
     names_filter = [str(n) for n in raw_names if n] or None
+    body = extract.stream[item.content_start : item.content_end]
+    granularity = section.get("passage_granularity", "paragraph")
+    split_cfg = section.get("passage_split") or {}
+    split_pat = split_cfg.get("pattern") if granularity == "subheading_regex" else None
+
+    if split_pat:
+        parts = split_passages(body, "subheading_regex", split_pattern=split_pat)
+        # Section-heading substitutes (e.g. OptionalClassesTable) sit before class bodies.
+        # Probe with the first passage head as stop_before sentinel so we don't eat class prose.
+        head_gap = extract.stream[item.heading_start : item.content_start]
+        if not head_gap.endswith("\n"):
+            head_gap += "\n"
+        sentinel = (parts[0].splitlines()[0] + "\n") if parts and parts[0].splitlines() else ""
+        head_md = _render_span_with_tables(
+            head_gap + sentinel,
+            game=extract.game,
+            warnings=warnings,
+            label=f"section {sid!r} heading",
+            names_filter=names_filter,
+        ).rstrip()
+        if sentinel.strip() and head_md.endswith(sentinel.strip()):
+            head_md = head_md[: -len(sentinel.strip())].rstrip()
+        if head_md.strip():
+            lines.append(head_md)
+            lines.append("")
+
+        passage_table_filters = _passage_table_filters(extract.game, sid, len(parts))
+        for i, part in enumerate(parts):
+            first = part.splitlines()[0] if part.splitlines() else f"passage {i}"
+            lines.append(
+                f"> `{sid}#p{i}` · PDF: {_md_escape_heading(first)} via passage_split"
+            )
+            lines.append("")
+            p_filter = passage_table_filters[i] if passage_table_filters else names_filter
+            lines.append(
+                _render_span_with_tables(
+                    part,
+                    game=extract.game,
+                    warnings=warnings,
+                    label=f"section {sid!r}#p{i}",
+                    names_filter=p_filter,
+                ).rstrip()
+            )
+            lines.append("")
+        return
+
+    pdf_span = extract.stream[item.heading_start : item.content_end]
     lines.append(
         _render_span_with_tables(
             pdf_span,

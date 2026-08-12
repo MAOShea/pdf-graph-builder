@@ -55,6 +55,7 @@ from src.section_chunking import (
     section_chunks_for_llm,
 )
 from src.index_materialization import materialize_rulebook_catalog
+from src.spine_materialization import materialize_operational_spines
 
 from langchain_community.document_loaders import WebBaseLoader
 
@@ -574,6 +575,13 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
     )
     logging.info("rulebook_catalog: %s", index_stats)
     uri_latency["rulebook_catalog"] = index_stats
+
+    if section_phase >= 2:
+      spine_stats = materialize_operational_spines(
+        graph, params.file_name, game="mork-borg"
+      )
+      logging.info("operational_spines: %s", spine_stats)
+      uri_latency["operational_spines"] = spine_stats
 
     section_chunk_list = section_chunks_for_llm(
       graph, params.file_name, game="mork-borg", phase=section_phase

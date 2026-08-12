@@ -241,6 +241,31 @@ def _link_cross_column_duplicates(
     return links
 
 
+def index_titles_for_section(section: dict[str, Any]) -> list[str]:
+    """RULES IndexEntry titles that should MAPS_TO_SECTION this section Chunk.
+
+    Prefer ``index_titles`` (compound sections: Crit + Fumble + Resting + …).
+    Fall back to singular ``index_title``. Preserve order; drop empties/dupes.
+    """
+    titles: list[str] = []
+    raw_list = section.get("index_titles")
+    if isinstance(raw_list, list) and raw_list:
+        titles.extend(str(t).strip() for t in raw_list if str(t).strip())
+    else:
+        single = section.get("index_title")
+        if single:
+            titles.append(str(single).strip())
+    seen: set[str] = set()
+    out: list[str] = []
+    for title in titles:
+        key = title.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(title)
+    return out
+
+
 def link_index_entries_to_sections(
     graph,
     file_name: str,
@@ -261,30 +286,11 @@ def link_index_entries_to_sections(
         sections = [s for s in sections if (s.get("phase") or 99) <= phase]
 
     for section in sections:
-        index_title = section.get("index_title")
         section_id = section.get("id")
-        if not index_title or not section_id:
+        titles = index_titles_for_section(section)
+        if not titles or not section_id:
             continue
         stats["sections_with_index_title"] += 1
-
-        rows = execute_graph_query(
-            graph,
-            """
-            MATCH (e:IndexEntry {column: 'RULES', title: $index_title})
-            WHERE e.source = $file_name OR e.id STARTS WITH $file_prefix
-            RETURN e.id AS entry_id
-            """,
-            {
-                "index_title": index_title,
-                "file_name": file_name,
-                "file_prefix": f"{file_name}#index:RULES:",
-            },
-        )
-        if not rows:
-            msg = f"no RULES IndexEntry for index_title={index_title!r} (section {section_id})"
-            stats["warnings"].append(msg)
-            logger.warning("rulebook_index: %s", msg)
-            continue
 
         chunk_rows = execute_graph_query(
             graph,
@@ -301,17 +307,40 @@ def link_index_entries_to_sections(
             continue
 
         chunk_id = chunk_rows[0]["chunk_id"]
-        for entry_row in rows:
-            execute_graph_query(
+        for index_title in titles:
+            rows = execute_graph_query(
                 graph,
                 """
-                MATCH (e:IndexEntry {id: $entry_id})
-                MATCH (c:Chunk {id: $chunk_id})
-                MERGE (e)-[:MAPS_TO_SECTION]->(c)
+                MATCH (e:IndexEntry {column: 'RULES', title: $index_title})
+                WHERE e.source = $file_name OR e.id STARTS WITH $file_prefix
+                RETURN e.id AS entry_id
                 """,
-                {"entry_id": entry_row["entry_id"], "chunk_id": chunk_id},
+                {
+                    "index_title": index_title,
+                    "file_name": file_name,
+                    "file_prefix": f"{file_name}#index:RULES:",
+                },
             )
-            stats["links_created"] += 1
+            if not rows:
+                msg = (
+                    f"no RULES IndexEntry for index_title={index_title!r} "
+                    f"(section {section_id})"
+                )
+                stats["warnings"].append(msg)
+                logger.warning("rulebook_index: %s", msg)
+                continue
+
+            for entry_row in rows:
+                execute_graph_query(
+                    graph,
+                    """
+                    MATCH (e:IndexEntry {id: $entry_id})
+                    MATCH (c:Chunk {id: $chunk_id})
+                    MERGE (e)-[:MAPS_TO_SECTION]->(c)
+                    """,
+                    {"entry_id": entry_row["entry_id"], "chunk_id": chunk_id},
+                )
+                stats["links_created"] += 1
 
     logger.info(
         "rulebook_index: section_links=%s warnings=%s",

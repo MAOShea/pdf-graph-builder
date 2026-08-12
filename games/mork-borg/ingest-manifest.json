@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (role-based index+result; index key enumeration per table, not per die size).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -17,6 +17,11 @@
     "target_path": "games/mork-borg/passage-sections.json",
     "index_page": 75,
     "description": "Heading-anchor section contracts for chunking and RulePassage extraction. PDF index p.75 has three columns (THE WORLD, CREATURES, RULES); all catalogued in passage-sections.json index_source. sections[] is authored from RULES for mechanics phases. See pdf-graph-builder-briefing-6.md."
+  },
+  "operational_spines": {
+    "file": "operational-spines.json",
+    "target_path": "games/mork-borg/operational-spines.json",
+    "description": "Altitude-D If spines (Briefing 17 / D1 Violence DR12). Deterministic IngestNode materialization — closed vocabulary only."
   },
   "rulebook_index": {
     "file": "passage-sections.json",
@@ -1041,7 +1046,7 @@
           "Optional Classes\\s*\\(d6\\)"
         ],
         "stop_before": [
-          "EARLIEST MEMORIES"
+          "1\\.\\s*Fanged deserter"
         ],
         "index": {
           "type": "d6"
@@ -1111,11 +1116,15 @@
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "EARLIEST MEMORIES\\s*\\(d6\\)"
+          "EARLIEST MEMORIES\\s*\\([Dd]6\\)"
         ],
         "index": {
           "type": "d6"
         },
+        "stop_before": [
+          "Abilities",
+          "Built like a Bull"
+        ],
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": true
@@ -1145,11 +1154,16 @@
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "You also begin with one of the following\\s*\\(d6\\)"
+          "You also begin with one of the following\\s*\\([Dd]6\\)"
         ],
         "index": {
           "type": "d6"
         },
+        "stop_before": [
+          "2\\.\\s*Gutterborn",
+          "Gutterborn Scum",
+          "An ill star"
+        ],
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -1196,7 +1210,7 @@
         {
           "cells": {
             "d6": 4,
-            "result": "Kicked and beaten beneath a baker's table in Schleswig."
+            "result": "Kicked and beaten beneath a baker’s table in Schleswig."
           }
         },
         {
@@ -1220,11 +1234,16 @@
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "Bad Birth\\s*\\(d6\\)"
+          "Bad Birth\\s*\\([Dd]6\\)"
         ],
         "index": {
           "type": "d6"
         },
+        "stop_before": [
+          "Abilities",
+          "Small, roll",
+          "You also begin with"
+        ],
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -1254,11 +1273,16 @@
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "Eldritch Origins\\s*\\(d6\\)"
+          "Eldritch Origins\\s*\\([Dd]6\\)"
         ],
         "index": {
           "type": "d6"
         },
+        "stop_before": [
+          "Abilities",
+          "Wise, roll",
+          "You also begin"
+        ],
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -1284,7 +1308,7 @@
         }
       ],
       "acceptance_rows": [],
-      "note": "Header: 'Things were going so well' on p.52.",
+      "note": "Header: 'Things were going so well' on p.52. Stop before abilities prose / equipment table.",
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -1293,6 +1317,11 @@
         "index": {
           "type": "d6"
         },
+        "stop_before": [
+          "Painfully average",
+          "You begin with two",
+          "begin with two of the following"
+        ],
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -1327,6 +1356,11 @@
         "index": {
           "type": "d6"
         },
+        "stop_before": [
+          "5\\.\\s*Heretical",
+          "Heretical Priest",
+          "Hunted by the Two-Headed"
+        ],
         "min_rows": 6,
         "max_rows": 6,
         "multi_table_page": false
@@ -1443,7 +1477,12 @@
           ]
         },
         "min_rows": 6,
-        "max_rows": 6,
+        "max_rows": 8,
+        "stop_before": [
+          "Abilities",
+          "Tough as wood",
+          "Occult Herbmaster decoctions"
+        ],
         "multi_table_page": false
       }
     },
@@ -1517,6 +1556,203 @@
       }
     },
     {
+      "name": "TerribleTraitsTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "38",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": "1",
+            "result": "Endlessly aggravated"
+          }
+        },
+        {
+          "cells": {
+            "d20": "20",
+            "result": "Arrogant"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Terrible Traits,?\\s*d20"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "stop_before": [
+          "Broken Bodies"
+        ],
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
+      },
+      "note": "Optional Tables — Terrible Traits d20 (roll twice). PDF extract; no hand-authored override."
+    },
+    {
+      "name": "BrokenBodiesTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "39",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": "1",
+            "result": "Staring manic gaze."
+          }
+        },
+        {
+          "cells": {
+            "d20": "20",
+            "result": "Nails cracked and black, maybe about to drop off."
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Broken Bodies,?\\s*d20"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "stop_before": [
+          "Bad Habits"
+        ],
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
+      },
+      "note": "Optional Tables — Broken Bodies d20. PDF extract; no hand-authored override."
+    },
+    {
+      "name": "BadHabitsTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "40",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": "1",
+            "result": "Obsessively collect small sharp stones."
+          }
+        },
+        {
+          "cells": {
+            "d20": "20",
+            "result": "You make jewelry from the teeth of the dead. If this can be considered a bad habit."
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Bad Habits,?\\s*d20"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "stop_before": [
+          "Troubling Tales",
+          "The whole group"
+        ],
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
+      },
+      "note": "Optional Tables — Bad Habits d20. PDF extract; no hand-authored override."
+    },
+    {
+      "name": "TroublingTalesTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "41-42",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": "1",
+            "result": "Pursued for manslaughter. There is a bounty."
+          }
+        },
+        {
+          "cells": {
+            "d20": "20",
+            "result": "Your flesh heals twice as fast, but your companions twice as slow. You see a many-eyed “guardian angel.”"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Troubling Tales,?\\s*d20"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "stop_before": [
+          "Arcane Catastrophes"
+        ],
+        "multi_table_page": false,
+        "min_rows": 20,
+        "max_rows": 20
+      },
+      "note": "Optional Tables — Troubling Tales d20. PDF extract; no hand-authored override."
+    },
+    {
       "name": "ArcaneCatastrophesTable",
       "phase": 3,
       "instance_of": "LookupTable",
@@ -1543,6 +1779,10 @@
         "index": {
           "type": "d20"
         },
+        "stop_before": [
+          "Optional Classes",
+          "EARLIEST MEMORIES"
+        ],
         "multi_table_page": false,
         "min_rows": 20,
         "max_rows": 20
@@ -1935,7 +2175,7 @@
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "begin with one of the following\\s*\\(d6\\)"
+          "You also begin with one of the following\\s*\\([Dd]6\\)"
         ],
         "index": {
           "type": "d6"
@@ -1943,7 +2183,9 @@
         "min_rows": 6,
         "max_rows": 6,
         "stop_before": [
-          "Things were going"
+          "4\\.\\s*Wretched",
+          "Things were going",
+          "Bowed down only"
         ],
         "multi_table_page": true
       },

@@ -1,12 +1,12 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.7",
+  "version": "0.5.9",
   "status": "draft",
-  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span.",
+  "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-08-10",
-  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. Operator PDF pass welcome to amend.",
+  "verified_date": "2026-08-12",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. index_titles for compound RULES→section MAPS_TO_SECTION (Briefing 16) 2026-08-10. optional-classes 1.–6. class subsections + nested tables (2026-08-12). Operator PDF pass welcome to amend.",
   "handoff": {
     "source_of_truth": "pdf-graph-builder",
     "path": "games/mork-borg/passage-sections.json",
@@ -874,6 +874,15 @@
       "phase": 2,
       "title": "Violence",
       "index_title": "Violence",
+      "index_titles": [
+        "Violence",
+        "Attack",
+        "Combat",
+        "Defence",
+        "Initiative",
+        "Melee attack",
+        "Ranged attack"
+      ],
       "start_anchor": {
         "type": "heading_regex",
         "pattern": "^\\s*Violence\\s*$"
@@ -905,6 +914,12 @@
       "phase": 2,
       "title": "Crit, fumble, and rest",
       "index_title": "Crit",
+      "index_titles": [
+        "Crit",
+        "Fumble",
+        "Resting",
+        "Infection"
+      ],
       "start_anchor": {
         "type": "heading_regex",
         "pattern": "^\\s*Crit\\s*\\(natural 20\\)\\s*$"
@@ -1018,9 +1033,12 @@
       },
       "operator_page_hint": "38",
       "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "TerribleTraitsTable"
+      ],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "notes": "Terrible Traits d20 table intro."
+      "notes": "Terrible Traits d20 — table via ingest-manifest TerribleTraitsTable pdf_extract (no hand-authored)."
     },
     {
       "id": "optional-broken-bodies",
@@ -1037,8 +1055,12 @@
       },
       "operator_page_hint": "39",
       "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "BrokenBodiesTable"
+      ],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph"
+      "passage_granularity": "paragraph",
+      "notes": "Broken Bodies d20 — ingest-manifest BrokenBodiesTable pdf_extract."
     },
     {
       "id": "optional-bad-habits",
@@ -1055,8 +1077,12 @@
       },
       "operator_page_hint": "40",
       "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "BadHabitsTable"
+      ],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph"
+      "passage_granularity": "paragraph",
+      "notes": "Bad Habits d20 — ingest-manifest BadHabitsTable pdf_extract."
     },
     {
       "id": "troubling-tales",
@@ -1073,8 +1099,12 @@
       },
       "operator_page_hint": "41-42",
       "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "TroublingTalesTable"
+      ],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph"
+      "passage_granularity": "paragraph",
+      "notes": "Troubling Tales d20 — ingest-manifest TroublingTalesTable pdf_extract."
     },
     {
       "id": "arcane-catastrophes",
@@ -1097,6 +1127,55 @@
         "ArcaneCatastrophesTable"
       ],
       "notes": "End anchor is Optional Classes (p.46); adjust if anchor misses."
+    },
+    {
+      "id": "optional-classes",
+      "phase": 2,
+      "title": "Optional Classes",
+      "index_title": "Fanged deserter",
+      "index_titles": [
+        "Fanged deserter",
+        "Gutterborn scum",
+        "Esoteric hermit",
+        "Wretched royalty",
+        "Heretical priest",
+        "Occult herbmaster"
+      ],
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Optional Classes\\s*\\([Dd]6\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Creatures\\s*$"
+      },
+      "operator_page_hint": "46-57",
+      "links_to_seed_labels": [
+        "OptionalClass"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*[1-6]\\.\\s*(Fanged deserter|Gutterborn Scum|Esoteric hermit|Wretched royalty|Heretical priest|Occult herbmaster)\\s*$",
+        "notes": "Six optional-class subsections (Bare Bones pp.46–57). Not a flat d6 row table — each class is prose + nested lookup tables."
+      },
+      "contains_lookup_tables": [
+        "OptionalClassesTable",
+        "EarliestMemoriesTable",
+        "FangedDeserterEquipmentTable",
+        "BadBirthTable",
+        "GutterbornSpecialtyTable",
+        "EldritchOriginsTable",
+        "EsotericHermitEquipmentTable",
+        "ThingsGoingWrongTable",
+        "WretchedRoyaltyEquipmentTable",
+        "HereticalPriestOriginsTable",
+        "HereticalPriestEquipmentTable",
+        "RaisedInTable",
+        "HerbmasterDecoctionsTable"
+      ],
+      "notes": "Optional Classes (D6): six class packages. Flat OptionalClassesTable remains the d6 chooser (hand-authored); nested tables stay manifest pdf_extract. Section Chunk + RulePassages delimit class prose (intro, Abilities, HP/Omens) with nested tables in-span."
     }
   ]
 }

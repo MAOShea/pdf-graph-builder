@@ -1,0 +1,198 @@
+{
+  "id": "mork-borg-operational-spines",
+  "game": "mork-borg",
+  "version": "0.2.0",
+  "status": "draft",
+  "description": "Altitude-D adjudicable If spines for Bare Bones Violence (D1) and Crit/fumble/rest/infection (D2). Closed vocabulary only — materializer MERGEs IngestNode instances; does not invent predicates.",
+  "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
+  "verified_date": "2026-08-11",
+  "spines": [
+    {
+      "id": "if:melee-hit-default",
+      "for_procedure": "MeleeAttack",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare_dr",
+        "id": "compare:melee-dr12",
+        "threshold": 12
+      },
+      "bool_id": "bool:melee-hit-default",
+      "then": {
+        "id": "outcome:melee-hit",
+        "name": "hit",
+        "summary": "Melee attack hits (test meets or beats DR)."
+      },
+      "else": {
+        "id": "outcome:melee-miss",
+        "name": "miss",
+        "summary": "Melee attack misses."
+      },
+      "evidence": {
+        "section_id": "violence-combat",
+        "text_contains_any": ["Test Strength"]
+      },
+      "notes": "Test Strength DR12"
+    },
+    {
+      "id": "if:ranged-hit-default",
+      "for_procedure": "RangedAttack",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare_dr",
+        "id": "compare:ranged-dr12",
+        "threshold": 12
+      },
+      "bool_id": "bool:ranged-hit-default",
+      "then": {
+        "id": "outcome:ranged-hit",
+        "name": "hit",
+        "summary": "Ranged attack hits (test meets or beats DR)."
+      },
+      "else": {
+        "id": "outcome:ranged-miss",
+        "name": "miss",
+        "summary": "Ranged attack misses."
+      },
+      "evidence": {
+        "section_id": "violence-combat",
+        "text_contains_any": ["Test Presence"]
+      },
+      "notes": "Test Presence DR12"
+    },
+    {
+      "id": "if:defence-default",
+      "for_procedure": "DefenseRoll",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare_dr",
+        "id": "compare:defence-dr12",
+        "threshold": 12
+      },
+      "bool_id": "bool:defence-default",
+      "then": {
+        "id": "outcome:defence-success",
+        "name": "defend",
+        "summary": "Defence succeeds (test meets or beats DR)."
+      },
+      "else": {
+        "id": "outcome:defence-fail",
+        "name": "hit-by-enemy",
+        "summary": "Defence fails; enemy hits you."
+      },
+      "evidence": {
+        "section_id": "violence-combat",
+        "text_contains_any": ["Test Agility"]
+      },
+      "notes": "Test Agility DR12"
+    },
+    {
+      "id": "if:crit-attack",
+      "for_procedures": ["MeleeAttack", "RangedAttack"],
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare_face",
+        "id": "compare:natural-20",
+        "op": "=",
+        "left": "natural_face",
+        "threshold": 20
+      },
+      "bool_id": "bool:crit-attack",
+      "then": [
+        {
+          "id": "outcome:crit-double-damage",
+          "name": "double-damage",
+          "summary": "Crit on attack: double damage."
+        },
+        {
+          "id": "outcome:crit-armor-tier-down",
+          "name": "armor-tier-down",
+          "summary": "Crit on attack: armor/protection reduced one tier."
+        }
+      ],
+      "evidence": {
+        "section_id": "crit-fumble-rest",
+        "text_contains_any": ["Double damage", "armor/protection"]
+      },
+      "notes": "One If with two FOR (MeleeAttack + RangedAttack). Bare Bones defence crit is different (PC gains a free attack) — not this spine; see handoff."
+    },
+    {
+      "id": "if:fumble-defence",
+      "for_procedure": "DefenseRoll",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare_face",
+        "id": "compare:natural-1",
+        "op": "=",
+        "left": "natural_face",
+        "threshold": 1
+      },
+      "bool_id": "bool:fumble-defence",
+      "then": [
+        {
+          "id": "outcome:fumble-defence-double-damage",
+          "name": "double-damage",
+          "summary": "Fumbled defence: PC takes double damage."
+        },
+        {
+          "id": "outcome:fumble-defence-armor-tier-down",
+          "name": "armor-tier-down",
+          "summary": "Fumbled defence: armor reduced one tier."
+        }
+      ],
+      "evidence": {
+        "section_id": "crit-fumble-rest",
+        "text_contains_any": ["Fumble", "double damage", "armor is reduced"]
+      },
+      "notes": "Defence fumble (natural 1). Attack fumble (weapon breaks/lost) deferred."
+    },
+    {
+      "id": "if:rest-catch-breath",
+      "for_procedure": "Downtime",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:catch-breath-and-drink",
+        "name": "catch breath and drink"
+      },
+      "bool_id": "bool:rest-catch-breath",
+      "then": {
+        "id": "outcome:rest-restore-d4-hp",
+        "name": "restore-d4-hp",
+        "summary": "Catch breath and drink: restore d4 HP."
+      },
+      "evidence": {
+        "section_id": "crit-fumble-rest",
+        "text_contains_any": ["Catch your breath", "Restore d4"]
+      },
+      "notes": "FOR Downtime (no Rest SeedNode). Circumstance situating atom."
+    },
+    {
+      "id": "if:infection-blocks-rest",
+      "for_procedure": "Downtime",
+      "combinator": "AND",
+      "atoms": [
+        {
+          "kind": "circumstance",
+          "id": "circumstance:infected",
+          "name": "Infected"
+        },
+        {
+          "kind": "circumstance",
+          "id": "circumstance:resting",
+          "name": "resting"
+        }
+      ],
+      "bool_id": "bool:infection-blocks-rest",
+      "then": {
+        "id": "outcome:infection-no-rest-benefit",
+        "name": "no-rest-benefit",
+        "summary": "Infected: no HP restored from resting; instead lose d6 HP daily."
+      },
+      "evidence": {
+        "section_id": "crit-fumble-rest",
+        "text_contains_any": ["infected character", "does not benefit"]
+      },
+      "notes": "AND of Circumstance Infected + resting (not status Condition). Book: infected does not benefit from resting; d6 HP lost daily."
+    }
+  ]
+}

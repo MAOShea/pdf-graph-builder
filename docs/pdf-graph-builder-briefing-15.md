@@ -121,12 +121,12 @@ If a gate cannot be met, **name it** and stop — do not mark slice 2b ingest co
 
 ## Acceptance checklist (handoff)
 
-- [x] P0 text layer OK for Crit / Rest headings on p.31  
-- [x] P1 `crit-fumble-rest` `passage-section` Chunk exists; body stops before Reaction  
-- [x] P2 passages usable for crit vs rest without chapter bleed  
-- [x] P3 no bogus table invent for 2b  
-- [x] P4 no fiction-seed evidence fan-out  
-- [x] Handoff lists remaining WIP parser limits — see [handoff-12](./ai-dm-assistant-handoff-12.md)
+- [ ] P0 text layer OK for Crit / Rest headings on p.31  
+- [ ] P1 `crit-fumble-rest` `passage-section` Chunk exists; body stops before Reaction  
+- [ ] P2 passages usable for crit vs rest without chapter bleed  
+- [ ] P3 no bogus table invent for 2b  
+- [ ] P4 no fiction-seed evidence fan-out  
+- [ ] Handoff lists remaining WIP parser limits  
 
 **ADA already prepared:** phase-2 ladder 2a–2g; 2b smokes R1–R4; retrieval prefers declared sections. After handoff, ADA promotes contracts and runs smokes — no ADA 2b “done” until these gates are green (or blocked with cause).
 

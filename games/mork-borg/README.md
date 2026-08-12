@@ -87,7 +87,8 @@ Graph column enums use underscores: `THE_WORLD`, `CREATURES`, `RULES`.
 | `start_anchor` | yes | Boundary start — see anchor types below |
 | `end_anchor` | if `heading_regex` | Exclusive end heading (required for `heading_regex`; unused for `page_range`) |
 | `links_to_seed_labels` | yes | Seed labels for `CONFIRMS_SEED` / `DOCUMENTED_BY` |
-| `index_title` | no | Exact RULES index label → `IndexEntry` link |
+| `index_title` | no | Primary RULES index label → `IndexEntry` `MAPS_TO_SECTION` (kept for tools) |
+| `index_titles` | no | All RULES index labels that map to this section Chunk (compound spans). Linker prefers this list over singular `index_title`. |
 | `operator_page_hint` | no | Verification only — **not** used for boundary detection |
 | `extract_rule_passages` | no | Default true |
 | `passage_granularity` | no | `paragraph` (default), `section`, or `subheading_regex` |
