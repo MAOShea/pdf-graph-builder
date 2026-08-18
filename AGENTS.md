@@ -1,5 +1,21 @@
 # Agent directives (pdf-graph-builder)
 
+## Multi-root workspace (with AI-DM-Assistant)
+
+Operator may open **this repo and AI-DM-Assistant** in one Cursor window. Then **one agent**, two git remotes. Name which root a task is for.
+
+| Root | Touch |
+| --- | --- |
+| **This repo** | Ingest Python (materializers, extract); SoT `games/<game>/` contracts |
+| **AI-DM-Assistant** | Seeds, bootstrap, retrieve, adapters, smokes |
+
+- Commit only in the repo you edited. Do not copy materializers into ADA.
+- Same chat can edit both trees. Do **not** wait for an outbox paste from a second agent.
+- Briefing / `docs/ai-dm-assistant-handoff-*.md` files are **optional archive** after ingest, not the workflow.
+- ADA `corpus/games/<game>/` copies are mirrors. Edit SoT **here**; promote with ADA `sync-*-from-pgb.ps1`. Sync policy: `docs/ingest-manifest-sync.md`.
+
+If this window is **pgb-only**, ADA still uses outbox/inbox as a courier.
+
 ## PDF lookup tables — user says “parse table XYZ”
 
 When the user asks for a table to be **parsed from the PDF** (e.g. “get `WeaponTable` in”, “parse the traps table from page 4”), treat that as an **end-to-end delivery request**, not a design discussion.

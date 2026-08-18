@@ -17,7 +17,7 @@ Tier-5 **materialization contracts** are separate from Tier-4 seeds (`deltas.jso
 | Outbox briefings | **ADA** | pgb `docs/` copy | `sync-outbox-briefings.ps1` |
 | Inbox handoffs | **pgb** | ADA `docs/inbox/` copy | Manual copy into inbox |
 
-**There is no script that pushes `ingest-manifest.json` (or hand-authored overrides) from ADA → pgb.** Edit the SoT in pdf-graph-builder; promote the mirror here. If an ADA agent notes a needed manifest change, put it in an **outbox briefing** for pgb — do not edit the ADA mirror as if it were SoT (or expect a reverse sync).
+**There is no script that pushes `ingest-manifest.json` (or hand-authored overrides) from ADA → pgb.** Edit the SoT in pdf-graph-builder; promote the mirror in ADA. With both repos in one Cursor workspace, edit pgb SoT in the same chat — do not wait on an outbox paste. ADA-only window: note the needed change in an **outbox briefing**; do not edit the ADA mirror as if it were SoT (or expect a reverse sync).
 
 **Tables in chat CONTEXT:** declare `used_by` on SoT manifest rows + Tier-4 `(Seed)-[:USES]->(:LookupTable)`. Runtime matches table names/pages in the KG — avoid synonym lists in `retrieval_hints.py`.
 
