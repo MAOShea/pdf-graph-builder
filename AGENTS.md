@@ -40,6 +40,8 @@ Do **not** stop at “add a manifest entry” unless the user asked for explanat
 
 Contract reference: `README.md` (Use Case 2 → Lookup tables), `docs/pdf-graph-builder-briefing-3.md`, `docs/roadmap.md`, `games/mork-borg/hand-authored-overrides/README.md`.
 
+**Architecture pin:** contracts vs Ollama, scaffold-diff edges, prompt location, and full ingest vs light CLIs — `design.md` → *Product path: contracts first, Ollama second*. After a DB reset, use full `.\ingest-morkborg.ps1` (not only `materialize-*`).
+
 After ingest, run `.\check-coverage.ps1` for a manifest-driven coverage report.
 
 Section chunking (Briefing 6): `games/<game>/passage-sections.json` via manifest `passage_sections.file`; **pdf-graph-builder is source of truth** for that file (not ADA). Runs automatically on scaffold-diff extract, or `backend\materialize_passage_sections.py --phase 1`. Sync policy: `docs/ingest-manifest-sync.md`.

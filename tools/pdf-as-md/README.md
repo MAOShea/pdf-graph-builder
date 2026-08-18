@@ -17,11 +17,14 @@ This tool only renders that model to `.as.md` (no Neo4j).
 ```powershell
 .\tools\pdf-as-md\pdf-as-md.ps1
 # → tools/pdf-as-md/out/mork-borg.as.md
+
+# Focused review by contract section id
+.\tools\pdf-as-md\pdf-as-md.ps1 -Section reaction-morale,crit-fumble-rest
 ```
 
 | Flag | Meaning |
 |---|---|
-| `--phase N` | Sections with `phase <= N` |
+| `-Section` / `--section ID` | Include only these contract section ids (repeatable; comma-separated OK). Default: all matched sections. Not an ingest `section_phase` gate. |
 | `--pages-only` | Full normalized stream only |
 | `--sections-only` | Contract sections only |
 | `--no-entities` | Skip CREATURES appendix |

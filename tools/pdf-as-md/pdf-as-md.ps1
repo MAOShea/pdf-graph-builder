@@ -4,7 +4,7 @@ param(
     [string]$Game = "mork-borg",
     [string]$FileName = "mork-borg.pdf",
     [string]$Pdf = "",
-    [Nullable[int]]$Phase = $null,
+    [string[]]$Section = @(),
     [string]$Output = "",
     [switch]$PagesOnly,
     [switch]$SectionsOnly,
@@ -27,7 +27,12 @@ $argsList = @(
     "--file-name", $FileName
 )
 if ($Pdf) { $argsList += @("--pdf", $Pdf) }
-if ($null -ne $Phase) { $argsList += @("--phase", "$Phase") }
+foreach ($raw in $Section) {
+    foreach ($part in ($raw -split ",")) {
+        $sid = $part.Trim()
+        if ($sid) { $argsList += @("--section", $sid) }
+    }
+}
 if ($Output) { $argsList += @("-o", $Output) }
 if ($PagesOnly) { $argsList += "--pages-only" }
 if ($SectionsOnly) { $argsList += "--sections-only" }

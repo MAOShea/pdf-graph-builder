@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""CLI: materialize altitude-D If spines (Briefings 17–19 / D1–D3).
+"""CLI: materialize D4 creature sheets (Briefings 20 / 23).
 
 Usage (from repo root):
-  backend\\venv\\Scripts\\python.exe backend\\materialize_operational_spines.py
-  backend\\venv\\Scripts\\python.exe backend\\materialize_operational_spines.py --ensure-sections
+  backend\\venv\\Scripts\\python.exe backend\\materialize_creature_sheets.py
+  backend\\venv\\Scripts\\python.exe backend\\materialize_creature_sheets.py --ensure-fiction
 """
 from __future__ import annotations
 
@@ -20,10 +20,11 @@ _BACKEND = Path(__file__).resolve().parent
 if str(_BACKEND) not in sys.path:
     sys.path.insert(0, str(_BACKEND))
 
+from src.creature_sheet_materialization import materialize_creature_sheets
+from src.index_materialization import materialize_rulebook_catalog
 from src.section_chunking import materialize_passage_sections
 from src.spine_materialization import (
     ensure_document,
-    load_operational_spines,
     materialize_operational_spines,
 )
 
@@ -31,19 +32,17 @@ load_dotenv()
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Materialize altitude-D If spines")
+    parser = argparse.ArgumentParser(description="Materialize D4 creature sheets")
     parser.add_argument("--document", default="mork-borg.pdf")
     parser.add_argument("--game", default="mork-borg")
     parser.add_argument("--database", default=os.getenv("NEO4J_DATABASE", "morkborg"))
     parser.add_argument(
-        "--ensure-sections",
+        "--ensure-fiction",
         action="store_true",
-        help="MERGE Document + materialize passage sections phase 2 before spines",
+        help="MERGE Document + sections + catalog/entity passages + spines before sheets",
     )
     parser.add_argument("--section-phase", type=int, default=2)
     args = parser.parse_args()
-
-    load_operational_spines.cache_clear()
 
     graph = Neo4jGraph(
         url=os.getenv("NEO4J_URI"),
@@ -53,7 +52,7 @@ def main() -> int:
     )
 
     out: dict = {}
-    if args.ensure_sections:
+    if args.ensure_fiction:
         ensure_document(graph, args.document)
         out["sections"] = materialize_passage_sections(
             graph,
@@ -61,16 +60,27 @@ def main() -> int:
             game=args.game,
             phase=args.section_phase,
         )
+        out["catalog"] = materialize_rulebook_catalog(
+            graph,
+            args.document,
+            game=args.game,
+            link_sections=True,
+            fiction=True,
+            entity_passages=True,
+            section_phase=args.section_phase,
+        )
+        out["spines"] = materialize_operational_spines(
+            graph, args.document, game=args.game
+        )
 
-    out["spines"] = materialize_operational_spines(
+    out["sheets"] = materialize_creature_sheets(
         graph, args.document, game=args.game
     )
-    print(json.dumps(out, indent=2))
-    spines = out["spines"]
+    print(json.dumps(out, indent=2, default=str))
+    sheets = out["sheets"]
     ok = (
-        spines.get("spines_created", 0) >= spines.get("spines_expected", 1)
-        and spines.get("evidence_links", 0) >= spines.get("spines_expected", 1)
-        and not any("D0.4" in w for w in spines.get("warnings") or [])
+        sheets.get("creatures_with_sheet", 0) >= 5
+        and not any("D4 incomplete" in w for w in sheets.get("warnings") or [])
     )
     return 0 if ok else 1
 

@@ -345,6 +345,7 @@ def save_scaffold_diff_in_neo4j(graph: Neo4jGraph, graph_document_list: List[Gra
                         graph.query(
                             """
                             MATCH (c:Chunk {id: $chunk_id})
+                            WHERE coalesce(c.seed_evidence, true) <> false
                             MATCH (seed:SeedNode)
                             WHERE $concept_label IN labels(seed)
                             MERGE (c)-[:DOCUMENTED_BY]->(seed)

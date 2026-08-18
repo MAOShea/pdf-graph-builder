@@ -182,7 +182,6 @@ def _append_section_md(
     section = item.section
     title = _md_escape_heading(str(section.get("title") or section.get("id") or "section"))
     sid = section.get("id", "?")
-    phase = section.get("phase", "?")
     content_source = (
         section.get("content_source")
         if isinstance(section.get("content_source"), dict)
@@ -197,7 +196,7 @@ def _append_section_md(
 
     lines.append(f"## {title}")
     lines.append("")
-    meta = f"`{sid}` · phase {phase}"
+    meta = f"`{sid}`"
     if section.get("index_title"):
         meta += f" · index: {section['index_title']}"
     if pages:
@@ -461,6 +460,54 @@ def default_output_path(file_name: str) -> Path:
     return Path(__file__).resolve().parent / "out" / f"{stem}.as.md"
 
 
+def _normalize_section_ids(raw: list[str] | None) -> list[str]:
+    """Flatten ``--section`` values; allow comma-separated lists in one arg."""
+    if not raw:
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        for part in str(item).split(","):
+            sid = part.strip()
+            if not sid or sid in seen:
+                continue
+            seen.add(sid)
+            out.append(sid)
+    return out
+
+
+def filter_extract_sections_by_id(
+    extract: DocumentExtract, section_ids: list[str]
+) -> tuple[list[str], list[str]]:
+    """Keep only ResolvedSections whose contract id is requested.
+
+    Returns (unknown_ids, unmatched_ids) where unknown are not in the contract
+    and unmatched are in the contract but did not resolve in the PDF stream.
+    """
+    contract_ids = {
+        str(s.get("id"))
+        for s in (extract.contract.get("sections") or [])
+        if s.get("id")
+    }
+    wanted = set(section_ids)
+    unknown = sorted(wanted - contract_ids)
+    if unknown:
+        return unknown, []
+
+    matched = {
+        str(item.section.get("id") or "")
+        for item in extract.sections
+        if item.section.get("id")
+    }
+    unmatched = sorted(wanted - matched)
+    extract.sections = [
+        item
+        for item in extract.sections
+        if str(item.section.get("id") or "") in wanted
+    ]
+    return [], unmatched
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -471,7 +518,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--game", default="mork-borg")
     parser.add_argument("--file-name", default="mork-borg.pdf")
     parser.add_argument("--pdf", default=None)
-    parser.add_argument("--phase", type=int, default=None)
+    parser.add_argument(
+        "--section",
+        action="append",
+        default=None,
+        metavar="ID",
+        help=(
+            "Contract section id to include (repeatable; comma-separated OK). "
+            "Default: all matched sections. Not an ingest section_phase gate."
+        ),
+    )
     parser.add_argument("--pages-only", action="store_true")
     parser.add_argument("--sections-only", action="store_true")
     parser.add_argument("--no-entities", action="store_true")
@@ -482,16 +538,41 @@ def main(argv: list[str] | None = None) -> int:
         print("Choose at most one of --pages-only / --sections-only", file=sys.stderr)
         return 2
 
+    section_ids = _normalize_section_ids(args.section)
+
     try:
         extract = load_document_extract(
             args.file_name,
             game=args.game,
             pdf_path=args.pdf,
-            phase=args.phase,
+            phase=None,
         )
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+
+    if section_ids:
+        unknown, unmatched = filter_extract_sections_by_id(extract, section_ids)
+        if unknown:
+            known = sorted(
+                str(s.get("id"))
+                for s in (extract.contract.get("sections") or [])
+                if s.get("id")
+            )
+            print(
+                f"Unknown section id(s): {', '.join(unknown)}. "
+                f"Contract ids include: {', '.join(known[:20])}"
+                + ("…" if len(known) > 20 else ""),
+                file=sys.stderr,
+            )
+            return 1
+        if unmatched:
+            print(
+                "Section id(s) in contract but not matched in PDF stream: "
+                + ", ".join(unmatched),
+                file=sys.stderr,
+            )
+            return 1
 
     entity_appendix = None
     if not args.no_entities and not args.pages_only:

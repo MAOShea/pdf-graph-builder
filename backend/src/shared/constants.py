@@ -897,6 +897,13 @@ INGEST_REL_TYPES = {
     "OVERRIDES_SEED",
     "POSSIBLE_OVERRIDES_SEED",
     "REFERENCES",
+    # Altitude D exception precedence (briefing-22)
+    "SUPERSEDES",
+    # Creature sheets (briefing-20 / 23)
+    "HAS_HIT_POINTS",
+    "HAS_MORALE",
+    "HAS_ARMOR",
+    "HAS_ATTACK",
     # Tier-5 lookup table materialization (briefing-3)
     "HAS_COLUMN",
     "HAS_ENTRY",

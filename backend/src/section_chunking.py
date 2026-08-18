@@ -349,7 +349,8 @@ def _merge_section_chunk(
             c.tier = 5,
             c.page_number = $page_start,
             c.page_number_start = $page_start,
-            c.page_number_end = $page_end
+            c.page_number_end = $page_end,
+            c.seed_evidence = $seed_evidence
         MERGE (c)-[:PART_OF]->(d)
         """,
         {
@@ -361,6 +362,7 @@ def _merge_section_chunk(
             "position": position,
             "page_start": page_start,
             "page_end": page_end,
+            "seed_evidence": bool(section.get("seed_evidence", True)),
         },
     )
     return chunk_id
@@ -657,12 +659,18 @@ def section_chunks_for_llm(
     game: str = "mork-borg",
     phase: int = 1,
 ) -> list[dict[str, Any]]:
-    """Return section chunk entries in LLM processing shape."""
+    """Return section chunk entries in LLM processing shape.
+
+    Sections with ``seed_evidence: false`` are omitted so scaffold-diff cannot
+    fan CONFIRMS_SEED out from front-matter (Briefing 21).
+    """
     contract = load_passage_sections(game)
     section_ids = {
         s["id"]
         for s in contract.get("sections") or []
-        if (s.get("phase") or 99) <= phase and s.get("id")
+        if (s.get("phase") or 99) <= phase
+        and s.get("id")
+        and s.get("seed_evidence", True) is not False
     }
     if not section_ids:
         return []

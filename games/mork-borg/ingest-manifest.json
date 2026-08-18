@@ -2,11 +2,11 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (role-based index+result; index key enumeration per table, not per die size).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-07-15",
+  "verified_date": "2026-08-16",
   "handoff": {
     "target_repo": "pdf-graph-builder",
     "target_path": "games/mork-borg/ingest-manifest.json",
@@ -21,7 +21,7 @@
   "operational_spines": {
     "file": "operational-spines.json",
     "target_path": "games/mork-borg/operational-spines.json",
-    "description": "Altitude-D If spines (Briefing 17 / D1 Violence DR12). Deterministic IngestNode materialization — closed vocabulary only."
+    "description": "Altitude-D If spines (Briefings 17–19 / D1–D3). Deterministic IngestNode materialization — closed vocabulary only; D3 binds creature via Circumstance-[:APPLIES_TO]."
   },
   "rulebook_index": {
     "file": "passage-sections.json",
@@ -2039,6 +2039,80 @@
         "multi_table_page": true
       },
       "note": "Slice 2a (Briefing 14): d6 range pairs, not six separate rows. No used_by yet — scaffold has no Initiative SeedNode (ADA may add)."
+    },
+    {
+      "name": "ReactionTable",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "32",
+      "columns": [
+        {
+          "name": "2d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "2d6": "2-3",
+            "result": "Kill!"
+          }
+        },
+        {
+          "cells": {
+            "2d6": "4-6",
+            "result": "Angered"
+          }
+        },
+        {
+          "cells": {
+            "2d6": "7-8",
+            "result": "Indifferent"
+          }
+        },
+        {
+          "cells": {
+            "2d6": "9-10",
+            "result": "Almost friendly"
+          }
+        },
+        {
+          "cells": {
+            "2d6": "11-12",
+            "result": "Helpful"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Reaction\\s*\\(2D6\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "2-3",
+            "4-6",
+            "7-8",
+            "9-10",
+            "11-12"
+          ]
+        },
+        "min_rows": 5,
+        "max_rows": 5,
+        "stop_before": [
+          "Morale"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 2c (Briefing 24 follow-up): 2d6 reaction bands on p.32. Stop before Morale prose. No flee/surrender d6 table."
     },
     {
       "name": "FoulPsychopompSummonTable",

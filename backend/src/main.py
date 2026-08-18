@@ -56,6 +56,7 @@ from src.section_chunking import (
 )
 from src.index_materialization import materialize_rulebook_catalog
 from src.spine_materialization import materialize_operational_spines
+from src.creature_sheet_materialization import materialize_creature_sheets
 
 from langchain_community.document_loaders import WebBaseLoader
 
@@ -582,6 +583,12 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
       )
       logging.info("operational_spines: %s", spine_stats)
       uri_latency["operational_spines"] = spine_stats
+
+      sheet_stats = materialize_creature_sheets(
+        graph, params.file_name, game="mork-borg"
+      )
+      logging.info("creature_sheets: %s", sheet_stats)
+      uri_latency["creature_sheets"] = sheet_stats
 
     section_chunk_list = section_chunks_for_llm(
       graph, params.file_name, game="mork-borg", phase=section_phase

@@ -77,7 +77,7 @@ Same shape with `FOR` → `DefenseRoll` (Agility binding already in seeds).
 | Deferred | Why |
 |---|---|
 | Crit / fumble / rest / infection spines | **D2** — same metamodel, later briefing |
-| Goblin DR14 / `Circumstance` “fighting Goblin” | **D3** / creature sheet lane |
+| Creature DR overrides (e.g. Goblin 14) via `Circumstance-[:APPLIES_TO]->` instance — **not** creature-in-`If.id` | **D3** — [briefing-19](./pdf-graph-builder-briefing-19.md) |
 | Natural-20 `Compare` crit spine | **D2** |
 | Lore edges, creature-type taxonomies | Never for D1 |
 | Changing ADA `ludemes.json` | Gap → handoff report; ADA fixes seeds + reset/bootstrap |

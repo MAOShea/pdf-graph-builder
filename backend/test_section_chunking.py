@@ -279,3 +279,16 @@ def test_apply_text_filters_strips_bare_bones_footer():
     assert out.splitlines()[0] != "27"
     assert out.splitlines()[-1] != "27"
     assert "1" in out  # mid-page index kept
+
+
+def test_front_matter_seed_evidence_denied():
+    """Briefing 21: front-matter sections must not confirm scaffold seeds."""
+    contract = load_passage_sections("mork-borg")
+    by_id = {s["id"]: s for s in contract["sections"]}
+    for sid in (
+        "character-names",
+        "occult-treasures",
+        "front-matter-colophon-credits",
+    ):
+        assert by_id[sid].get("seed_evidence") is False
+    assert by_id["violence-combat"].get("seed_evidence", True) is not False

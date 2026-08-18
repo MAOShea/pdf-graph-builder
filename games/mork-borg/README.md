@@ -149,7 +149,7 @@ After editing: re-run full ingest, or recovery
 5. Bump `version` / `verified_note` when you change boundaries; set `status: verified` when happy.
 6. After edits here, copy `passage-sections.json` **pgb → ADA** corpus mirror when ADA should stay aligned (see [ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md)).
 
-**Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Do not add parse logic in the tool.
+**Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump. Do not add parse logic in the tool.
 
 ---
 

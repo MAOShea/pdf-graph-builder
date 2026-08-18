@@ -1,83 +1,75 @@
-# Briefing 19: Altitude D — Goblin DR14 `If` spines (D3 vertical slice)
+# Briefing 19: Altitude D — creature DR overrides as graph parameters (D3)
 
 **For pdf-graph-builder agents.** Third **operational fill** under altitude D ([DESIGN §8.2.4](../../DESIGN.md#824-altitude-d-build-plan-dependency-order)). Same closed vocabulary as [briefing-17](./pdf-graph-builder-briefing-17.md) / [briefing-18](./pdf-graph-builder-briefing-18.md).
 
-**Prerequisite:** D1 + D2 spines green ([handoff-15](../inbox/ai-dm-assistant-handoff-15.md), [handoff-16](../inbox/ai-dm-assistant-handoff-16.md)). Goblin **entity-scoped** `RulePassage` already exists (fiction gate / briefing-10–11). Scaffold has `If` / `BoolExpression` / `Circumstance` / `Compare` / `Creature` / `CreatureTest`.
+**Prerequisite:** D1 + D2 spines green ([handoff-15](../inbox/ai-dm-assistant-handoff-15.md), [handoff-16](../inbox/ai-dm-assistant-handoff-16.md)). CREATURES entity passages exist. **ADA seed grammar updated** (`ludemes` 0.4.1: `Circumstance-[:APPLIES_TO]->Monster`; MB `deltas` 0.3.3: `→Creature`). Operator must **reset + bootstrap** before this fill so the scaffold allows the parameter edge.
 
-**Do not invent** sheet relationship types (`HAS_STAT`, `HAS_ATTACK`, `HAS_ARMOR`, …) — those labels are **not** in ADA Tier 0–4 seeds yet. This briefing is the **Goblin DR14 adjudication slice** (the paper shape already locked in DESIGN). Full creature-sheet ontology = later ADA seed PR + follow-up briefing.
+**Design rule (read this):** the creature is a **graph parameter** (edge to an instance node), **not** a substring of `If.id`.  
+Do **not** use ids like `if:melee-vs-goblin` / `if:melee-hit-goblin`. Those encode the creature in a string and force ADA into slug parsing.
+
+**Sheet rels:** deferred here — see **[briefing-20](./pdf-graph-builder-briefing-20.md)** (D4). Do not invent `HAS_STAT` / free-form sheet edges in this D3 fill.
 
 ---
 
-## Framing (unchanged)
+## Framing
 
 | Side | Role |
 |---|---|
-| **DM prompt** | Situation (e.g. fighting a Goblin) — **not** an IF/THEN/ELSE |
-| **Rulebook** | Library of `If` spines |
-| **pgb** | Materialize Goblin DR14 spines + cite Goblin entity passage |
-| **ADA (later)** | Extend R16 to select these when the situation mentions Goblin |
-
-Closed vocabulary only. `Circumstance` = evaluable situating atom (true/false). Not status `Condition`.
+| **DM prompt** | Situation — which procedure, which creature instance |
+| **Rulebook** | `If` spines |
+| **pgb** | Emit override spines; bind creature via **`APPLIES_TO`** (or equivalent closed edge) |
+| **ADA** | Select by matching procedure **and** creature instance in the guard — not by parsing id strings |
 
 ---
 
-## Closed vocabulary
+## Identity = subgraph (not a named string)
 
-**Nodes:** `If`, `BoolExpression`, `Circumstance`, `Compare`, `Outcome`  
-**Rels:** `FOR`, `IF`, `THEN`, `ELSE`, `HAS_ATOM`; `COMPARED_TO` → `DR` / threshold **14**  
-**Property:** `BoolExpression.combinator` ∈ {`LEAF`, `AND`, `OR`, `NOT`} — Goblin guards use **`AND`**
-
-**Evidence:** every spine `DOCUMENTED_BY` → Goblin **entity** `RulePassage` (not a neighbor creature, not bounty trail, not `violence-combat` alone).
-
----
-
-## Book cue (Bare Bones Goblin)
-
-Entity passage Special line (paraphrase — match your extract):
-
-> Quick; **attacks and defence are DR14**.
-
-Meaning for spines: when the situation is fighting a Goblin, PC melee / ranged / defence tests use threshold **14** (not the default 12 Violence spines).
-
----
-
-## D3 scope — what to materialize (Goblin only)
-
-Extend `operational-spines.json` (v0.2.x → v0.3.0). Deterministic materializer; full `.\ingest-morkborg.ps1 -SectionPhase 2` (or current phase that includes CREATURES entity passages). **Do not** wipe D1/D2 spines.
-
-### 1. Melee vs Goblin (DR 14)
+A creature DR override is uniquely identified by:
 
 ```text
-(:If {id: "if:melee-hit-goblin"})-[:FOR]->(:MeleeAttack)
+(If)-[:FOR]->(Procedure)          // MeleeAttack | RangedAttack | DefenseRoll
+(If)-[:IF]->(BoolExpression {combinator: "AND"})
+(BoolExpression)-[:HAS_ATOM]->(Circumstance {role: "fighting"})
+(Circumstance)-[:APPLIES_TO]->(CreatureInstance)   // the parameter
+(BoolExpression)-[:HAS_ATOM]->(Compare {threshold: N})-[:COMPARED_TO]->(DR)
+(If)-[:THEN|ELSE]->(Outcome)
+(If)-[:DOCUMENTED_BY]->(entity RulePassage for that creature)
+```
+
+**`If.id`:** opaque stable merge key only — e.g. ingest element id, or hash of `(procedure, creature_instance_id, threshold)`.  
+Human-readable creature names belong on the **creature node** / catalog title, not inside `If.id`.
+
+**MERGE / upsert:** match existing override by **graph shape** (same `FOR` procedure + same `Circumstance-[:APPLIES_TO]->` instance), not by decoding a slug from `id`.
+
+---
+
+## Template (batch every qualifying CREATURES row)
+
+For each creature instance `C` whose entity prose states an attack/defence DR (or clear equivalent):
+
+```text
+(:If:IngestNode {id: <opaque>})-[:FOR]->(:MeleeAttack)
 (:If)-[:IF]->(:BoolExpression {combinator: "AND"})
-(:BoolExpression)-[:HAS_ATOM]->(:Circumstance {name: "fighting Goblin"})
-(:BoolExpression)-[:HAS_ATOM]->(:Compare {op: ">=", threshold: 14})-[:COMPARED_TO]->(:DR)
+(:BoolExpression)-[:HAS_ATOM]->(:Circumstance {role: "fighting"})
+(:Circumstance)-[:APPLIES_TO]->(C)
+(:BoolExpression)-[:HAS_ATOM]->(:Compare {op: ">=", threshold: <N>})-[:COMPARED_TO]->(:DR)
 (:If)-[:THEN]->(:Outcome)   // hit
 (:If)-[:ELSE]->(:Outcome)   // miss
 ```
 
-### 2. Ranged vs Goblin (DR 14)
+Emit the same shape for `RangedAttack` and `DefenseRoll` when the prose applies to attacks and defence (Goblin: DR14 for both).
 
-Same shape: `if:ranged-hit-goblin` `FOR` `RangedAttack`.
+**Skip** creatures with no extractable DR override (leave D1 defaults).
 
-### 3. Defence vs Goblin (DR 14)
+**Batch source:** full `creatures_index` — one materializer pass.
 
-Same shape: `if:defence-goblin` `FOR` `DefenseRoll`.
+---
 
-### Optional (only if Goblin prose clearly states creature-side tests)
+## Goblin = acceptance exemplar only
 
-```text
-(:If {id: "if:goblin-creature-test"})-[:FOR]->(:CreatureTest)
-... AND Circumstance "Goblin acting" + Compare threshold 14 ...
-```
-
-Skip if the book only constrains PC attack/defence DR. Document the choice in the handoff.
-
-**Stable ids (required):**  
-`if:melee-hit-goblin`, `if:ranged-hit-goblin`, `if:defence-goblin`  
-(+ `bool:*`, `circumstance:fighting-goblin`, `compare:*-dr14`, `outcome:*`).
-
-**Circumstance naming:** use exactly `fighting Goblin` (or document a single canonical string). Do not create a parallel “vs Goblin” / “Goblin present” synonym set in the graph.
+Prose: attacks and defence **DR14**.  
+Expect three override `If` nodes whose `Circumstance-[:APPLIES_TO]->` Goblin instance and `Compare.threshold = 14`, `FOR` Melee / Ranged / Defence.  
+**Ids must not contain `goblin`.**
 
 ---
 
@@ -85,98 +77,115 @@ Skip if the book only constrains PC attack/defence DR. Document the choice in th
 
 | Deferred | Why |
 |---|---|
-| D1/D2 spines | Keep; do not regress |
-| Full bestiary sheet (`HAS_HP`, `HAS_ATTACK`, armor tiers as edges) | **ADA seed lock first** — not this briefing |
-| Every CREATURES row | Goblin vertical slice only |
-| Lore / Galgenbeck | Never |
-| Changing ADA `ludemes.json` from pgb | Gap → handoff; ADA fixes seeds |
+| D1/D2 spines | Keep |
+| `HAS_*` sheet ontology | ADA seeds first |
+| Creature name inside `If.id` | **Forbidden** |
+| Inventing DR when prose silent | Skip |
+| Per-creature briefings | Forbidden |
 
 ---
 
 ## Ops path
 
-1. Confirm Goblin entity `RulePassage` exists and stops before neighbor/bounty bleed.  
-2. Confirm D1/D2 `If:IngestNode` counts unchanged after your run.  
-3. Extend spine contract + materializer (`circumstance` + `compare_dr` with threshold 14, `combinator: AND`).  
-4. Full product-path ingest (not recovery-only for the handoff claim).  
-5. Handoff with acceptance Cypher pasted. No “ball with ADA” until D3-P0–P2 green.
+**Split of work** (ingest is **only** in pgb — ADA never runs Tier-5):
 
-**No ADA reset/bootstrap** unless scaffold labels are missing (they should not be). Tier-5 only → full ingest is enough ([same rule as D2](../inbox/ai-dm-assistant-handoff-16.md)).
+| Where | What |
+|---|---|
+| **ADA** | Seed grammar + **reset + bootstrap** only (scaffold). Then paste this briefing into a pgb session. |
+| **pgb** | All Tier-5: fiction + D1/D2 spines + **this D3 fill** on the fresh DB (reset wiped prior ingest). |
+
+1. **ADA operator:** after seed pull —  
+   `python schema/reset_db.py --game mork-borg --confirm`  
+   then `python schema/bootstrap.py --game mork-borg`  
+   Confirm scaffold has `Circumstance-[:APPLIES_TO]->Creature` (and/or `Monster`).  
+2. **Hand this briefing to pgb** (sync/paste).  
+3. **pgb:** extend spine materializer (template + loop CREATURES; opaque ids; `APPLIES_TO` → creature **instance**); run full product-path ingest (fiction + D1 + D2 + D3).  
+4. **pgb → ADA inbox:** handoff with Cypher pasted — prove parameter edge, not id substrings.
+
+**This is not Tier-5-only on the ADA side.** New seed grammar → ADA reset + bootstrap first; then pgb re-dresses the empty scaffold.
 
 ---
 
 ## Acceptance gates (handoff must paste results)
 
-### D3-P0 — Prior spines intact + Goblin passage
+### D3-P0 — Prior spines intact
 
 ```cypher
 MATCH (i:If:IngestNode)
-WHERE i.id STARTS WITH 'if:melee-hit-default'
-   OR i.id STARTS WITH 'if:crit'
-   OR i.id STARTS WITH 'if:fumble'
-RETURN count(i) AS prior_sample
+WHERE i.id IN [
+  'if:melee-hit-default', 'if:crit-attack', 'if:fumble-defence'
+]
+RETURN i.id ORDER BY i.id
 ```
 
-```cypher
-MATCH (p:RulePassage)
-WHERE toLower(coalesce(p.id,'')) CONTAINS 'goblin'
-   OR toLower(coalesce(p.text,'')) CONTAINS 'goblin'
-RETURN count(p) AS goblin_passages
-```
+**Expect:** 3 rows.
 
-**Expect:** prior_sample ≥ 1 (smoke that D1/D2 still there); goblin_passages ≥ 1 entity-scoped preferred.
-
-### D3-P1 — Three Goblin DR14 spines
+### D3-P1 — Overrides bound by graph parameter (not id slug)
 
 ```cypher
 MATCH (i:If:IngestNode)-[:FOR]->(proc)
-WHERE i.id IN [
-  'if:melee-hit-goblin',
-  'if:ranged-hit-goblin',
-  'if:defence-goblin'
-]
-MATCH (i)-[:`IF`]->(b:BoolExpression)-[:HAS_ATOM]->(atom)
-OPTIONAL MATCH (atom)-[:COMPARED_TO]->(dr)
+MATCH (i)-[:`IF`]->(b:BoolExpression {combinator: 'AND'})
+MATCH (b)-[:HAS_ATOM]->(circ:Circumstance)-[:APPLIES_TO]->(c)
+WHERE (c:IngestNode OR c:Creature OR c.name IS NOT NULL)
+  AND (c)-[:INSTANCE_OF]->(:Creature) OR 'Creature' IN labels(c)
+      OR exists { (c)-[:INSTANCE_OF]->(:SeedNode) }
+MATCH (b)-[:HAS_ATOM]->(cmp:Compare)
+WHERE cmp.threshold IS NOT NULL
 OPTIONAL MATCH (i)-[:THEN]->(t)
 OPTIONAL MATCH (i)-[:ELSE]->(e)
-RETURN i.id AS if_id,
-       coalesce(proc.name, labels(proc)[0]) AS procedure,
-       b.combinator AS combinator,
-       labels(atom) AS atom_labels,
-       coalesce(atom.threshold, atom.name) AS atom_key,
-       coalesce(dr.name, '') AS compared_to,
+RETURN coalesce(proc.name, labels(proc)[0]) AS procedure,
+       coalesce(c.name, c.title, c.id) AS creature,
+       cmp.threshold AS threshold,
+       i.id AS if_id,
        count(DISTINCT t) AS then_n,
        count(DISTINCT e) AS else_n
-ORDER BY if_id, atom_key
+ORDER BY creature, procedure
 ```
 
-**Expect:** three `if_id`s; combinator **AND**; Circumstance key fighting Goblin; Compare threshold **14**; THEN≥1 and ELSE≥1 each.
+**Expect:**
 
-### D3-P2 — Evidence → Goblin entity passage
+- Multiple creatures when prose supports it (batch).  
+- Goblin (by **creature** column / node), threshold **14**, three procedures.  
+- **`if_id` does not contain creature names** (handoff: assert with a check — e.g. no `goblin` / `scum` substring in `i.id` for these rows).  
+- `then_n` / `else_n` ≥ 1.
+
+Simplify the `WHERE` on `c` to match how your instances are actually labelled; the invariant is: **Circumstance APPLIES_TO the creature instance**.
+
+### D3-P1b — Id hygiene (required)
+
+```cypher
+MATCH (i:If:IngestNode)-[:`IF`]->(:BoolExpression)-[:HAS_ATOM]->(:Circumstance)-[:APPLIES_TO]->(c)
+WHERE toLower(i.id) CONTAINS toLower(coalesce(c.name, c.title, ''))
+   OR toLower(i.id) CONTAINS 'goblin'
+   OR toLower(i.id) CONTAINS '-vs-'
+RETURN i.id, coalesce(c.name, c.title) AS creature
+```
+
+**Expect:** **zero rows**. Creature must not appear in `If.id`; `-vs-` slug pattern retired.
+
+### D3-P2 — Evidence from that creature’s entity passage
 
 ```cypher
 MATCH (i:If:IngestNode)-[:DOCUMENTED_BY]->(p:RulePassage)
-WHERE i.id IN [
-  'if:melee-hit-goblin',
-  'if:ranged-hit-goblin',
-  'if:defence-goblin'
-]
-RETURN i.id AS if_id, collect(DISTINCT p.id) AS passages
-ORDER BY if_id
+MATCH (i)-[:`IF`]->(:BoolExpression)-[:HAS_ATOM]->(:Circumstance)-[:APPLIES_TO]->(c)
+RETURN coalesce(c.name, c.title, c.id) AS creature,
+       collect(DISTINCT p.id) AS passages
+ORDER BY creature
 ```
 
-**Expect:** ≥ 1 passage per spine; passage ids/text clearly Goblin entity (not Bent/Scum neighbor).
+**Expect:** passages are that creature’s entity scope.
 
-### D3-P3 — No new rel vocabulary
+### D3-P3 — Closed rels on If
 
 ```cypher
 MATCH (i:If:IngestNode)-[r]->()
-WHERE i.id CONTAINS 'goblin'
-RETURN DISTINCT type(r) AS rel
-ORDER BY rel
+WHERE exists {
+  (i)-[:`IF`]->(:BoolExpression)-[:HAS_ATOM]->(:Circumstance)-[:APPLIES_TO]->()
+}
+RETURN DISTINCT type(r) AS rel ORDER BY rel
 ```
 
-**Expect:** `FOR`, `IF`, `THEN`, `ELSE`, `DOCUMENTED_BY`, `CONFIRMS_SEED`, `INSTANCE_OF` only on the `If`. No `HAS_ATTACK` / `HAS_STAT`.
+**Expect:** `FOR`, `IF`, `THEN`, `ELSE`, `DOCUMENTED_BY`, … — no `HAS_ATTACK`.
 
 ---
 
@@ -184,34 +193,34 @@ ORDER BY rel
 
 | Gate | Required |
 |---|---|
-| D1/D2 spines intact | **Required** |
-| Goblin entity passage clean | **Required** |
-| **D3-P0** | **Required** |
-| **D3-P1** three AND spines DR14 | **Required** |
-| **D3-P2** Goblin evidence | **Required** |
-| **D3-P3** closed rels | **Required** |
+| Creature via `APPLIES_TO` instance | **Required** |
+| Opaque `If.id` (no creature name / no `-vs-` slug) | **Required** |
+| Batch CREATURES with extractable DR | **Required** |
+| Goblin exemplar threshold 14 in **creature** column | **Required** |
+| D3-P0…P3 | **Required** |
 
 ---
 
 ## What ADA will do after a green handoff
 
-1. Extend **R16** to prefer Goblin DR14 spines when the situation mentions Goblin (over default DR12).  
-2. Graph + API/CONTEXT smokes (e.g. *I melee a Goblin — what's the DR?*).  
-3. Definitional *What is a Goblin?* may still use entity-passage short-circuit; adjudication asks must use spines.  
-4. Full sheet ontology only after ADA locks seed labels.
+1. Extend **R16** to match `(FOR procedure) + (Circumstance APPLIES_TO creature mentioned in situation)` — **never** parse creature from `If.id`.  
+2. Prefer those overrides over default DR12 when the creature parameter matches.  
+3. Smokes use Goblin + one other override creature (if any).  
+4. Sheet ontology later.
 
 ---
 
-## Standing smokes (ADA, after handoff)
+## Standing smokes (ADA)
 
-| Id | Prompt focus | Spine |
+| Id | Prompt | Expect in CONTEXT |
 |---|---|---|
-| **G1** | Melee a Goblin — DR? | `if:melee-hit-goblin` (14, not 12) |
-| **G2** | Shoot a Goblin / bow — DR? | `if:ranged-hit-goblin` |
-| **G3** | Defend against a Goblin — DR? | `if:defence-goblin` |
+| **G1** | *I melee a Goblin — what's the DR?* | Override `If` FOR MeleeAttack, Circumstance APPLIES_TO Goblin, threshold **14** |
+| **G2** | *I shoot a Goblin — DR?* | same, RangedAttack |
+| **G3** | *I defend against a Goblin — DR?* | same, DefenseRoll |
+| **G4** | Same for another creature that received an override | bound via APPLIES_TO, not id string |
 
 ---
 
 ## Sync
 
-`.\scripts\sync-outbox-briefings.ps1` from AI-DM-Assistant root, or paste into the pgb Cursor session. Reply with `docs/inbox/ai-dm-assistant-handoff-*.md`.
+`.\scripts\sync-outbox-briefings.ps1` from AI-DM-Assistant root, or paste into the pgb Cursor session.
