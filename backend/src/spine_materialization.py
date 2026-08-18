@@ -692,6 +692,7 @@ def materialize_operational_spines(
             logger.error("spine_materialization: %s", stats["warnings"][-1])
             return stats
 
+    load_operational_spines.cache_clear()
     contract = load_operational_spines(game)
     spines = contract.get("spines") or []
     stats["spines_expected"] = len(spines)

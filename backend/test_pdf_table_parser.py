@@ -50,6 +50,31 @@ class TestManifestPdfParser(unittest.TestCase):
         traps = next(t for t in tables if t["manifest_name"] == "TrapsTable")
         self.assertEqual(len(traps["rows"]), 12)
 
+    def test_advancement_debris_mixed_range_list(self):
+        spec = spec_by_name(self.manifest, "AdvancementDebrisTable")
+        sample = (
+            "Left in the debris you find\n"
+            "d6\n"
+            "1-3\n"
+            "nothing\n"
+            "4\n"
+            "3d10 silver\n"
+            "5\n"
+            "an unclean scroll\n"
+            "6\n"
+            "a sacred scroll\n"
+            "Ability changes\n"
+            "Roll a d6 against every ability.\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=33)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 4)
+        by_key = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertEqual(by_key["1-3"], "nothing")
+        self.assertIn("silver", by_key["4"].lower())
+        self.assertIn("unclean", by_key["5"].lower())
+        self.assertIn("sacred", by_key["6"].lower())
+
     def test_table_matches_spec_columns(self):
         from src.table_materialization import _table_matches_spec
 

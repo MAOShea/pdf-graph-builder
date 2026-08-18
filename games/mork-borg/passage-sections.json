@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.13",
+  "version": "0.5.14",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -1032,7 +1032,10 @@
         "pattern": "^\\s*(More HP|Left in the debris you find|Ability changes)\\s*$",
         "notes": "Real children of Getting Better. Preamble keeps GM-when + 'When this happens the following things occur:'"
       },
-      "notes": "Sibling of Rest / Reaction / Morale. Title is two PDF lines (Getting Better / or worse). Split only the three improvement heads."
+      "contains_lookup_tables": [
+        "AdvancementDebrisTable"
+      ],
+      "notes": "Sibling of Rest / Reaction / Morale. Title is two PDF lines (Getting Better / or worse). Split only the three improvement heads. Debris d6 is AdvancementDebrisTable."
     },
     {
       "id": "powers-and-scrolls",

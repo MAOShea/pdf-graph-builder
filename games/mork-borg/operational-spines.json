@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints. Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-17",
   "creature_dr_overrides": {
@@ -316,6 +316,34 @@
         "text_contains_any": ["flees", "surrenders"]
       },
       "notes": "FOR MoraleCheck. Bare Bones: Roll d6 — (1–3) flees or (4–6) surrenders. AND demoralized + d6<=3 → flee; ELSE surrender."
+    },
+    {
+      "id": "if:improve-hp",
+      "for_procedure": "Advancement",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare",
+        "id": "compare:6d10-ge-max-hp",
+        "op": ">=",
+        "left": "6d10",
+        "compared_to": "HitPoints"
+      },
+      "bool_id": "bool:improve-hp",
+      "then": {
+        "id": "outcome:improve-hp-gain-d6",
+        "name": "increase-max-hp-d6",
+        "summary": "6d10 equal to or greater than current maximum HP: increase maximum HP by d6."
+      },
+      "else": {
+        "id": "outcome:improve-hp-no-gain",
+        "name": "no-hp-gain",
+        "summary": "6d10 below current maximum HP: maximum HP does not increase."
+      },
+      "evidence": {
+        "section_id": "getting-better-or-worse",
+        "text_contains_any": ["Roll 6d10", "maximum HP"]
+      },
+      "notes": "Slice 2d / Getting Better More HP. FOR Advancement (procedure); sheet SeedNode:HitPoints stays HAS_HIT_POINTS / COMPARED_TO only. Threshold is the PC's current max from the situation, not a seed constant."
     }
   ]
 }

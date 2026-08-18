@@ -13,8 +13,8 @@ def test_load_d1_and_d2_spines():
     spines = contract.get("spines") or []
     by_id = {s["id"]: s for s in spines}
 
-    assert contract.get("version") == "0.4.2"
-    assert len(spines) == 10
+    assert contract.get("version") == "0.4.3"
+    assert len(spines) == 11
     assert {
         "if:melee-hit-default",
         "if:ranged-hit-default",
@@ -26,6 +26,7 @@ def test_load_d1_and_d2_spines():
         "if:morale-trigger",
         "if:morale-demoralized",
         "if:morale-flee-or-surrender",
+        "if:improve-hp",
     } <= set(by_id)
 
     for sid in (
@@ -82,6 +83,16 @@ def test_load_d1_and_d2_spines():
     assert flee["for_procedure"] == "MoraleCheck"
     assert flee["combinator"] == "AND"
     assert flee["else"]["name"] == "surrenders"
+
+    improve = by_id["if:improve-hp"]
+    atom = improve["atom"]
+    assert improve["for_procedure"] == "Advancement"
+    assert atom["kind"] == "compare"
+    assert atom["op"] == ">="
+    assert atom["left"] == "6d10"
+    assert atom["compared_to"] == "HitPoints"
+    assert "threshold" not in atom
+    assert improve["evidence"]["section_id"] == "getting-better-or-worse"
 
     d3 = contract.get("creature_dr_overrides") or {}
     assert d3.get("enabled") is True
