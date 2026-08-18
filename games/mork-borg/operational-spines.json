@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "status": "draft",
   "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -188,7 +188,7 @@
         "summary": "Catch breath and drink: restore d4 HP."
       },
       "evidence": {
-        "section_id": "crit-fumble-rest",
+        "section_id": "rest",
         "text_contains_any": ["Catch your breath", "Restore d4"]
       },
       "notes": "FOR Downtime (no Rest SeedNode). Circumstance situating atom."
@@ -216,7 +216,7 @@
         "summary": "Infected: no HP restored from resting; instead lose d6 HP daily."
       },
       "evidence": {
-        "section_id": "crit-fumble-rest",
+        "section_id": "rest",
         "text_contains_any": ["infected character", "does not benefit"]
       },
       "notes": "AND of Circumstance Infected + resting (not status Condition). Book: infected does not benefit from resting; d6 HP lost daily."
@@ -249,7 +249,7 @@
         "summary": "Roll for morale: 2d6 against the creature's Morale value."
       },
       "evidence": {
-        "section_id": "reaction-morale",
+        "section_id": "morale",
         "text_contains_any": ["Roll for morale", "leader is killed"]
       },
       "notes": "Slice 2c / Briefing 25: roll-morale triggers (OR). FOR MoraleCheck (procedure); sheet SeedNode:Morale stays HAS_MORALE / COMPARED_TO only."
@@ -277,7 +277,7 @@
         "summary": "2d6 not greater than Morale: creature continues."
       },
       "evidence": {
-        "section_id": "reaction-morale",
+        "section_id": "morale",
         "text_contains_any": ["greater than the creature", "demoralized"]
       },
       "notes": "FOR MoraleCheck. Compare 2d6 > creature Morale (COMPARED_TO SeedNode:Morale; threshold from sheet HAS_MORALE at runtime)."
@@ -312,7 +312,7 @@
         "summary": "Demoralized: d6 4–6 → enemy surrenders."
       },
       "evidence": {
-        "section_id": "reaction-morale",
+        "section_id": "morale",
         "text_contains_any": ["flees", "surrenders"]
       },
       "notes": "FOR MoraleCheck. Bare Bones: Roll d6 — (1–3) flees or (4–6) surrenders. AND demoralized + d6<=3 → flee; ELSE surrender."

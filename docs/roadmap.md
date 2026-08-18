@@ -11,6 +11,7 @@ Operational backlog for scaffold-diff ingest and lookup-table materialization. N
 - **Shared extract + pdf-as-md** — `document_extract.py` + `tools/pdf-as-md` (Markdown sink, no Neo4j) for contract/PDF comparison
 - **AgonyEndTable** — hand-authored label→die chooser (p.17); ADA handoff-8 for `USES` / retrieval wiring
 - **Ingest coverage reporter** — `backend/check_coverage.py` / `.\check-coverage.ps1`
+- **Section ingest gates** — `backend/check_section_gates.py` / `.\check-section-gates.ps1` (Chunks, index hops, splits, spines)
 - Unified lookup-table pipeline (`run_lookup_table_pipeline`)
 - Complete `--cleanup` on full PDF re-ingest (chunks + document)
 
@@ -44,7 +45,7 @@ Terminal ingest and web UI must use the **same** `/extract` scaffold-diff path �
 
 - Run **`backend\start.ps1`**, then **`.\ingest-morkborg.ps1`** for normal ingest (CLI replaces the web UI only).
 - **Restart the backend** after code changes, then run a full ingest so hooks (section chunking, rulebook catalog, tables) load from current `main.py`.
-- Run **`.\check-coverage.ps1`** after ingest to verify manifest vs Neo4j.
+- Run **`.\check-section-gates.ps1`** after ingest to verify contracted section/index/spine shape, then **`.\check-coverage.ps1`** for manifest tables.
 
 **Don't** (for routine ops):
 

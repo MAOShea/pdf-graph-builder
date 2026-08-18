@@ -13,7 +13,7 @@ def test_load_d1_and_d2_spines():
     spines = contract.get("spines") or []
     by_id = {s["id"]: s for s in spines}
 
-    assert contract.get("version") == "0.4.1"
+    assert contract.get("version") == "0.4.2"
     assert len(spines) == 10
     assert {
         "if:melee-hit-default",
@@ -55,17 +55,19 @@ def test_load_d1_and_d2_spines():
     rest = by_id["if:rest-catch-breath"]
     assert rest["for_procedure"] == "Downtime"
     assert rest["atom"]["kind"] == "circumstance"
+    assert rest["evidence"]["section_id"] == "rest"
 
     infection = by_id["if:infection-blocks-rest"]
     assert infection["combinator"] == "AND"
     assert len(infection["atoms"]) == 2
     assert all(a["kind"] == "circumstance" for a in infection["atoms"])
+    assert infection["evidence"]["section_id"] == "rest"
 
     trigger = by_id["if:morale-trigger"]
     assert trigger["for_procedure"] == "MoraleCheck"
     assert trigger["combinator"] == "OR"
     assert len(trigger["atoms"]) == 3
-    assert trigger["evidence"]["section_id"] == "reaction-morale"
+    assert trigger["evidence"]["section_id"] == "morale"
 
     demoralized = by_id["if:morale-demoralized"]
     atom = demoralized["atom"]

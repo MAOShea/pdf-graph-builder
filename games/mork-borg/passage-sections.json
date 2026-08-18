@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -915,17 +915,43 @@
     {
       "id": "crit-fumble-rest",
       "phase": 2,
-      "title": "Crit, fumble, and rest",
+      "title": "Crit, fumble, and round",
       "index_title": "Crit",
       "index_titles": [
         "Crit",
-        "Fumble",
+        "Fumble"
+      ],
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Crit\\s*\\(natural 20\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Rest\\s*$"
+      },
+      "operator_page_hint": "31",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*(Fumble\\s*\\(natural 1\\)|How long is a round\\?)\\s*$",
+        "notes": "Bare Bones p.31. Intro before Fumble is Crit attack/defence prose (start heading stripped from Chunk body). Rest is a sibling heading — own section, not this split."
+      },
+      "notes": "Slice 2b: Crit + Fumble + round length. Stops before Rest (equal rank to Reaction / Morale / Getting Better). Id kept for D2 crit/fumble spines."
+    },
+    {
+      "id": "rest",
+      "phase": 2,
+      "title": "Rest",
+      "index_title": "Resting",
+      "index_titles": [
         "Resting",
         "Infection"
       ],
       "start_anchor": {
         "type": "heading_regex",
-        "pattern": "^\\s*Crit\\s*\\(natural 20\\)\\s*$"
+        "pattern": "^\\s*Rest\\s*$"
       },
       "end_anchor": {
         "type": "heading_regex",
@@ -934,26 +960,45 @@
       "operator_page_hint": "31",
       "links_to_seed_labels": [],
       "extract_rule_passages": true,
-      "passage_granularity": "subheading_regex",
-      "passage_split": {
-        "type": "heading_regex",
-        "pattern": "^\\s*(Fumble\\s*\\(natural 1\\)|How long is a round\\?|Rest)\\s*$",
-        "notes": "Bare Bones p.31 subheads. Intro before Fumble is Crit attack/defence prose (start heading stripped from Chunk body)."
-      },
-      "notes": "Slice 2b (Briefing 15): Crit, fumble, round length, Rest/infection (index: Resting, Infection p.31). No seed labels — section Chunk / RulePassage only."
+      "passage_granularity": "paragraph",
+      "notes": "Sibling of Reaction / Morale / Getting Better (not a subhead of Crit). Index: Resting, Infection p.31."
     },
     {
-      "id": "reaction-morale",
+      "id": "reaction",
       "phase": 2,
-      "title": "Reaction and morale",
+      "title": "Reaction (2D6)",
       "index_title": "Reaction",
       "index_titles": [
-        "Reaction",
-        "Morale"
+        "Reaction"
       ],
       "start_anchor": {
         "type": "heading_regex",
         "pattern": "^\\s*Reaction\\s*\\(2D6\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Morale\\s*$"
+      },
+      "operator_page_hint": "32",
+      "links_to_seed_labels": [],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "contains_lookup_tables": [
+        "ReactionTable"
+      ],
+      "notes": "Sibling heading. Stops before Morale. Replaces compound id reaction-morale."
+    },
+    {
+      "id": "morale",
+      "phase": 2,
+      "title": "Morale",
+      "index_title": "Morale",
+      "index_titles": [
+        "Morale"
+      ],
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Morale\\s*$"
       },
       "end_anchor": {
         "type": "heading_regex",
@@ -963,10 +1008,7 @@
       "links_to_seed_labels": [],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "contains_lookup_tables": [
-        "ReactionTable"
-      ],
-      "notes": "Slice 2c (Briefing 24): Reaction (2D6) + Morale procedure; stop before Getting Better. Index: Reaction, Morale p.32. ReactionTable = 2d6 bands; Morale stays prose. No seed labels — section Chunk only. Combined passage OK for 2c start (optional Morale passage_split deferred)."
+      "notes": "Sibling heading (not a subhead of Reaction). Procedure prose; sheet score stays HAS_MORALE."
     },
     {
       "id": "getting-better-or-worse",
@@ -984,8 +1026,13 @@
       "operator_page_hint": "33",
       "links_to_seed_labels": [],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph",
-      "notes": "Title spans two lines in PDF ('Getting Better' / 'or worse')."
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*(More HP|Left in the debris you find|Ability changes)\\s*$",
+        "notes": "Real children of Getting Better. Preamble keeps GM-when + 'When this happens the following things occur:'"
+      },
+      "notes": "Sibling of Rest / Reaction / Morale. Title is two PDF lines (Getting Better / or worse). Split only the three improvement heads."
     },
     {
       "id": "powers-and-scrolls",

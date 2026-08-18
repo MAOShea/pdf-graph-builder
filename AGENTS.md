@@ -58,7 +58,7 @@ Contract reference: `README.md` (Use Case 2 → Lookup tables), `docs/pdf-graph-
 
 **Architecture pin:** contracts vs Ollama, scaffold-diff edges, prompt location, and full ingest vs light CLIs — `design.md` → *Product path: contracts first, Ollama second*. After a DB reset, use full `.\ingest-morkborg.ps1` (not only `materialize-*`).
 
-After ingest, run `.\check-coverage.ps1` for a manifest-driven coverage report.
+After ingest, run `.\check-section-gates.ps1` (section Chunks, IndexEntry `MAPS_TO_SECTION`, passage splits, spine `DOCUMENTED_BY` — fail closed) then `.\check-coverage.ps1` (tables). Do not treat table coverage as a substitute for the section-shape gate. ADA chat smokes come after both.
 
 Section chunking (Briefing 6): `games/<game>/passage-sections.json` via manifest `passage_sections.file`; **pdf-graph-builder is source of truth** for that file (not ADA). Runs automatically on scaffold-diff extract, or `backend\materialize_passage_sections.py --phase 1`. Sync policy: `docs/ingest-manifest-sync.md`.
 

@@ -148,6 +148,7 @@ After editing: re-run full ingest, or recovery
 4. Confirm `entry_kind` on index rows (wrong kind → wrong `INSTANCE_OF` seed).
 5. Bump `version` / `verified_note` when you change boundaries; set `status: verified` when happy.
 6. After edits here, copy `passage-sections.json` **pgb → ADA** corpus mirror when ADA should stay aligned (see [ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md)).
+7. After full ingest, from the pgb repo root run `.\check-section-gates.ps1` (fail-closed section/index/spine shape) then `.\check-coverage.ps1` (tables). ADA smokes are the consumer check, not this gate.
 
 **Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump. Do not add parse logic in the tool.
 

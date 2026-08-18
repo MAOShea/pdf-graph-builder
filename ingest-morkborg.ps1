@@ -4,6 +4,8 @@
 #   .\ingest-morkborg.ps1 -SectionPhase 2
 #   .\ingest-morkborg.ps1 -StartPage 27 -EndPage 31
 #
+# After ingest: .\check-section-gates.ps1 then .\check-coverage.ps1
+#
 # -SectionPhase: max passage-sections.json phase (inclusive). Default 2 = RULES
 # phase-1 + THE WORLD (Briefing 13). Use 1 for phase-1 only; 3 for later RULES.
 
