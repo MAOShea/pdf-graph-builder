@@ -667,6 +667,44 @@ def _merge_spine(graph, file_name: str, spine: dict[str, Any], stats: dict[str, 
     _link_evidence(graph, file_name, if_id, spine, stats)
 
 
+def _normalize_supersedes(spine: dict[str, Any]) -> list[str]:
+    raw = spine.get("supersedes")
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return [str(x) for x in raw if x]
+    return [str(raw)]
+
+
+def _link_declared_supersedes(
+    graph, spines: list[dict[str, Any]], stats: dict[str, Any]
+) -> None:
+    """Contract ``supersedes`` → ``If-[:SUPERSEDES]->If`` (situation-gated overrides)."""
+    linked = 0
+    for spine in spines:
+        if_id = spine.get("id")
+        if not if_id:
+            continue
+        for target_id in _normalize_supersedes(spine):
+            rows = execute_graph_query(
+                graph,
+                """
+                MATCH (a:IngestNode:If {id: $if_id})
+                MATCH (b:IngestNode:If {id: $target_id})
+                MERGE (a)-[:SUPERSEDES]->(b)
+                RETURN 1 AS ok
+                """,
+                {"if_id": if_id, "target_id": target_id},
+            )
+            if rows:
+                linked += 1
+            else:
+                stats["warnings"].append(
+                    f"SUPERSEDES: {if_id} → {target_id} (missing If)"
+                )
+    stats["declared_supersedes_links"] = linked
+
+
 def materialize_operational_spines(
     graph,
     file_name: str,
@@ -681,6 +719,7 @@ def materialize_operational_spines(
         "d3_creatures_scanned": 0,
         "d3_overrides_emitted": 0,
         "d3_supersedes_links": 0,
+        "declared_supersedes_links": 0,
         "warnings": [],
     }
 
@@ -707,6 +746,13 @@ def materialize_operational_spines(
             msg = f"spine {spine.get('id')!r} failed: {exc}"
             stats["warnings"].append(msg)
             logger.exception("spine_materialization: %s", msg)
+
+    try:
+        _link_declared_supersedes(graph, spines, stats)
+    except Exception as exc:
+        msg = f"declared SUPERSEDES failed: {exc}"
+        stats["warnings"].append(msg)
+        logger.exception("spine_materialization: %s", msg)
 
     try:
         materialize_creature_dr_overrides(graph, file_name, contract, stats)

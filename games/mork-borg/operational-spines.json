@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints. Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-17",
   "creature_dr_overrides": {
@@ -344,6 +344,76 @@
         "text_contains_any": ["Roll 6d10", "maximum HP"]
       },
       "notes": "Slice 2d / Getting Better More HP. FOR Advancement (procedure); sheet SeedNode:HitPoints stays HAS_HIT_POINTS / COMPARED_TO only. Threshold is the PC's current max from the situation, not a seed constant."
+    },
+    {
+      "id": "if:ability-change-default",
+      "for_procedure": "Advancement",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare",
+        "id": "compare:d6-ge-ability",
+        "op": ">=",
+        "left": "d6",
+        "compared_to": "AbilityScore"
+      },
+      "bool_id": "bool:ability-change-default",
+      "then": {
+        "id": "outcome:ability-increase-1",
+        "name": "increase-ability-1",
+        "summary": "d6 equal to or greater than the ability: increase it by 1, to a maximum of +6."
+      },
+      "else": {
+        "id": "outcome:ability-decrease-1",
+        "name": "decrease-ability-1",
+        "summary": "d6 below the ability: decrease it by 1."
+      },
+      "evidence": {
+        "section_id": "getting-better-or-worse",
+        "text_contains_any": ["Roll a d6 against every ability", "maximum of +6"]
+      },
+      "notes": "Slice 2d / Getting Better Ability changes default. FOR Advancement; COMPARED_TO AbilityScore (situation value, not a seed threshold). Cap +6 is the THEN outcome, not a Compare threshold."
+    },
+    {
+      "id": "if:ability-change-low",
+      "for_procedure": "Advancement",
+      "combinator": "AND",
+      "atoms": [
+        {
+          "kind": "compare",
+          "id": "compare:ability-ge-minus-3",
+          "op": ">=",
+          "left": "AbilityScore",
+          "threshold": -3,
+          "compared_to": "AbilityScore"
+        },
+        {
+          "kind": "compare",
+          "id": "compare:ability-le-plus-1",
+          "op": "<=",
+          "left": "AbilityScore",
+          "threshold": 1,
+          "compared_to": "AbilityScore"
+        },
+        {
+          "kind": "compare",
+          "id": "compare:ability-d6-eq-1",
+          "op": "=",
+          "left": "d6",
+          "threshold": 1
+        }
+      ],
+      "bool_id": "bool:ability-change-low",
+      "then": {
+        "id": "outcome:ability-low-nat1-decrease",
+        "name": "decrease-ability-1-floor-minus-3",
+        "summary": "Abilities from −3 to +1 and d6 is 1: reduce by 1, never below −3."
+      },
+      "supersedes": "if:ability-change-default",
+      "evidence": {
+        "section_id": "getting-better-or-worse",
+        "text_contains_any": ["Abilities from", "unless the d6 result is 1", "never below"]
+      },
+      "notes": "Slice 2d / Getting Better Ability changes override. Band + nat 1 SUPERSEDES the default d6>=ability increase (which would otherwise always succeed in this band). No ELSE — when the AND is false, the default If applies."
     }
   ]
 }

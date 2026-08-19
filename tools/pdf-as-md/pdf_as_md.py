@@ -8,6 +8,7 @@ This tool only renders that model to ``.as.md`` for PDF comparison.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -50,18 +51,56 @@ def _passage_table_filters(
     return [list(b.get("contains_tables") or []) for b in bundles]
 
 
+_SPLIT_HEAD_FLAGS = re.MULTILINE | re.IGNORECASE
+
+
 def _md_escape_heading(text: str) -> str:
     return text.replace("\n", " ").strip()
+
+
+def _heading_key(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+def _child_heading_from_part(part: str, split_pat: str) -> str | None:
+    """First line of a split part is a child title when it matches passage_split."""
+    lines = part.splitlines()
+    if not lines:
+        return None
+    first = lines[0]
+    if not re.search(split_pat, first, flags=_SPLIT_HEAD_FLAGS):
+        return None
+    return _md_escape_heading(first)
+
+
+def _strip_leading_heading_block(text: str, heading: str | None) -> str:
+    """Drop a PDF heading already emitted as ``##`` / ``###`` from the body start."""
+    if not heading or not text:
+        return text
+    t_lines = text.lstrip("\n").splitlines()
+    h_lines = [ln for ln in heading.splitlines() if ln.strip()]
+    if not h_lines or len(t_lines) < len(h_lines):
+        return text
+    if any(
+        _heading_key(t_lines[i]) != _heading_key(h_lines[i])
+        for i in range(len(h_lines))
+    ):
+        return text
+    return "\n".join(t_lines[len(h_lines) :]).lstrip("\n")
 
 
 def _emit_body(text: str) -> str:
     return text.strip() + ("\n" if text.strip() else "")
 
 
-def _render_table_block(block: dict[str, Any]) -> list[str]:
+def _render_table_block(
+    block: dict[str, Any], *, omit_title: str | None = None
+) -> list[str]:
     lines: list[str] = []
     title = block.get("title")
-    if title:
+    if title and not (
+        omit_title and _heading_key(str(title)) == _heading_key(omit_title)
+    ):
         lines.append(f"### {title}")
         lines.append("")
     columns = block.get("columns") or []
@@ -132,17 +171,23 @@ def _render_span_with_tables(
     warnings: list[str],
     label: str,
     names_filter: list[str] | None = None,
+    omit_heading: str | None = None,
 ) -> str:
     hits, tw = resolve_tables_in_span(span_text, game=game, names_filter=names_filter)
     for w in tw:
         warnings.append(f"{label}: {w}")
     if not hits:
-        return _emit_body(span_text)
+        return _emit_body(_strip_leading_heading_block(span_text, omit_heading))
 
     parts: list[str] = []
     cursor = 0
+    stripped_head = False
     for hit in hits:
-        before = span_text[cursor : hit.start].strip()
+        before = span_text[cursor : hit.start]
+        if omit_heading and not stripped_head:
+            before = _strip_leading_heading_block(before, omit_heading)
+            stripped_head = True
+        before = before.strip()
         if before:
             parts.append(before)
             parts.append("")
@@ -159,7 +204,8 @@ def _render_span_with_tables(
                     "title": display,
                     "columns": hit.table.get("columns") or [],
                     "rows": hit.table.get("rows") or [],
-                }
+                },
+                omit_title=omit_heading,
             )
         )
         parts.append("")
@@ -213,16 +259,18 @@ def _append_section_md(
     lines.append("")
 
     if content_source and content_source.get("skip_pdf_text", True):
-        if item.matched_heading:
-            lines.append(item.matched_heading)
-            lines.append("")
         rendered, err = _render_content_source_md(extract.game, content_source)
         if err:
             warnings.append(f"section {sid!r}: {err}")
             lines.append(f"> **content_source error:** {err}")
             lines.append("")
             lines.append(
-                _emit_body(extract.stream[item.heading_start : item.content_end])
+                _emit_body(
+                    _strip_leading_heading_block(
+                        extract.stream[item.heading_start : item.content_end],
+                        item.matched_heading,
+                    )
+                )
             )
         else:
             assert rendered is not None
@@ -251,6 +299,7 @@ def _append_section_md(
             warnings=warnings,
             label=f"section {sid!r} heading",
             names_filter=names_filter,
+            omit_heading=item.matched_heading,
         ).rstrip()
         if sentinel.strip() and head_md.endswith(sentinel.strip()):
             head_md = head_md[: -len(sentinel.strip())].rstrip()
@@ -260,11 +309,17 @@ def _append_section_md(
 
         passage_table_filters = _passage_table_filters(extract.game, sid, len(parts))
         for i, part in enumerate(parts):
-            first = part.splitlines()[0] if part.splitlines() else f"passage {i}"
+            child_heading = _child_heading_from_part(part, split_pat)
+            first = child_heading or (
+                part.splitlines()[0] if part.splitlines() else f"passage {i}"
+            )
             lines.append(
                 f"> `{sid}#p{i}` · PDF: {_md_escape_heading(first)} via passage_split"
             )
             lines.append("")
+            if child_heading:
+                lines.append(f"### {child_heading}")
+                lines.append("")
             p_filter = passage_table_filters[i] if passage_table_filters else names_filter
             lines.append(
                 _render_span_with_tables(
@@ -273,6 +328,7 @@ def _append_section_md(
                     warnings=warnings,
                     label=f"section {sid!r}#p{i}",
                     names_filter=p_filter,
+                    omit_heading=child_heading,
                 ).rstrip()
             )
             lines.append("")
@@ -286,6 +342,7 @@ def _append_section_md(
             warnings=warnings,
             label=f"section {sid!r}",
             names_filter=names_filter,
+            omit_heading=item.matched_heading,
         ).rstrip()
     )
     lines.append("")
