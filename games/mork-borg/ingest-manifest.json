@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (sequential index+remainder, or aligned_columns via word x-cuts when get_text() stacks a multi-column list).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -581,7 +581,7 @@
         }
       ],
       "pdf_extract": {
-        "status": "partial",
+        "status": "verified",
         "mode": "aligned_columns",
         "header_patterns": [
           "^\\s*Equipment\\s*$"
@@ -634,7 +634,7 @@
         }
       ],
       "pdf_extract": {
-        "status": "partial",
+        "status": "verified",
         "mode": "aligned_columns",
         "header_patterns": [
           "^\\s*Services\\s*$"
@@ -706,7 +706,7 @@
         }
       ],
       "pdf_extract": {
-        "status": "partial",
+        "status": "verified",
         "mode": "aligned_columns",
         "header_patterns": [
           "^\\s*Weapons\\s*$"
@@ -757,7 +757,7 @@
         }
       ],
       "pdf_extract": {
-        "status": "partial",
+        "status": "verified",
         "mode": "aligned_columns",
         "header_patterns": [
           "^\\s*Beasts\\s*$"
