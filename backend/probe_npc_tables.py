@@ -54,13 +54,31 @@ def main():
     trial("BrokenTable", [29], r"Broken\s*\(d4\)", d4, 4, 4)
     trial("InitiativeTable", [30], r"Initiative\s*\(d6\)", d6, 6, 6)
     trial(
+        "UncleanScrollsTable",
+        [34, 35],
+        r"Unclean Scrolls d10",
+        {"type": "d10"},
+        10,
+        10,
+        stop=[r"Sacred Scrolls"],
+    )
+    trial(
+        "SacredScrollsTable",
+        [35],
+        r"Sacred Scrolls d10",
+        {"type": "d10"},
+        10,
+        10,
+        stop=[r"The Basilisks Demand"],
+    )
+    trial(
         "FoulPsychopompSummonTable",
         [35],
         r"Foul Psychompomp:?\s*Summon\s*\(d6\)",
-        d6,
-        6,
-        6,
-        stop=[r"The Basilisks Demand"],
+        {"type": "range_list", "values": ["1-3", "4-6"]},
+        2,
+        2,
+        stop=[r"9[\s\x00-\x1f]+Eyelid Blinds"],
     )
     trial(
         "ToLeaveTable",

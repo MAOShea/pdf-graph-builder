@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.14",
+  "version": "0.5.16",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -17,7 +17,8 @@
   "text_filters": {
     "notes": "Running header/footer on Bare Bones pages. Applied per page in the shared extract path (document_extract / section_chunking / table pipeline). Not table-specific — lives here, not ingest-manifest.",
     "drop_line_patterns": [
-      "^M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION\\s*$"
+      "^M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION\\s*$",
+      "^Unclean Scrolls d10,\\s*cont\\.\\s*$"
     ],
     "strip_inline_patterns": [
       "\\s*M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION(?:\\s+\\d+)?\\s*"
@@ -1042,6 +1043,10 @@
       "phase": 2,
       "title": "Powers",
       "index_title": "Powers",
+      "index_titles": [
+        "Powers",
+        "Scrolls"
+      ],
       "start_anchor": {
         "type": "heading_regex",
         "pattern": "^\\s*Powers\\s*$"
@@ -1056,8 +1061,18 @@
         "Scroll"
       ],
       "extract_rule_passages": true,
-      "passage_granularity": "paragraph",
-      "notes": "Powers and scroll usage (index lists Scrolls p.34)."
+      "passage_granularity": "subheading_regex",
+      "passage_split": {
+        "type": "heading_regex",
+        "pattern": "^\\s*(Unclean Scrolls d10|Sacred Scrolls d10|The Basilisks Demand \\(d20\\))\\s*$",
+        "notes": "Real children of Powers. Preamble keeps Presence+d4 / DR12 procedure. Do not match 'Unclean Scrolls d10, cont.' (dropped by text_filters)."
+      },
+      "contains_lookup_tables": [
+        "UncleanScrollsTable",
+        "SacredScrollsTable",
+        "BasilisksDemandTable"
+      ],
+      "notes": "Powers and scroll usage (index lists Scrolls p.34). Unclean/Sacred d10 are first-class tables. FoulPsychopompSummonTable is nested in Unclean row 8 — omit from this allowlist so its inline header does not steal the Unclean span. Basilisks Demand is on p.36 in this section (manifest phase 3; keep out of 2e smokes)."
     },
     {
       "id": "optional-rules-omens",

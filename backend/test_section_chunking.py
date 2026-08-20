@@ -281,6 +281,19 @@ def test_apply_text_filters_strips_bare_bones_footer():
     assert "1" in out  # mid-page index kept
 
 
+def test_apply_text_filters_drops_unclean_scrolls_continuation():
+    contract = load_passage_sections("mork-borg")
+    raw = (
+        "Metzhuotl Blind Your Eye\n"
+        "Unclean Scrolls d10, cont.\n"
+        "8 Foul Psychompomp: Summon (d6)\n"
+    )
+    out = apply_text_filters(raw, contract["text_filters"], page_number=35)
+    assert "cont." not in out
+    assert "Foul Psychompomp" in out
+    assert "Metzhuotl" in out
+
+
 def test_front_matter_seed_evidence_denied():
     """Briefing 21: front-matter sections must not confirm scaffold seeds."""
     contract = load_passage_sections("mork-borg")
