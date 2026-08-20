@@ -90,6 +90,8 @@ Bottom-up mode still uses `ADDITIONAL_INSTRUCTIONS` and writes `(:Chunk)-[:HAS_E
 
 Product entry: `.\ingest-morkborg.ps1` → `.\ingest-pdf.ps1` → `POST /upload` + `POST /extract` with `ingest_mode=scaffold-diff` and `section_phase` (wrappers default **2**).
 
+`section_phase` **is** the ADA coverage-phase integer (include `phase <= N`; `>= 2` also emits spines + sheets). It is not a slice id (`2a`–`2g`) and not product Phase 0–5. Semantics: ADA `DESIGN.md` §4.5.1. Backend omit still defaults to **1**.
+
 Inside extract ([`backend/src/main.py`](backend/src/main.py)), after PDF read / page chunks:
 
 1. **Fetch scaffold map** from Neo4j (nodes with `tier` / `seed_id`). Fail if empty—bootstrap first (ADA).

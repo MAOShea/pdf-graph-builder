@@ -63,6 +63,7 @@ Stream hygiene for every page before section/table resolve (not table-specific �
 | `title` | yes | Exact (or near-exact) publisher label |
 | `page` | yes | Hint page for that entry (not used as section boundary) |
 | `entry_kind` | yes* | Fiction/routing kind → seed via manifest `entry_kind_to_seed` (`creature`, `place`, `faction`, …) |
+| `maps_to_seed` | no | RULES → mechanism: `IndexEntry-[:MAPS_TO_SEED]->SeedNode` labels (e.g. Powers + Scrolls → `Power`). Not a SeedNode for the publisher title itself. |
 | `text_end_hint` | no | Exclusive end for that creature’s entity passage (literal or regex) when shared `stop_before` fails |
 
 \*Required for fiction wiring (Briefing 8); amend if a row maps to the wrong seed type.

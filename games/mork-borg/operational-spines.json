@@ -1,11 +1,11 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-08-17",
+  "verified_date": "2026-08-20",
   "creature_dr_overrides": {
     "enabled": true,
     "circumstance_role": "fighting",
@@ -414,6 +414,53 @@
         "text_contains_any": ["Abilities from", "unless the d6 result is 1", "never below"]
       },
       "notes": "Slice 2d / Getting Better Ability changes override. Band + nat 1 SUPERSEDES the default d6>=ability increase (which would otherwise always succeed in this band). No ELSE — when the AND is false, the default If applies."
+    },
+    {
+      "id": "if:power-daily-uses",
+      "for_procedure": "Power",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:morning-power-uses",
+        "name": "every morning"
+      },
+      "bool_id": "bool:power-daily-uses",
+      "then": {
+        "id": "outcome:power-uses-presence-plus-d4",
+        "name": "daily-uses-presence-plus-d4",
+        "summary": "Daily Power uses = Presence + d4 (roll each morning; choose from available scrolls)."
+      },
+      "evidence": {
+        "section_id": "powers-and-scrolls",
+        "text_contains_any": ["Roll Presence + d4", "every morning"]
+      },
+      "notes": "Slice 2e W1. Formula lives on the Outcome — not a Compare (Compare is yes/no). FOR Power; procedure APPLIES_TO Presence. Do not encode 1+3=4 in Python."
+    },
+    {
+      "id": "if:power-scroll-read",
+      "for_procedure": "Power",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "compare_dr",
+        "id": "compare:power-scroll-dr12",
+        "threshold": 12
+      },
+      "bool_id": "bool:power-scroll-read",
+      "then": {
+        "id": "outcome:power-activates",
+        "name": "activate-and-spend-use",
+        "summary": "Scroll Power activates; subtract one use from the daily total."
+      },
+      "else": {
+        "id": "outcome:power-fail",
+        "name": "fail-d2-dizzy",
+        "summary": "Power doesn't work; lose d2 HP; dizzy for the next hour; Powers fail in the worst possible way."
+      },
+      "evidence": {
+        "section_id": "powers-and-scrolls",
+        "text_contains_any": ["When reading a scroll", "test Presence DR12"]
+      },
+      "notes": "Slice 2e W2. Ordinary Presence DR12 Compare on FOR Power. Cite preamble only — not Unclean/Sacred catalogue rows. Nested Foul d6 is OQ-ADAPT-07."
     }
   ]
 }

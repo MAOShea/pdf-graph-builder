@@ -88,6 +88,7 @@ def _iter_index_rows(
                     "title": title,
                     "page": int(page) if page is not None else None,
                     "entry_kind": item.get("entry_kind"),
+                    "maps_to_seed": maps_to_seed_labels(item),
                 }
             )
     return rows
@@ -192,11 +193,16 @@ def materialize_rulebook_index(
     also_links = _link_cross_column_duplicates(graph, file_name, rows)
     stats["also_indexed_links"] = also_links
 
+    seed_links, seed_warnings = _link_index_entries_to_seeds(graph, file_name, rows)
+    stats["maps_to_seed_links"] = seed_links
+    stats["warnings"].extend(seed_warnings)
+
     logger.info(
-        "rulebook_index: entries=%s by_column=%s also_indexed=%s",
+        "rulebook_index: entries=%s by_column=%s also_indexed=%s maps_to_seed=%s",
         stats["entries_created"],
         stats["by_column"],
         stats["also_indexed_links"],
+        stats["maps_to_seed_links"],
     )
     return stats
 
@@ -239,6 +245,70 @@ def _link_cross_column_duplicates(
                     right.split(":")[-1],
                 )
     return links
+
+
+def maps_to_seed_labels(item: dict[str, Any]) -> list[str]:
+    """Seed labels this IndexEntry should MAPS_TO_SEED (RULES → procedure)."""
+    raw = item.get("maps_to_seed")
+    if not isinstance(raw, list):
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for value in raw:
+        label = str(value).strip()
+        if not label:
+            continue
+        key = label.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(label)
+    return out
+
+
+def _link_index_entries_to_seeds(
+    graph,
+    file_name: str,
+    rows: list[dict[str, Any]],
+) -> tuple[int, list[str]]:
+    """MERGE IndexEntry-[:MAPS_TO_SEED]->SeedNode from index_source maps_to_seed."""
+    links = 0
+    warnings: list[str] = []
+    for row in rows:
+        labels = row.get("maps_to_seed") or []
+        if not labels:
+            continue
+        entry_id = _entry_id(file_name, row["column"], row["title"])
+        for label in labels:
+            count = _count_seed_nodes_by_label(graph, label)
+            if count == 0:
+                msg = (
+                    f"MAPS_TO_SEED skipped: no SeedNode label={label!r} "
+                    f"(IndexEntry {row['title']!r})"
+                )
+                warnings.append(msg)
+                logger.warning("rulebook_index: %s", msg)
+                continue
+            if count > 1:
+                msg = (
+                    f"MAPS_TO_SEED skipped: ambiguous SeedNode label={label!r} "
+                    f"count={count} (IndexEntry {row['title']!r})"
+                )
+                warnings.append(msg)
+                logger.warning("rulebook_index: %s", msg)
+                continue
+            execute_graph_query(
+                graph,
+                """
+                MATCH (e:IndexEntry {id: $entry_id})
+                MATCH (s:SeedNode)
+                WHERE $label IN labels(s)
+                MERGE (e)-[:MAPS_TO_SEED]->(s)
+                """,
+                {"entry_id": entry_id, "label": label},
+            )
+            links += 1
+    return links, warnings
 
 
 def index_titles_for_section(section: dict[str, Any]) -> list[str]:

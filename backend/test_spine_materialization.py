@@ -13,8 +13,8 @@ def test_load_d1_and_d2_spines():
     spines = contract.get("spines") or []
     by_id = {s["id"]: s for s in spines}
 
-    assert contract.get("version") == "0.4.4"
-    assert len(spines) == 13
+    assert contract.get("version") == "0.4.5"
+    assert len(spines) == 15
     assert {
         "if:melee-hit-default",
         "if:ranged-hit-default",
@@ -29,6 +29,8 @@ def test_load_d1_and_d2_spines():
         "if:improve-hp",
         "if:ability-change-default",
         "if:ability-change-low",
+        "if:power-daily-uses",
+        "if:power-scroll-read",
     } <= set(by_id)
 
     for sid in (
@@ -112,6 +114,20 @@ def test_load_d1_and_d2_spines():
     assert ability_low["supersedes"] == "if:ability-change-default"
     assert "else" not in ability_low
     assert ability_low["evidence"]["section_id"] == "getting-better-or-worse"
+
+    daily = by_id["if:power-daily-uses"]
+    assert daily["for_procedure"] == "Power"
+    assert daily["atom"]["kind"] == "circumstance"
+    assert "else" not in daily
+    assert daily["evidence"]["section_id"] == "powers-and-scrolls"
+    assert "Presence + d4" in (daily.get("then") or {}).get("summary", "")
+
+    scroll = by_id["if:power-scroll-read"]
+    assert scroll["for_procedure"] == "Power"
+    assert scroll["atom"]["kind"] == "compare_dr"
+    assert int(scroll["atom"]["threshold"]) == 12
+    assert "d2" in (scroll.get("else") or {}).get("summary", "")
+    assert scroll["evidence"]["section_id"] == "powers-and-scrolls"
 
     d3 = contract.get("creature_dr_overrides") or {}
     assert d3.get("enabled") is True

@@ -41,3 +41,13 @@ def test_gated_rules_phase2_includes_siblings():
     assert {"rest", "reaction", "morale", "getting-better-or-worse", "crit-fumble-rest"} <= ids
     assert "what-was-written" not in ids
     assert "optional-rules-omens" not in ids
+
+
+def test_powers_and_scrolls_map_to_power_seed():
+    load_passage_sections.cache_clear()
+    contract = load_passage_sections("mork-borg")
+    section = next(s for s in contract["sections"] if s["id"] == "powers-and-scrolls")
+    assert section["links_to_seed_labels"] == ["Power"]
+    by_title = {r["title"]: r for r in contract["index_source"]["rules_index"]}
+    assert by_title["Powers"]["maps_to_seed"] == ["Power"]
+    assert by_title["Scrolls"]["maps_to_seed"] == ["Power"]

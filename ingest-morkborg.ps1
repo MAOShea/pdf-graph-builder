@@ -6,8 +6,9 @@
 #
 # After ingest: .\check-section-gates.ps1 then .\check-coverage.ps1
 #
-# -SectionPhase: max passage-sections.json phase (inclusive). Default 2 = RULES
-# phase-1 + THE WORLD (Briefing 13). Use 1 for phase-1 only; 3 for later RULES.
+# -SectionPhase: ingest filter = coverage phase (ADA DESIGN §4.5.1). Inclusive max:
+#   1 = tests/DR/HP only (no spines/sheets); 2 = default (WORLD + combat/powers + spines);
+#   3 = optional tables too. Not a slice id (2a–2g). Backend /extract omit still defaults to 1.
 
 param(
     [int]$StartPage = 0,

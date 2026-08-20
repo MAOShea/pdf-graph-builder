@@ -1,12 +1,12 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.16",
+  "version": "0.5.17",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-16",
-  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. index_titles for compound RULES→section MAPS_TO_SECTION (Briefing 16) 2026-08-10. optional-classes 1.–6. class subsections + nested tables (2026-08-12). seed_evidence=false on front-matter (Briefing 21) 2026-08-14. reaction-morale index_titles Reaction+Morale (Briefing 24 / slice 2c) 2026-08-16. reaction-morale contains_lookup_tables ReactionTable 2026-08-16. Operator PDF pass welcome to amend.",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. index_titles for compound RULES→section MAPS_TO_SECTION (Briefing 16) 2026-08-10. optional-classes 1.–6. class subsections + nested tables (2026-08-12). seed_evidence=false on front-matter (Briefing 21) 2026-08-14. reaction-morale index_titles Reaction+Morale (Briefing 24 / slice 2c) 2026-08-16. reaction-morale contains_lookup_tables ReactionTable 2026-08-16. index_source maps_to_seed Powers+Scrolls→Power (slice 2e) 2026-08-20. Operator PDF pass welcome to amend.",
   "handoff": {
     "source_of_truth": "pdf-graph-builder",
     "path": "games/mork-borg/passage-sections.json",
@@ -384,7 +384,10 @@
       {
         "page": 34,
         "title": "Powers",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Power"
+        ]
       },
       {
         "page": 30,
@@ -404,7 +407,10 @@
       {
         "page": 34,
         "title": "Scrolls",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Power"
+        ]
       },
       {
         "page": 21,
@@ -1055,8 +1061,7 @@
       },
       "operator_page_hint": "34-36",
       "links_to_seed_labels": [
-        "Power",
-        "Scroll"
+        "Power"
       ],
       "extract_rule_passages": true,
       "passage_granularity": "subheading_regex",

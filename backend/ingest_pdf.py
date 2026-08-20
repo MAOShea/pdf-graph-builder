@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import httpx
@@ -27,6 +28,33 @@ if str(_BACKEND) not in sys.path:
 from src.ingest_cleanup import cleanup_ingest_driver
 
 load_dotenv()
+
+
+def _fmt_duration(seconds: float) -> str:
+    """Human-readable duration: ``17m 17s (1037.3s)`` or ``12.4s`` under a minute."""
+    total = max(0.0, float(seconds))
+    whole = int(total)
+    hours, rem = divmod(whole, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        human = f"{hours}h {minutes}m {secs}s"
+    elif minutes:
+        human = f"{minutes}m {secs}s"
+    else:
+        return f"{total:.1f}s"
+    return f"{human} ({total:.1f}s)"
+
+
+def _extract_seconds(data: dict) -> float | None:
+    for key in ("total_processing_time", "processingTime", "elapsed_api_time"):
+        value = data.get(key)
+        if value is None or value == "":
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def _cleanup_neo4j(
@@ -144,6 +172,14 @@ def main() -> None:
         "database": args.database,
     }
 
+    started = time.perf_counter()
+    try:
+        _run_ingest(args, pdf_path, file_name, creds)
+    finally:
+        print(f"ingest_pdf: elapsed {_fmt_duration(time.perf_counter() - started)}")
+
+
+def _run_ingest(args: argparse.Namespace, pdf_path: Path, file_name: str, creds: dict) -> None:
     if args.cleanup:
         _cleanup_neo4j(
             args.uri,
@@ -183,10 +219,13 @@ def main() -> None:
 
         extract_body = _extract(client, file_name, args.model, creds, extract_opts)
         data = extract_body.get("data") or {}
+        extract_secs = _extract_seconds(data)
+        extract_note = f" extract={_fmt_duration(extract_secs)}" if extract_secs is not None else ""
         print(
             "extract:",
             f"nodes={data.get('nodeCount')} rels={data.get('relationshipCount')} "
-            f"chunks={data.get('chunkNodeCount') or data.get('total_chunks')}",
+            f"chunks={data.get('chunkNodeCount') or data.get('total_chunks')}"
+            f"{extract_note}",
         )
         if data.get("table_materialization"):
             print("table_materialization:", data["table_materialization"])

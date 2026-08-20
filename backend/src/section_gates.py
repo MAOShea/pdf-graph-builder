@@ -12,7 +12,7 @@ from typing import Any
 
 from neo4j import Session
 
-from src.index_materialization import index_titles_for_section
+from src.index_materialization import index_titles_for_section, maps_to_seed_labels
 from src.ingest_manifest import load_passage_sections
 from src.spine_materialization import load_operational_spines
 
@@ -245,6 +245,39 @@ def _index_map(
     return [dict(r) for r in rows]
 
 
+_INDEX_ARRAYS = (
+    ("rules_index", "RULES"),
+    ("world_index", "THE_WORLD"),
+    ("creatures_index", "CREATURES"),
+)
+
+
+def _seed_map(
+    session: Session,
+    document: str,
+    title: str,
+    column: str,
+) -> list[str]:
+    row = session.run(
+        """
+        MATCH (e:IndexEntry {column: $column, title: $title})
+        WHERE e.source = $fn OR e.id STARTS WITH $prefix
+        MATCH (e)-[:MAPS_TO_SEED]->(s:SeedNode)
+        UNWIND [lbl IN labels(s) WHERE lbl <> 'SeedNode'] AS label
+        RETURN collect(DISTINCT label) AS seed_labels
+        """,
+        {
+            "column": column,
+            "title": title,
+            "fn": document,
+            "prefix": f"{document}#index:{column}:",
+        },
+    ).single()
+    if not row:
+        return []
+    return [str(x) for x in (row.get("seed_labels") or []) if x]
+
+
 def _spine_graph(session: Session, if_id: str) -> dict[str, Any]:
     row = session.run(
         """
@@ -417,6 +450,50 @@ def run_section_gates(
                         name=f"index:{sid}:{title}",
                         ok=True,
                         detail=f"MAPS_TO_SECTION {sid}",
+                    )
+                )
+
+    index_source = contract.get("index_source") or {}
+    for array_key, idx_col in _INDEX_ARRAYS:
+        if column.lower() != "all" and idx_col != column:
+            continue
+        for item in index_source.get(array_key) or []:
+            if not isinstance(item, dict):
+                continue
+            contracted = maps_to_seed_labels(item)
+            title = str(item.get("title") or "").strip()
+            if not contracted or not title:
+                continue
+            entries = _index_map(session, document, title, idx_col)
+            check_name = f"maps_to_seed:{idx_col}:{title}"
+            if not entries:
+                report.checks.append(
+                    GateCheck(
+                        name=check_name,
+                        ok=False,
+                        detail=f"no {idx_col} IndexEntry title={title!r}",
+                    )
+                )
+                continue
+            present = set(_seed_map(session, document, title, idx_col))
+            missing = [lab for lab in contracted if lab not in present]
+            if missing:
+                report.checks.append(
+                    GateCheck(
+                        name=check_name,
+                        ok=False,
+                        detail=(
+                            f"IndexEntry {title!r} missing MAPS_TO_SEED "
+                            + ", ".join(missing)
+                        ),
+                    )
+                )
+            else:
+                report.checks.append(
+                    GateCheck(
+                        name=check_name,
+                        ok=True,
+                        detail="MAPS_TO_SEED " + ", ".join(contracted),
                     )
                 )
 

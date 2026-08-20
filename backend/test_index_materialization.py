@@ -4,6 +4,7 @@
 from src.index_materialization import (
     _iter_index_rows,
     index_titles_for_section,
+    maps_to_seed_labels,
     normalize_index_title,
     slug_title,
 )
@@ -53,3 +54,23 @@ def test_index_titles_for_section_compound_and_singular():
         "Defence",
     ]
     assert index_titles_for_section({}) == []
+
+
+def test_maps_to_seed_labels_dedupes_and_skips_empty():
+    assert maps_to_seed_labels({}) == []
+    assert maps_to_seed_labels({"maps_to_seed": ["Power", "Power", ""]}) == ["Power"]
+
+
+def test_iter_index_rows_carries_maps_to_seed():
+    index_source = {
+        "rules_index": [
+            {
+                "page": 34,
+                "title": "Scrolls",
+                "entry_kind": "rule_topic",
+                "maps_to_seed": ["Power"],
+            }
+        ],
+    }
+    rows = _iter_index_rows(index_source, {"RULES": "rules_index"})
+    assert rows[0]["maps_to_seed"] == ["Power"]
