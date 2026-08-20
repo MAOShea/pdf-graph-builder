@@ -65,3 +65,7 @@ def test_powers_and_scrolls_map_to_power_seed():
         "WeaponShopTable",
         "BeastsTable",
     ]
+    assert by_title["Fanged deserter"]["uses_tables"] == [
+        "EarliestMemoriesTable",
+        "FangedDeserterEquipmentTable",
+    ]
