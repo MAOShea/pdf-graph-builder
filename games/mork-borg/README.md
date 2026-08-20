@@ -1,14 +1,15 @@
 # Mörk Borg ingest contracts
 
-Tier-5 materialization contracts for this game. Sync policy: [docs/ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md).
+Tier-5 materialization contracts for this game. **This folder is the only copy.** Do not copy these files into AI-DM-Assistant. Policy: [docs/ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md).
 
 | File | Source of truth | Role |
 |---|---|---|
-| [`passage-sections.json`](./passage-sections.json) | **This repo** (`games/mork-borg/`) | Section anchors, `text_filters`, p.75 index, entity-passage end rules |
-| [`ingest-manifest.json`](./ingest-manifest.json) | AI-DM-Assistant `corpus/games/mork-borg/` (runtime copy here) | Lookup tables, `pdf_extract`, bundles, pointers |
-| [`hand-authored-overrides/`](./hand-authored-overrides/) | This repo (with ADA mirrors as needed) | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
+| [`passage-sections.json`](./passage-sections.json) | **This repo** | Section anchors, `text_filters`, p.75 index, entity-passage end rules |
+| [`ingest-manifest.json`](./ingest-manifest.json) | **This repo** | Lookup tables, `pdf_extract`, bundles, pointers |
+| [`operational-spines.json`](./operational-spines.json) | **This repo** | Altitude-D If spines |
+| [`hand-authored-overrides/`](./hand-authored-overrides/) | **This repo** | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
 
-Edit **`passage-sections.json` here**; copy **pgb → ADA** when ADA needs a mirror. Do not overwrite this file from an older ADA copy.
+Edit contracts **here**. After ingest, run `.\check-section-gates.ps1` then `.\check-coverage.ps1`.
 
 **Design:** passage/table **boundaries live in JSON**, not hardcoded in Python. Amend the contract after a PDF pass; re-run ingest or the relevant materializer.
 
@@ -22,7 +23,7 @@ Operator-maintained contract for:
 2. **Publisher index (p.75)** — `RulebookIndex` / `IndexEntry` + fiction `INSTANCE_OF`
 3. **CREATURES entity prose** — per-creature `RulePassage` with contract-driven end cuts
 
-Implementation briefings: [6](../../docs/pdf-graph-builder-briefing-6.md) (sections), [7](../../docs/pdf-graph-builder-briefing-7.md)–[8](../../docs/pdf-graph-builder-briefing-8.md) (index/fiction), [10](../../docs/pdf-graph-builder-briefing-10.md)–[11](../../docs/pdf-graph-builder-briefing-11.md) (entity passages).
+Field guide: this README. Historical implementation notes (briefings 6–11) are in git.
 
 ### Top-level fields
 
@@ -147,8 +148,7 @@ After editing: re-run full ingest, or recovery
 3. Confirm creature blocks stop before bounty lines; amend `stop_before` or add `text_end_hint` if a label is missing.
 4. Confirm `entry_kind` on index rows (wrong kind → wrong `INSTANCE_OF` seed).
 5. Bump `version` / `verified_note` when you change boundaries; set `status: verified` when happy.
-6. After edits here, copy `passage-sections.json` **pgb → ADA** corpus mirror when ADA should stay aligned (see [ingest-manifest-sync.md](../../docs/ingest-manifest-sync.md)).
-7. After full ingest, from the pgb repo root run `.\check-section-gates.ps1` (fail-closed section/index/spine shape) then `.\check-coverage.ps1` (tables). ADA smokes are the consumer check, not this gate.
+6. After full ingest, from the pgb repo root run `.\check-section-gates.ps1` (fail-closed section/index/spine shape) then `.\check-coverage.ps1` (tables). ADA smokes are the consumer check, not this gate.
 
 **Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump. Do not add parse logic in the tool.
 

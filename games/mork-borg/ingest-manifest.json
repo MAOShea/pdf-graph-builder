@@ -10,7 +10,7 @@
   "handoff": {
     "target_repo": "pdf-graph-builder",
     "target_path": "games/mork-borg/ingest-manifest.json",
-    "sync": "Copy this file when the contract changes. See docs/outbox/ingest-manifest-sync.md."
+    "sync": "This file is the only copy. Do not copy it into ADA corpus. See docs/ingest-manifest-sync.md."
   },
   "passage_sections": {
     "file": "passage-sections.json",

@@ -10,9 +10,7 @@
   "handoff": {
     "source_of_truth": "pdf-graph-builder",
     "path": "games/mork-borg/passage-sections.json",
-    "mirror_repo": "AI-DM-Assistant",
-    "mirror_path": "corpus/games/mork-borg/passage-sections.json",
-    "sync": "SoT is pdf-graph-builder. After edits here, copy pgb → ADA mirror. Do not overwrite this file from ADA. See docs/ingest-manifest-sync.md. ingest-manifest.json remains ADA SoT (ADA → pgb)."
+    "sync": "This file is the only copy. Do not copy it into ADA corpus. See docs/ingest-manifest-sync.md."
   },
   "text_filters": {
     "notes": "Running header/footer on Bare Bones pages. Applied per page in the shared extract path (document_extract / section_chunking / table pipeline). Not table-specific — lives here, not ingest-manifest.",

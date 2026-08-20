@@ -61,6 +61,5 @@ Terminal ingest and web UI must use the **same** `/extract` scaffold-diff path �
 
 ## References
 
-- [ingest-manifest-sync.md](./ingest-manifest-sync.md) — manifest as Tier-5 contract
-- [pdf-graph-builder-briefing-4.md](./pdf-graph-builder-briefing-4.md) — Phase 1 verification queries
+- [ingest-manifest-sync.md](./ingest-manifest-sync.md) — SoT split; no copies
 - [AGENTS.md](../AGENTS.md) — table delivery workflow
