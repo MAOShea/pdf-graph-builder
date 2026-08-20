@@ -12,7 +12,11 @@ from typing import Any
 
 from neo4j import Session
 
-from src.index_materialization import index_titles_for_section, maps_to_seed_labels
+from src.index_materialization import (
+    index_titles_for_section,
+    maps_to_seed_labels,
+    uses_table_names,
+)
 from src.ingest_manifest import load_passage_sections
 from src.spine_materialization import load_operational_spines
 
@@ -278,6 +282,31 @@ def _seed_map(
     return [str(x) for x in (row.get("seed_labels") or []) if x]
 
 
+def _table_uses_map(
+    session: Session,
+    document: str,
+    title: str,
+    column: str,
+) -> list[str]:
+    row = session.run(
+        """
+        MATCH (e:IndexEntry {column: $column, title: $title})
+        WHERE e.source = $fn OR e.id STARTS WITH $prefix
+        MATCH (e)-[:USES]->(t:IngestNode)
+        RETURN collect(DISTINCT coalesce(t.name, t.id)) AS tables
+        """,
+        {
+            "column": column,
+            "title": title,
+            "fn": document,
+            "prefix": f"{document}#index:{column}:",
+        },
+    ).single()
+    if not row:
+        return []
+    return [str(x) for x in (row.get("tables") or []) if x]
+
+
 def _spine_graph(session: Session, if_id: str) -> dict[str, Any]:
     row = session.run(
         """
@@ -460,42 +489,84 @@ def run_section_gates(
         for item in index_source.get(array_key) or []:
             if not isinstance(item, dict):
                 continue
-            contracted = maps_to_seed_labels(item)
             title = str(item.get("title") or "").strip()
-            if not contracted or not title:
+            if not title:
+                continue
+            contracted = maps_to_seed_labels(item)
+            contracted_tables = uses_table_names(item)
+            if not contracted and not contracted_tables:
                 continue
             entries = _index_map(session, document, title, idx_col)
-            check_name = f"maps_to_seed:{idx_col}:{title}"
-            if not entries:
-                report.checks.append(
-                    GateCheck(
-                        name=check_name,
-                        ok=False,
-                        detail=f"no {idx_col} IndexEntry title={title!r}",
+            if contracted:
+                check_name = f"maps_to_seed:{idx_col}:{title}"
+                if not entries:
+                    report.checks.append(
+                        GateCheck(
+                            name=check_name,
+                            ok=False,
+                            detail=f"no {idx_col} IndexEntry title={title!r}",
+                        )
                     )
-                )
-                continue
-            present = set(_seed_map(session, document, title, idx_col))
-            missing = [lab for lab in contracted if lab not in present]
-            if missing:
-                report.checks.append(
-                    GateCheck(
-                        name=check_name,
-                        ok=False,
-                        detail=(
-                            f"IndexEntry {title!r} missing MAPS_TO_SEED "
-                            + ", ".join(missing)
-                        ),
+                else:
+                    present = set(_seed_map(session, document, title, idx_col))
+                    missing = [lab for lab in contracted if lab not in present]
+                    if missing:
+                        report.checks.append(
+                            GateCheck(
+                                name=check_name,
+                                ok=False,
+                                detail=(
+                                    f"IndexEntry {title!r} missing MAPS_TO_SEED "
+                                    + ", ".join(missing)
+                                ),
+                            )
+                        )
+                    else:
+                        report.checks.append(
+                            GateCheck(
+                                name=check_name,
+                                ok=True,
+                                detail="MAPS_TO_SEED " + ", ".join(contracted),
+                            )
+                        )
+            if contracted_tables:
+                table_check = f"uses_tables:{idx_col}:{title}"
+                if not entries:
+                    report.checks.append(
+                        GateCheck(
+                            name=table_check,
+                            ok=False,
+                            detail=f"no {idx_col} IndexEntry title={title!r}",
+                        )
                     )
-                )
-            else:
-                report.checks.append(
-                    GateCheck(
-                        name=check_name,
-                        ok=True,
-                        detail="MAPS_TO_SEED " + ", ".join(contracted),
+                else:
+                    present_tables = set(
+                        _table_uses_map(session, document, title, idx_col)
                     )
-                )
+                    missing_tables = [
+                        name
+                        for name in contracted_tables
+                        if name not in present_tables
+                    ]
+                    if missing_tables:
+                        report.checks.append(
+                            GateCheck(
+                                name=table_check,
+                                ok=False,
+                                detail=(
+                                    f"IndexEntry {title!r} missing USES "
+                                    + ", ".join(missing_tables)
+                                ),
+                            )
+                        )
+                    else:
+                        report.checks.append(
+                            GateCheck(
+                                name=table_check,
+                                ok=True,
+                                detail="USES " + ", ".join(contracted_tables),
+                            )
+                        )
 
     for spine in spines_contract.get("spines") or []:
         if_id = str(spine.get("id") or "")

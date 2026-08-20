@@ -89,6 +89,7 @@ def _iter_index_rows(
                     "page": int(page) if page is not None else None,
                     "entry_kind": item.get("entry_kind"),
                     "maps_to_seed": maps_to_seed_labels(item),
+                    "uses_tables": uses_table_names(item),
                 }
             )
     return rows
@@ -109,6 +110,8 @@ def materialize_rulebook_index(
         "entries_created": 0,
         "by_column": {},
         "also_indexed_links": 0,
+        "maps_to_seed_links": 0,
+        "uses_table_links": 0,
         "warnings": [],
     }
 
@@ -197,12 +200,17 @@ def materialize_rulebook_index(
     stats["maps_to_seed_links"] = seed_links
     stats["warnings"].extend(seed_warnings)
 
+    table_links, table_warnings = _link_index_entries_to_tables(graph, file_name, rows)
+    stats["uses_table_links"] = table_links
+    stats["warnings"].extend(table_warnings)
+
     logger.info(
-        "rulebook_index: entries=%s by_column=%s also_indexed=%s maps_to_seed=%s",
+        "rulebook_index: entries=%s by_column=%s also_indexed=%s maps_to_seed=%s uses_tables=%s",
         stats["entries_created"],
         stats["by_column"],
         stats["also_indexed_links"],
         stats["maps_to_seed_links"],
+        stats["uses_table_links"],
     )
     return stats
 
@@ -266,6 +274,25 @@ def maps_to_seed_labels(item: dict[str, Any]) -> list[str]:
     return out
 
 
+def uses_table_names(item: dict[str, Any]) -> list[str]:
+    """Ingest table ids this IndexEntry should USES (catalog → lookup table)."""
+    raw = item.get("uses_tables")
+    if not isinstance(raw, list):
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for value in raw:
+        name = str(value).strip()
+        if not name:
+            continue
+        key = name.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(name)
+    return out
+
+
 def _link_index_entries_to_seeds(
     graph,
     file_name: str,
@@ -306,6 +333,66 @@ def _link_index_entries_to_seeds(
                 MERGE (e)-[:MAPS_TO_SEED]->(s)
                 """,
                 {"entry_id": entry_id, "label": label},
+            )
+            links += 1
+    return links, warnings
+
+
+def _count_ingest_tables_by_name(graph, table_name: str) -> int:
+    rows = execute_graph_query(
+        graph,
+        """
+        MATCH (t:IngestNode)
+        WHERE $table IN labels(t) OR t.name = $table OR t.id = $table
+        RETURN count(t) AS c
+        """,
+        {"table": table_name},
+    )
+    if not rows:
+        return 0
+    return int(rows[0].get("c") or 0)
+
+
+def _link_index_entries_to_tables(
+    graph,
+    file_name: str,
+    rows: list[dict[str, Any]],
+) -> tuple[int, list[str]]:
+    """MERGE IndexEntry-[:USES]->ingest table from index_source uses_tables."""
+    links = 0
+    warnings: list[str] = []
+    for row in rows:
+        tables = row.get("uses_tables") or []
+        if not tables:
+            continue
+        entry_id = _entry_id(file_name, row["column"], row["title"])
+        for table_name in tables:
+            count = _count_ingest_tables_by_name(graph, table_name)
+            if count == 0:
+                msg = (
+                    f"USES skipped: no ingest table {table_name!r} "
+                    f"(IndexEntry {row['title']!r})"
+                )
+                warnings.append(msg)
+                logger.warning("rulebook_index: %s", msg)
+                continue
+            if count > 1:
+                msg = (
+                    f"USES skipped: ambiguous ingest table {table_name!r} "
+                    f"count={count} (IndexEntry {row['title']!r})"
+                )
+                warnings.append(msg)
+                logger.warning("rulebook_index: %s", msg)
+                continue
+            execute_graph_query(
+                graph,
+                """
+                MATCH (e:IndexEntry {id: $entry_id})
+                MATCH (t:IngestNode)
+                WHERE $table IN labels(t) OR t.name = $table OR t.id = $table
+                MERGE (e)-[:USES]->(t)
+                """,
+                {"entry_id": entry_id, "table": table_name},
             )
             links += 1
     return links, warnings

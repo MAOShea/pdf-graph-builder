@@ -19,7 +19,7 @@ from src.ingest_manifest import _project_root, load_ingest_manifest, spec_by_nam
 from src.make_relationships import create_relation_between_chunks
 from src.pdf_table_parser import (
     _attach_table_to_chunk,
-    extract_table_from_text,
+    extract_lookup_table,
     page_span,
     persist_chunk_table_metadata,
 )
@@ -165,7 +165,11 @@ def run_lookup_table_pipeline(
     )
     stream, page_spans = build_page_indexed_stream(page_texts)
     hits, resolve_warnings = resolve_tables_in_span(
-        stream, game=game, names_filter=table_names
+        stream,
+        game=game,
+        names_filter=table_names,
+        pdf_path=resolved,
+        text_filters=text_filters,
     )
     stats["resolve_warnings"] = resolve_warnings
     for w in resolve_warnings:
@@ -233,7 +237,7 @@ def run_lookup_table_pipeline(
             stats["failures"].append(f"{name}: materialize_lookup_table returned false")
 
     # Fallback: page-span PDF extract for verified tables not found by stream resolve
-    # (header/layout edge cases). Same extract_table_from_text as document_extract.
+    # (header/layout edge cases). Same extract_lookup_table as document_extract.
     for spec in _pdf_extractable_specs(
         manifest,
         table_names=table_names,
@@ -245,11 +249,13 @@ def run_lookup_table_pipeline(
             continue
         span = page_span(spec)
         merged_text = "\n".join(page_texts.get(p, "") for p in span)
-        table = extract_table_from_text(
-            merged_text,
+        table = extract_lookup_table(
             spec,
+            text=merged_text,
+            pdf_path=resolved,
             page_number=span[0],
             allow_multi_page=len(span) > 1,
+            text_filters=text_filters,
         )
         if not table:
             stats["pdf_tables_failed"] += 1

@@ -7,6 +7,7 @@ from src.index_materialization import (
     maps_to_seed_labels,
     normalize_index_title,
     slug_title,
+    uses_table_names,
 )
 
 
@@ -74,3 +75,25 @@ def test_iter_index_rows_carries_maps_to_seed():
     }
     rows = _iter_index_rows(index_source, {"RULES": "rules_index"})
     assert rows[0]["maps_to_seed"] == ["Power"]
+
+
+def test_uses_table_names_dedupes_and_skips_empty():
+    assert uses_table_names({}) == []
+    assert uses_table_names({"uses_tables": ["WeaponTable", "WeaponTable", ""]}) == [
+        "WeaponTable"
+    ]
+
+
+def test_iter_index_rows_carries_uses_tables():
+    index_source = {
+        "rules_index": [
+            {
+                "page": 23,
+                "title": "Weapons",
+                "entry_kind": "equipment_category",
+                "uses_tables": ["WeaponTable"],
+            }
+        ],
+    }
+    rows = _iter_index_rows(index_source, {"RULES": "rules_index"})
+    assert rows[0]["uses_tables"] == ["WeaponTable"]

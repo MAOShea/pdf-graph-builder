@@ -64,6 +64,7 @@ Stream hygiene for every page before section/table resolve (not table-specific �
 | `page` | yes | Hint page for that entry (not used as section boundary) |
 | `entry_kind` | yes* | Fiction/routing kind → seed via manifest `entry_kind_to_seed` (`creature`, `place`, `faction`, …) |
 | `maps_to_seed` | no | RULES → mechanism: `IndexEntry-[:MAPS_TO_SEED]->SeedNode` labels (e.g. Powers + Scrolls → `Power`). Not a SeedNode for the publisher title itself. |
+| `uses_tables` | no | RULES → lookup table: `IndexEntry-[:USES]->` ingest table ids (e.g. Weapons → `WeaponTable`; Equipment → shop lists). Materialize tables first. |
 | `text_end_hint` | no | Exclusive end for that creature’s entity passage (literal or regex) when shared `stop_before` fails |
 
 \*Required for fiction wiring (Briefing 8); amend if a row maps to the wrong seed type.
@@ -111,7 +112,13 @@ Match against **PDF text on disk**, not Neo4j chunk text.
 | `heading_regex` | `pattern` | Inclusive match; body starts after the heading. Pair with `end_anchor` (`heading_regex`) exclusive end. |
 | `page_range` | `start_page`, `end_page` | Whole pages **inclusive** (e.g. 6–7 = Colophon/credits). No heading match; `end_anchor` unused. |
 
-**Default vs override (tables):** `pdf-as-md` / table ingest treat a span as a table when ingest-manifest `pdf_extract.header_patterns` match the text stream (`extract_table_from_text`). That is “looks like a table” here — not layout/vision. `passage-sections.json` only overrides when that default fails or is wrong (`content_source`, optional allowlist).
+**Default vs override (tables):** `pdf-as-md` / table ingest treat a span as a table when ingest-manifest `pdf_extract.header_patterns` match.
+
+- **Sequential (default):** `extract_table_from_text` on the flattened `get_text()` stream — index token + remainder. That is enough for die/DR lists.
+- **`aligned_columns`:** when the book is a 2- or 3-column list and `get_text()` stacks each cell on its own line. Parser reads PDF word x-coordinates; `column_x_cuts` in the manifest are the left edges of columns 1..n-1 (operator-maintained, like `stop_before`). Wrapped notes (only the last column filled) join the previous row.
+- **`content_source` / hand-authored:** `passage-sections.json` override when PDF text still cannot represent the span (e.g. two-column name grid).
+
+`passage-sections.json` `contains_lookup_tables` is an optional allowlist when auto-detect would pick the wrong table.
 
 #### `content_source` (optional override)
 

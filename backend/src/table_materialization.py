@@ -142,23 +142,28 @@ def _validate_rows(table: dict, spec: dict) -> None:
     cols = column_names(spec)
     if not cols:
         return
-    index_col = cols[0]
+    col_defs = spec.get("columns") or []
+    index_names = {
+        str(c.get("name"))
+        for c in col_defs
+        if c.get("role") == "index" and c.get("name")
+    }
     extracted = {}
     for row in table.get("rows") or []:
         cells = _row_cells(list(row), cols)
-        extracted[str(cells.get(index_col))] = cells
+        extracted[_row_index_key(cells, col_defs)] = cells
 
     mismatches = 0
     for expected in acceptance:
         exp_cells = expected.get("cells") or {}
-        key = str(exp_cells.get(index_col))
+        key = _row_index_key(exp_cells, col_defs)
         if key not in extracted:
             mismatches += 1
             continue
         for col, exp_val in exp_cells.items():
-            got = extracted[key].get(col)
-            if col == index_col:
+            if col in index_names:
                 continue
+            got = extracted[key].get(col)
             if str(got).strip().lower() != str(exp_val).strip().lower():
                 mismatches += 1
                 logging.warning(

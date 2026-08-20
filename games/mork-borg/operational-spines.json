@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-20",
   "creature_dr_overrides": {
@@ -461,6 +461,54 @@
         "text_contains_any": ["When reading a scroll", "test Presence DR12"]
       },
       "notes": "Slice 2e W2. Ordinary Presence DR12 Compare on FOR Power. Cite preamble only — not Unclean/Sacred catalogue rows. Nested Foul d6 is OQ-ADAPT-07."
+    },
+    {
+      "id": "if:create-pc-bare-bones",
+      "for_procedure": "CharacterCreation",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:create-player-character",
+        "name": "Create a Player Character"
+      },
+      "bool_id": "bool:create-pc-bare-bones",
+      "then": [
+        {
+          "id": "outcome:create-pc-starting-equipment",
+          "name": "randomize-starting-equipment",
+          "summary": "Randomize your starting equipment on this page and the next."
+        },
+        {
+          "id": "outcome:create-pc-weapon-armor",
+          "name": "randomize-weapon-and-armor",
+          "summary": "Randomize weapon and armor."
+        },
+        {
+          "id": "outcome:create-pc-abilities",
+          "name": "roll-abilities",
+          "summary": "Roll your abilities."
+        },
+        {
+          "id": "outcome:create-pc-hit-points",
+          "name": "roll-hit-points",
+          "summary": "Roll your Hit Points."
+        },
+        {
+          "id": "outcome:create-pc-name",
+          "name": "name-if-you-wish",
+          "summary": "Name your character if you wish. It will not save you."
+        },
+        {
+          "id": "outcome:create-pc-silver-food",
+          "name": "starting-silver-waterskin-food",
+          "summary": "2d6 × 10 silver (s); a waterskin and d4 days worth of food."
+        }
+      ],
+      "evidence": {
+        "section_id": "character-creation",
+        "text_contains_any": ["Randomize your starting equipment"]
+      },
+      "notes": "Slice 2f K1. Numbered Bare Bones list as THEN Outcomes (book wording). Optional class / pp.38–42 / Omens stay off this If — they are Optional rules in the same passage (citation only). No Compare. No ELSE."
     }
   ]
 }

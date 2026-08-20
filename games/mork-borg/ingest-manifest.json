@@ -2,9 +2,9 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.8",
+  "version": "0.3.14",
   "status": "verified",
-  "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (role-based index+result; index key enumeration per table, not per die size).",
+  "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (sequential index+remainder, or aligned_columns via word x-cuts when get_text() stacks a multi-column list).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-16",
   "handoff": {
@@ -164,9 +164,203 @@
       "note": "Phase 1. Ingest creates :IngestNode DRTable with :HAS_COLUMN and :HAS_ENTRY rows. Extract from Chunk.table_json; validate against acceptance_rows."
     },
     {
-      "name": "WeaponTable",
+      "name": "StartingPossessionsTable",
+      "title": "Starting equipment #1",
+      "lead_in": "To begin with, you are what you own:",
+      "phase": 2,
       "instance_of": "LookupTable",
       "applies_during": "CharacterCreation",
+      "used_by": [
+        "CharacterCreation"
+      ],
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "21",
+      "columns": [
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "1-2",
+            "result": "nothing"
+          }
+        },
+        {
+          "cells": {
+            "d6": "3",
+            "result": "backpack for 7 normal-sized items"
+          }
+        },
+        {
+          "cells": {
+            "d6": "4",
+            "result": "sack for 10 normal-sized items"
+          }
+        },
+        {
+          "cells": {
+            "d6": "5",
+            "result": "small wagon or one item above of your choice"
+          }
+        },
+        {
+          "cells": {
+            "d6": "6",
+            "result": "donkey, not bad. Or one of the above of your choice"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "To begin with, you are what you own:\\s*d6"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ]
+        },
+        "stop_before": [
+          "d12"
+        ],
+        "min_rows": 5,
+        "max_rows": 5,
+        "prefer_page": 21,
+        "multi_table_page": true
+      },
+      "note": "Slice 2f. Display title Starting equipment #1. PDF sentence before the d6 is lead_in (own line); header still matches that sentence plus d6 so it splits from the previous paragraph. Die size is the index column, not the title."
+    },
+    {
+      "name": "StartingEquipmentTable",
+      "title": "Starting equipment #2",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "applies_during": "CharacterCreation",
+      "used_by": [
+        "CharacterCreation"
+      ],
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "22",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": 1,
+            "result": "rope 30 feet"
+          }
+        },
+        {
+          "cells": {
+            "d12": 12,
+            "result": "silver crucifix"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "d12(?=\\s*1\\s*rope)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "stop_before": [
+          "and\\s*d12"
+        ],
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": true
+      },
+      "note": "Slice 2f. First untitled p.22 d12 (rope … crucifix). Header is the die-size line uniquely identified by lookahead to row 1; display title is contracted. Do not use a bare d12 pattern — that collides with Traps/Weather (d12)."
+    },
+    {
+      "name": "StartingEquipmentTable2",
+      "title": "Starting equipment #3",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "applies_during": "CharacterCreation",
+      "used_by": [
+        "CharacterCreation"
+      ],
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "22",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": 1,
+            "result": "1 life elixir d4 doses (heals d6 HP and removes infection)"
+          }
+        },
+        {
+          "cells": {
+            "d12": 12,
+            "result": "tent"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "and\\s*d12"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "stop_before": [
+          "Scrolls are the twisted magic"
+        ],
+        "min_rows": 12,
+        "max_rows": 12,
+        "multi_table_page": true
+      },
+      "note": "Slice 2f. Second untitled p.22 d12 (life elixir … tent), joined to the first list by the word and. Display title is contracted."
+    },
+    {
+      "name": "WeaponTable",
+      "title": "Weapons",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "applies_during": "CharacterCreation",
+      "used_by": [
+        "CharacterCreation"
+      ],
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "23",
       "columns": [
@@ -262,8 +456,13 @@
     },
     {
       "name": "ArmorTable",
+      "title": "Armor",
+      "phase": 2,
       "instance_of": "LookupTable",
       "applies_during": "CharacterCreation",
+      "used_by": [
+        "CharacterCreation"
+      ],
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "23",
       "columns": [
@@ -326,6 +525,254 @@
         "prefer_page": 23,
         "multi_table_page": true
       }
+    },
+    {
+      "name": "EquipmentTable",
+      "title": "Equipment",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "24-25",
+      "columns": [
+        {
+          "name": "item",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "silver",
+          "role": "result",
+          "position": 1
+        },
+        {
+          "name": "notes",
+          "role": "result",
+          "position": 2
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "item": "Backpack",
+            "silver": "6s",
+            "notes": "Holds 7 normal-sized items"
+          }
+        },
+        {
+          "cells": {
+            "item": "Crowbar",
+            "silver": "8s",
+            "notes": ""
+          }
+        },
+        {
+          "cells": {
+            "item": "Crucifix, silver",
+            "silver": "60s",
+            "notes": ""
+          }
+        },
+        {
+          "cells": {
+            "item": "Sack",
+            "silver": "3s",
+            "notes": "Holds 10 normal sized items"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "partial",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "^\\s*Equipment\\s*$"
+        ],
+        "stop_before": [
+          "Improvised weapons",
+          "^\\s*Services\\s*$"
+        ],
+        "column_x_cuts": {
+          "24": [139, 170],
+          "25": [159, 190]
+        },
+        "min_rows": 45,
+        "max_rows": 45,
+        "multi_table_page": true
+      },
+      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, WeaponShopTable, BeastsTable. Come back: Repair Armor* (tier 1→2, tier 2→3, asterisk footnote)."
+    },
+    {
+      "name": "ServicesTable",
+      "title": "Services",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "25",
+      "columns": [
+        {
+          "name": "item",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "silver",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "item": "Night in hospice",
+            "silver": "3s"
+          }
+        },
+        {
+          "cells": {
+            "item": "Bribe, guard",
+            "silver": "20–40s"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "partial",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "^\\s*Services\\s*$"
+        ],
+        "stop_before": [
+          "Repair Armor"
+        ],
+        "column_x_cuts": {
+          "25": [173]
+        },
+        "min_rows": 6,
+        "max_rows": 6,
+        "multi_table_page": true
+      },
+      "note": "Slice 2g. Two-column service list (item / silver). Stop before Repair Armor*."
+    },
+    {
+      "name": "WeaponShopTable",
+      "title": "Weapons",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "26",
+      "columns": [
+        {
+          "name": "damage",
+          "role": "result",
+          "position": 0
+        },
+        {
+          "name": "item",
+          "role": "index",
+          "position": 1
+        },
+        {
+          "name": "silver",
+          "role": "result",
+          "position": 2
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "damage": "d8",
+            "item": "Battle axe",
+            "silver": "35s"
+          }
+        },
+        {
+          "cells": {
+            "damage": "d4",
+            "item": "Femur",
+            "silver": "worthless"
+          }
+        },
+        {
+          "cells": {
+            "damage": "",
+            "item": "20 arrows",
+            "silver": "10s"
+          }
+        },
+        {
+          "cells": {
+            "damage": "",
+            "item": "10 bolts",
+            "silver": "10s"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "partial",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "^\\s*Weapons\\s*$"
+        ],
+        "stop_before": [
+          "^\\s*Beasts\\s*$"
+        ],
+        "column_x_cuts": {
+          "26": [76, 153]
+        },
+        "min_rows": 19,
+        "max_rows": 19,
+        "multi_table_page": true
+      },
+      "note": "Slice 2g. Shop list on p.26: damage die / item / silver. Distinct from p.23 WeaponTable (creation d10). Ammo rows have empty damage (name column indented). Stop before Beasts."
+    },
+    {
+      "name": "BeastsTable",
+      "title": "Beasts",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "26",
+      "columns": [
+        {
+          "name": "item",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "silver",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "item": "Dog (trained)",
+            "silver": "25s"
+          }
+        },
+        {
+          "cells": {
+            "item": "Rat (tame)",
+            "silver": "8s"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "partial",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "^\\s*Beasts\\s*$"
+        ],
+        "stop_before": [
+          "^\\s*Abilities\\s*$"
+        ],
+        "column_x_cuts": {
+          "26": [153]
+        },
+        "min_rows": 5,
+        "max_rows": 5,
+        "multi_table_page": true
+      },
+      "note": "Slice 2g. Two-column beast list (item / silver). Last catalog on the equipment span."
     },
     {
       "name": "CorpsePlunderTable",

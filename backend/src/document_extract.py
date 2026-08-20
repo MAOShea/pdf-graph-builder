@@ -2,7 +2,8 @@
 
 Owns the parse/resolve path that ``tools/pdf-as-md`` and Neo4j materializers share:
 normalized PDF stream, contract section spans, and lookup-table hits
-(PDF ``extract_table_from_text`` or manifest ``hand_authored.file`` substitution).
+(PDF ``extract_lookup_table`` — sequential stream or ``aligned_columns`` —
+or manifest ``hand_authored.file`` substitution).
 
 Sinks only choose where to write (Neo4j vs Markdown) — not how to parse.
 """
@@ -21,7 +22,7 @@ from src.ingest_manifest import _project_root, load_ingest_manifest, load_passag
 from src.pdf_table_parser import (
     _find_header,
     _slice_body,
-    extract_table_from_text,
+    extract_lookup_table,
     table_display_title,
 )
 from src.section_chunking import (
@@ -297,11 +298,13 @@ def resolve_tables_in_span(
     *,
     game: str = "mork-borg",
     names_filter: list[str] | None = None,
+    pdf_path: str | Path | None = None,
+    text_filters: dict[str, Any] | None = None,
 ) -> tuple[list[TableHit], list[str]]:
     """
     Find lookup tables in a text span (shared by ingest helpers and pdf-as-md).
 
-    - verified/partial pdf_extract → extract_table_from_text
+    - verified/partial pdf_extract → extract_lookup_table (stream or aligned_columns)
     - hand_authored + header_patterns → load JSON; PDF shred for [start,end) skipped
     """
     warnings: list[str] = []
@@ -354,16 +357,19 @@ def resolve_tables_in_span(
                 )
 
         if source == "pdf":
-            table = extract_table_from_text(
-                span_text,
+            table = extract_lookup_table(
                 spec,
+                text=span_text,
+                pdf_path=pdf_path,
                 page_number=None,
                 allow_multi_page=True,
+                text_filters=text_filters,
             )
             if not table:
                 warnings.append(f"header matched but extract failed for {name!r}")
                 continue
-            note = "via extract_table_from_text"
+            pe_mode = pe.get("mode") or "sequential"
+            note = f"via extract_lookup_table ({pe_mode})"
         else:
             table = load_hand_authored_table(spec)
             if not table:

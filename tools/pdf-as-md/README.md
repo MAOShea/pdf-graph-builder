@@ -32,6 +32,6 @@ This tool only renders that model to `.as.md` (no Neo4j).
 
 ## Design
 
-- **Default tables:** `resolve_tables_in_span` (manifest `pdf_extract` / `hand_authored`)
+- **Default tables:** `resolve_tables_in_span` (manifest `pdf_extract` sequential or `aligned_columns` / `hand_authored`)
 - **Overrides:** `passage-sections.json` `content_source`, optional `contains_lookup_tables` allowlist
 - Change parse behavior in `document_extract` / manifest — not by forking logic in this folder

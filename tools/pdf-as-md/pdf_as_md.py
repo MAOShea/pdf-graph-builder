@@ -164,6 +164,13 @@ def _render_content_source_md(game: str, content_source: dict[str, Any]) -> tupl
     return "\n".join(out).rstrip() + "\n", None
 
 
+def _table_resolve_kwargs(extract: DocumentExtract) -> dict[str, Any]:
+    return {
+        "pdf_path": extract.pdf_path,
+        "text_filters": (extract.contract or {}).get("text_filters"),
+    }
+
+
 def _render_span_with_tables(
     span_text: str,
     *,
@@ -172,8 +179,16 @@ def _render_span_with_tables(
     label: str,
     names_filter: list[str] | None = None,
     omit_heading: str | None = None,
+    pdf_path: Path | None = None,
+    text_filters: dict[str, Any] | None = None,
 ) -> str:
-    hits, tw = resolve_tables_in_span(span_text, game=game, names_filter=names_filter)
+    hits, tw = resolve_tables_in_span(
+        span_text,
+        game=game,
+        names_filter=names_filter,
+        pdf_path=pdf_path,
+        text_filters=text_filters,
+    )
     for w in tw:
         warnings.append(f"{label}: {w}")
     if not hits:
@@ -190,6 +205,10 @@ def _render_span_with_tables(
         before = before.strip()
         if before:
             parts.append(before)
+            parts.append("")
+        lead_in = str(hit.table.get("lead_in") or "").strip()
+        if lead_in:
+            parts.append(lead_in)
             parts.append("")
         display = str(hit.table.get("title") or hit.manifest_name).strip()
         parts.append(
@@ -300,6 +319,7 @@ def _append_section_md(
             label=f"section {sid!r} heading",
             names_filter=names_filter,
             omit_heading=item.matched_heading,
+            **_table_resolve_kwargs(extract),
         ).rstrip()
         if sentinel.strip() and head_md.endswith(sentinel.strip()):
             head_md = head_md[: -len(sentinel.strip())].rstrip()
@@ -329,6 +349,7 @@ def _append_section_md(
                     label=f"section {sid!r}#p{i}",
                     names_filter=p_filter,
                     omit_heading=child_heading,
+                    **_table_resolve_kwargs(extract),
                 ).rstrip()
             )
             lines.append("")
@@ -343,6 +364,7 @@ def _append_section_md(
             label=f"section {sid!r}",
             names_filter=names_filter,
             omit_heading=item.matched_heading,
+            **_table_resolve_kwargs(extract),
         ).rstrip()
     )
     lines.append("")
@@ -396,6 +418,7 @@ def render_markdown(
                             game=extract.game,
                             warnings=warnings,
                             label="unsectioned",
+                            **_table_resolve_kwargs(extract),
                         ).rstrip()
                     )
                     lines.append("")
@@ -412,6 +435,7 @@ def render_markdown(
                         game=extract.game,
                         warnings=warnings,
                         label="unsectioned",
+                        **_table_resolve_kwargs(extract),
                     ).rstrip()
                 )
                 lines.append("")

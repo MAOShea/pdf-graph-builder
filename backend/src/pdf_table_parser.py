@@ -1,10 +1,20 @@
-"""Extract lookup tables from PDF chunk text using ingest-manifest pdf_extract signatures."""
+"""Extract lookup tables from PDF using ingest-manifest pdf_extract signatures.
+
+Two modes:
+
+- default — sequential index+remainder on the flattened ``get_text()`` stream
+- ``aligned_columns`` — N cells per visual row from word x-coordinates
+  (``pdf_extract.column_x_cuts``). Needed when the book is a 3-column list
+  and ``get_text()`` stacks each cell on its own line.
+"""
 
 import json
 import logging
 import re
+from pathlib import Path
 from typing import Any
 
+from fitz import open as fitz_open
 from langchain_core.documents import Document
 
 from src.ingest_manifest import column_names, load_ingest_manifest, lookup_table_specs, spec_by_name
@@ -101,9 +111,13 @@ def _page_span(spec: dict[str, Any]) -> list[int]:
         return []
 
 
+_STREAM_REGEX_FLAGS = re.IGNORECASE | re.DOTALL | re.MULTILINE
+
+
 def _find_header(text: str, patterns: list[str]) -> re.Match | None:
+    """Search header_patterns in a multi-line span. ``^`` / ``$`` are line anchors."""
     for pat in patterns:
-        match = re.search(pat, text, re.IGNORECASE | re.DOTALL)
+        match = re.search(pat, text, _STREAM_REGEX_FLAGS)
         if match:
             return match
     return None
@@ -115,7 +129,7 @@ def _slice_body(text: str, start: int, stop_before: list[str]) -> str:
         return body
     earliest = len(body)
     for pat in stop_before:
-        match = re.search(pat, body, re.IGNORECASE | re.DOTALL)
+        match = re.search(pat, body, _STREAM_REGEX_FLAGS)
         if match:
             earliest = min(earliest, match.start())
     return body[:earliest]
@@ -175,6 +189,235 @@ def table_display_title(
     return str(spec.get("name") or "table")
 
 
+def _aligned_column_index(x0: float, cuts: list[float]) -> int:
+    """cuts are left edges of columns 1..n-1. x < cuts[0] → column 0."""
+    for i, cut in enumerate(cuts):
+        if x0 < cut:
+            return i
+    return len(cuts)
+
+
+def cells_from_aligned_words(
+    words: list[tuple[float, str]], cuts: list[float], n_cols: int
+) -> list[str]:
+    """Split one visual row's (x0, text) words into n_cols cells."""
+    buckets: list[list[str]] = [[] for _ in range(n_cols)]
+    for x0, text in words:
+        idx = _aligned_column_index(x0, cuts)
+        if idx >= n_cols:
+            idx = n_cols - 1
+        token = _clean_label(text)
+        if token:
+            buckets[idx].append(token)
+    return [" ".join(part) for part in buckets]
+
+
+def is_aligned_continuation_row(cells: list[str]) -> bool:
+    """Wrapped notes: leading columns empty, last column filled.
+
+    Empty first column alone is not a wrap (e.g. shop ammo indented into
+    the name column).
+    """
+    if len(cells) < 2:
+        return False
+    leading = [c.strip() for c in cells[:-1]]
+    last = cells[-1].strip()
+    return (not any(leading)) and bool(last)
+
+
+def _column_x_cuts_for_page(
+    pdf_extract: dict[str, Any], page_number: int
+) -> list[float] | None:
+    raw = pdf_extract.get("column_x_cuts")
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        vals = raw.get(str(page_number), raw.get(page_number))
+        if not isinstance(vals, list) or not vals:
+            return None
+        return [float(x) for x in vals]
+    if isinstance(raw, list) and raw:
+        return [float(x) for x in raw]
+    return None
+
+
+def _row_text_matches(text: str, patterns: list[str]) -> bool:
+    for pat in patterns:
+        if pat and re.search(pat, text, re.IGNORECASE | re.DOTALL):
+            return True
+    return False
+
+
+def _apply_strip_inline(text: str, text_filters: dict[str, Any] | None) -> str:
+    line = text
+    for pat in (text_filters or {}).get("strip_inline_patterns") or []:
+        if pat:
+            line = re.sub(pat, " ", line, flags=re.IGNORECASE)
+    return _clean_label(line)
+
+
+def _drop_spatial_row(
+    text: str, text_filters: dict[str, Any] | None, page_number: int
+) -> bool:
+    stripped = _apply_strip_inline(text, text_filters)
+    if not stripped:
+        return True
+    for pat in (text_filters or {}).get("drop_line_patterns") or []:
+        if pat and re.fullmatch(pat, stripped, re.IGNORECASE):
+            return True
+    if (text_filters or {}).get("drop_edge_page_number") and stripped == str(
+        page_number
+    ):
+        return True
+    return False
+
+
+def _group_words_by_row(
+    page_words: list[tuple[float, float, str]],
+) -> list[list[tuple[float, str]]]:
+    """Group (x0, y0, text) into visual rows (same rounded y), left-to-right."""
+    buckets: dict[int, list[tuple[float, str]]] = {}
+    for x0, y0, text in page_words:
+        key = int(round(y0))
+        buckets.setdefault(key, []).append((x0, text))
+    rows: list[list[tuple[float, str]]] = []
+    for y in sorted(buckets):
+        row = sorted(buckets[y], key=lambda item: item[0])
+        if row:
+            rows.append(row)
+    return rows
+
+
+def extract_table_aligned_columns(
+    spec: dict[str, Any],
+    pdf_path: str | Path,
+    *,
+    text_filters: dict[str, Any] | None = None,
+) -> dict | None:
+    """Parse an N-column aligned list from PDF word coordinates."""
+    pdf_extract = spec.get("pdf_extract") or {}
+    if pdf_extract.get("status") == "todo" or _skip_pdf_extract(spec):
+        return None
+    if pdf_extract.get("mode") != "aligned_columns":
+        return None
+
+    cols = column_names(spec)
+    if len(cols) < 2:
+        return None
+    n_cols = len(cols)
+    header_patterns = pdf_extract.get("header_patterns") or []
+    stop_before = pdf_extract.get("stop_before") or []
+    span = _page_span(spec)
+    if not header_patterns or not span:
+        return None
+
+    path = Path(pdf_path)
+    if not path.is_file():
+        return None
+
+    doc = fitz_open(path)
+    try:
+        started = False
+        matched_header = ""
+        rows: list[list[Any]] = []
+        for page_number in span:
+            cuts = _column_x_cuts_for_page(pdf_extract, page_number)
+            if not cuts or len(cuts) != n_cols - 1:
+                logging.warning(
+                    "aligned_columns %s: missing or wrong-length column_x_cuts for page %s",
+                    spec.get("name"),
+                    page_number,
+                )
+                return None
+            page_index = page_number - 1
+            if page_index < 0 or page_index >= len(doc):
+                return None
+            page = doc[page_index]
+            page_words = [
+                (float(w[0]), float(w[1]), str(w[4]))
+                for w in page.get_text("words")
+            ]
+            for row_words in _group_words_by_row(page_words):
+                line = _clean_label(" ".join(tok for _, tok in row_words))
+                if not line:
+                    continue
+                if _drop_spatial_row(line, text_filters, page_number):
+                    continue
+                if not started:
+                    if _row_text_matches(line, header_patterns):
+                        started = True
+                        matched_header = line
+                    continue
+                if stop_before and _row_text_matches(line, stop_before):
+                    return _aligned_table_result(
+                        spec, cols, rows, pdf_extract, matched_header
+                    )
+                cells = cells_from_aligned_words(row_words, cuts, n_cols)
+                if not any(c.strip() for c in cells):
+                    continue
+                if rows and is_aligned_continuation_row(cells):
+                    prev = rows[-1]
+                    prev[-1] = _clean_label(f"{prev[-1]} {cells[-1]}")
+                    continue
+                rows.append(cells)
+        if not started:
+            return None
+        return _aligned_table_result(spec, cols, rows, pdf_extract, matched_header)
+    finally:
+        doc.close()
+
+
+def _aligned_table_result(
+    spec: dict[str, Any],
+    cols: list[str],
+    rows: list[list[Any]],
+    pdf_extract: dict[str, Any],
+    matched_header: str,
+) -> dict | None:
+    min_rows = pdf_extract.get("min_rows") or 1
+    if len(rows) < min_rows:
+        return None
+    max_rows = pdf_extract.get("max_rows")
+    if max_rows is not None and len(rows) > max_rows:
+        rows = rows[:max_rows]
+    pdf_heading = _clean_pdf_heading(matched_header)
+    return {
+        "manifest_name": spec["name"],
+        "title": table_display_title(spec, matched_header=pdf_heading),
+        "pdf_heading": pdf_heading,
+        "lead_in": str(spec["lead_in"]).strip() if spec.get("lead_in") else "",
+        "columns": cols,
+        "rows": rows,
+    }
+
+
+def extract_lookup_table(
+    spec: dict[str, Any],
+    *,
+    text: str | None = None,
+    pdf_path: str | Path | None = None,
+    page_number: int | None = None,
+    allow_multi_page: bool = False,
+    text_filters: dict[str, Any] | None = None,
+) -> dict | None:
+    """Dispatch pdf_extract.mode (aligned_columns vs sequential text)."""
+    pdf_extract = spec.get("pdf_extract") or {}
+    if pdf_extract.get("mode") == "aligned_columns":
+        if not pdf_path:
+            return None
+        return extract_table_aligned_columns(
+            spec, pdf_path, text_filters=text_filters
+        )
+    if not text:
+        return None
+    return extract_table_from_text(
+        text,
+        spec,
+        page_number=page_number,
+        allow_multi_page=allow_multi_page,
+    )
+
+
 def extract_table_from_text(
     text: str,
     spec: dict[str, Any],
@@ -187,6 +430,8 @@ def extract_table_from_text(
         return None
 
     pdf_extract = spec.get("pdf_extract") or {}
+    if pdf_extract.get("mode") == "aligned_columns":
+        return None
     if pdf_extract.get("status") == "todo" or _skip_pdf_extract(spec):
         return None
 
@@ -236,6 +481,7 @@ def extract_table_from_text(
         "manifest_name": spec["name"],
         "title": table_display_title(spec, matched_header=pdf_heading),
         "pdf_heading": pdf_heading,
+        "lead_in": str(spec["lead_in"]).strip() if spec.get("lead_in") else "",
         "columns": cols,
         "rows": rows,
     }
