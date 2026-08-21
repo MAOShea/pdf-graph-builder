@@ -566,6 +566,644 @@ class TestManifestPdfParser(unittest.TestCase):
         self.assertNotIn("bedeviled", blob)
         self.assertNotIn("cont.", blob)
 
+    def test_bedeviled_name_lists_keep_one_column_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        filters = (load_passage_sections() or {}).get("text_filters")
+        first = extract_lookup_table(
+            spec_by_name(self.manifest, "BedeviledDungeonFirstTable"),
+            pdf_path=pdf,
+            text_filters=filters,
+        )
+        second = extract_lookup_table(
+            spec_by_name(self.manifest, "BedeviledDungeonSecondTable"),
+            pdf_path=pdf,
+            text_filters=filters,
+        )
+        self.assertIsNotNone(first)
+        self.assertIsNotNone(second)
+        self.assertEqual(len(first["rows"]), 12)
+        self.assertEqual(len(second["rows"]), 12)
+        first_by = {str(r[0]): r[1] for r in first["rows"]}
+        second_by = {str(r[0]): r[1] for r in second["rows"]}
+        self.assertEqual(first_by["1"], "Slaughter")
+        self.assertEqual(first_by["7"], "Sin")
+        self.assertEqual(first_by["12"], "Slave")
+        self.assertEqual(second_by["1"], "pit")
+        self.assertEqual(second_by["3"], "temple")
+        self.assertEqual(second_by["12"], "waste")
+        first_blob = " ".join(first_by.values()).lower()
+        second_blob = " ".join(second_by.values()).lower()
+        self.assertNotIn("pit", first_blob)
+        self.assertNotIn("temple", first_blob)
+        self.assertNotIn("slaughter", second_blob)
+        self.assertNotIn("sin", second_blob)
+        self.assertNotIn("still active", first_blob)
+        self.assertNotIn("still active", second_blob)
+        self.assertNotIn("the", first_by["1"].lower())
+
+    def test_status_table_does_not_pack_inactive_because(self):
+        spec = spec_by_name(self.manifest, "StatusTable")
+        sample = (
+            "Status (d6)\n"
+            "1–2\tStill active\n"
+            "3–6\tInactive, because (d4)\n"
+            "1\t\n\x07The place was invaded\n"
+            "2\tEverything ended in disaster\n"
+            "3\tIt was no longer needed\n"
+            "4\tA Misery was fulfilled, roll to see which one (p. 10)\n"
+            "Imminent danger (d10)\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=71)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 2)
+        by_key = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertEqual(by_key["1-2"], "Still active")
+        self.assertIn("Inactive", by_key["3-6"])
+        self.assertNotIn("invaded", by_key["3-6"].lower())
+        self.assertNotIn("disaster", by_key["3-6"].lower())
+        self.assertNotIn("Misery", by_key["3-6"])
+
+    def test_status_and_inactive_because_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        filters = (load_passage_sections() or {}).get("text_filters")
+        by_page = load_pdf_text_by_page(pdf)
+        status_spec = spec_by_name(self.manifest, "StatusTable")
+        nested_spec = spec_by_name(self.manifest, "InactiveBecauseTable")
+        status_span = page_span(status_spec)
+        nested_span = page_span(nested_spec)
+        status_text = "\n".join(by_page.get(p, "") for p in status_span)
+        nested_text = "\n".join(by_page.get(p, "") for p in nested_span)
+        status = extract_lookup_table(
+            status_spec,
+            text=status_text,
+            pdf_path=pdf,
+            page_number=status_span[0],
+            allow_multi_page=len(status_span) > 1,
+            text_filters=filters,
+        )
+        nested = extract_lookup_table(
+            nested_spec,
+            text=nested_text,
+            pdf_path=pdf,
+            page_number=nested_span[0],
+            allow_multi_page=len(nested_span) > 1,
+            text_filters=filters,
+        )
+        self.assertIsNotNone(status)
+        self.assertIsNotNone(nested)
+        self.assertEqual(len(status["rows"]), 2)
+        self.assertEqual(len(nested["rows"]), 4)
+        status_by = {str(r[0]): r[1] for r in status["rows"]}
+        nested_by = {str(r[0]): r[1] for r in nested["rows"]}
+        self.assertEqual(status_by["1-2"], "Still active")
+        self.assertIn("Inactive", status_by["3-6"])
+        self.assertNotIn("invaded", status_by["3-6"].lower())
+        self.assertNotIn("disaster", status_by["3-6"].lower())
+        self.assertIn("invaded", nested_by["1"].lower())
+        self.assertIn("disaster", nested_by["2"].lower())
+        self.assertIn("needed", nested_by["3"].lower())
+        self.assertIn("Misery", nested_by["4"])
+        self.assertNotIn("Imminent", nested_by["4"])
+        self.assertNotIn("flooding", nested_by["4"].lower())
+
+    def test_imminent_danger_does_not_pack_flooding_bands(self):
+        spec = spec_by_name(self.manifest, "ImminentDangerTable")
+        sample = (
+            "Imminent danger (d10)\n"
+            "1\tIs slowly flooding with (d4): 1–2 oil, 3–4 water\n"
+            "2\tBerserkers are appearing\n"
+            "3\tIs about to collapse\n"
+            "4\tSenses are being distorted\n"
+            "5\tUnderworld emissions of poisonous spores\n"
+            "6\tA hunted cult intends it to be their new hideout\n"
+            "7\tA terrible, dormant curse about to be unleashed\n"
+            "8\tFire is spreading from the deepest chamber\n"
+            "9\tThe gate will shut and seal, and not open again until seven days have passed\n"
+            "10\tA lethal mechanism is about to activate\n"
+            "Who or what dwells here now? (d12)\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=72)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 10)
+        by_key = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("flooding", by_key["1"].lower())
+        self.assertNotIn("oil", by_key["1"].lower())
+        self.assertNotIn("water", by_key["1"].lower())
+        self.assertIn("Berserkers", by_key["2"])
+        blob = " ".join(by_key.values()).lower()
+        self.assertNotIn("dwells", blob)
+
+    def test_flooding_bands_stop_before_parent_row_2(self):
+        spec = spec_by_name(self.manifest, "FloodingWithTable")
+        sample = (
+            "Imminent danger (d10)\n"
+            "1\tIs slowly flooding with (d4): 1–2 oil, 3–4 water\n"
+            "2\tBerserkers are appearing\n"
+            "3\tIs about to collapse\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=72)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 2)
+        by_key = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertTrue(by_key["1-2"].lower().startswith("oil"))
+        self.assertNotIn("water", by_key["1-2"].lower())
+        self.assertEqual(by_key["3-4"].lower(), "water")
+        self.assertNotIn("2", by_key["3-4"])
+        self.assertNotIn("Berserkers", by_key["3-4"])
+
+    def test_imminent_danger_and_flooding_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        filters = (load_passage_sections() or {}).get("text_filters")
+        by_page = load_pdf_text_by_page(pdf)
+        danger_spec = spec_by_name(self.manifest, "ImminentDangerTable")
+        flood_spec = spec_by_name(self.manifest, "FloodingWithTable")
+        span = page_span(danger_spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        danger = extract_lookup_table(
+            danger_spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=filters,
+        )
+        flood = extract_lookup_table(
+            flood_spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=filters,
+        )
+        self.assertIsNotNone(danger)
+        self.assertIsNotNone(flood)
+        self.assertEqual(len(danger["rows"]), 10)
+        self.assertEqual(len(flood["rows"]), 2)
+        danger_by = {str(r[0]): r[1] for r in danger["rows"]}
+        flood_by = {str(r[0]): r[1] for r in flood["rows"]}
+        self.assertIn("flooding", danger_by["1"].lower())
+        self.assertNotIn("oil", danger_by["1"].lower())
+        self.assertNotIn("water", danger_by["1"].lower())
+        self.assertIn("Berserkers", danger_by["2"])
+        self.assertIn("activate", danger_by["10"].lower())
+        self.assertNotIn("dwells", danger_by["10"].lower())
+        self.assertTrue(flood_by["1-2"].lower().startswith("oil"))
+        self.assertNotIn("water", flood_by["1-2"].lower())
+        self.assertEqual(flood_by["3-4"].lower(), "water")
+        self.assertNotIn("Berserkers", " ".join(flood_by.values()))
+
+    def test_dwells_here_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "DwellsHereTable")
+        self.assertIsNotNone(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 12)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("armor", by_face["1"].lower())
+        self.assertIn("Wickheads", by_face["7"])
+        self.assertIn("courtiers", by_face["12"].lower())
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("distinctive", blob)
+        self.assertNotIn("portal", blob)
+        self.assertNotIn("berserkers", blob)
+
+    def test_distinctive_feature_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "DistinctiveFeatureTable")
+        self.assertIsNotNone(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 12)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Portal", by_face["1"])
+        self.assertIn("Obelisk", by_face["7"])
+        self.assertIn("tar", by_face["12"].lower())
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("sample rooms", blob)
+        self.assertNotIn("inscription", blob)
+        self.assertNotIn("vomit", blob)
+        self.assertNotIn("wickheads", blob)
+
+    def test_sample_rooms_matrix_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "SampleRoomsTable")
+        self.assertIsNotNone(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 24)
+        by_cell = {(str(r[0]), str(r[1])): r[2] for r in table["rows"]}
+        self.assertIn("Inscriptions", by_cell[("1", "1")])
+        self.assertNotIn("vomit", by_cell[("1", "1")].lower())
+        self.assertNotIn("hypnotic", by_cell[("1", "1")].lower())
+        self.assertIn("Bloodied", by_cell[("1", "2")])
+        self.assertIn("Fire", by_cell[("1", "6")])
+        self.assertIn("Obvious", by_cell[("2", "1")])
+        self.assertIn("Freezing", by_cell[("2", "5")])
+        self.assertIn("Creaking", by_cell[("2", "6")])
+        self.assertIn("Shelves", by_cell[("3", "3")])
+        self.assertNotIn("literature", by_cell[("3", "3")].lower())
+        self.assertNotIn("rotting", by_cell[("3", "3")].lower())
+        self.assertIn("altar", by_cell[("4", "3")].lower())
+        self.assertNotIn("cracked", by_cell[("4", "3")].lower())
+        self.assertNotIn("blood", by_cell[("4", "3")].lower())
+        self.assertIn("Bonfire", by_cell[("4", "6")])
+        blob = " ".join(by_cell.values()).lower()
+        self.assertNotIn("obelisk", blob)
+        self.assertNotIn("anthelia", blob)
+
+    def test_inscription_motifs_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "InscriptionMotifsTable")
+        self.assertIsNotNone(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 6)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Vomit", by_face["1"])
+        self.assertEqual(by_face["3"], "Hypnotic")
+        self.assertIn("pointless", by_face["6"].lower())
+        self.assertNotIn("2", by_face["6"])
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("bloodied", blob)
+        self.assertNotIn("flooded", blob)
+        self.assertNotIn("obelisk", blob)
+
+    def test_shelves_and_altar_bands_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        shelves_spec = spec_by_name(self.manifest, "ShelvesWithTable")
+        altar_spec = spec_by_name(self.manifest, "SacrificialAltarTable")
+        self.assertIsNotNone(shelves_spec)
+        self.assertIsNotNone(altar_spec)
+        by_page = load_pdf_text_by_page(pdf)
+        filters = (load_passage_sections() or {}).get("text_filters")
+        shelves_span = page_span(shelves_spec)
+        altar_span = page_span(altar_spec)
+        shelves_text = "\n".join(by_page.get(p, "") for p in shelves_span)
+        altar_text = "\n".join(by_page.get(p, "") for p in altar_span)
+        shelves = extract_lookup_table(
+            shelves_spec,
+            text=shelves_text,
+            pdf_path=pdf,
+            page_number=shelves_span[0],
+            allow_multi_page=len(shelves_span) > 1,
+            text_filters=filters,
+        )
+        altar = extract_lookup_table(
+            altar_spec,
+            text=altar_text,
+            pdf_path=pdf,
+            page_number=altar_span[0],
+            allow_multi_page=len(altar_span) > 1,
+            text_filters=filters,
+        )
+        self.assertIsNotNone(shelves)
+        self.assertIsNotNone(altar)
+        self.assertEqual(len(shelves["rows"]), 2)
+        self.assertEqual(len(altar["rows"]), 2)
+        shelves_by = {str(r[0]): r[1] for r in shelves["rows"]}
+        altar_by = {str(r[0]): r[1] for r in altar["rows"]}
+        self.assertIn("literature", shelves_by["1-2"].lower())
+        self.assertNotIn("food", shelves_by["1-2"].lower())
+        self.assertIn("food", shelves_by["3-4"].lower())
+        self.assertNotIn("literature", shelves_by["3-4"].lower())
+        self.assertNotIn("abyssal", " ".join(shelves_by.values()).lower())
+        self.assertIn("cracked", altar_by["1-2"].lower())
+        self.assertNotIn("blood", altar_by["1-2"].lower())
+        self.assertIn("blood", altar_by["3-4"].lower())
+        self.assertNotIn("cracked", altar_by["3-4"].lower())
+        self.assertNotIn("throne", " ".join(altar_by.values()).lower())
+        self.assertNotIn("literature", " ".join(altar_by.values()).lower())
+
+    def test_wields_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "WieldsTable")
+        self.assertIsNotNone(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 4)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("flail", by_face["1"].lower())
+        self.assertIn("Chained", by_face["3"])
+        self.assertIn("warhammer", by_face["4"].lower())
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("ambush", blob)
+        self.assertNotIn("wraith", blob)
+        self.assertNotIn("zukuma", blob)
+
+    def test_earthbound_tables_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        by_page = load_pdf_text_by_page(pdf)
+        filters = (load_passage_sections() or {}).get("text_filters")
+        expected = {
+            "EarthboundTraitTable": ("3", "Joking", 4),
+            "EarthboundSpecialtyTable": ("3", "Senses danger", 4),
+            "EarthboundValuesTable": ("3", "Endless tasks", 6),
+        }
+        for name, (face, needle, n_rows) in expected.items():
+            spec = spec_by_name(self.manifest, name)
+            self.assertIsNotNone(spec, name)
+            span = page_span(spec)
+            text = "\n".join(by_page.get(p, "") for p in span)
+            table = extract_lookup_table(
+                spec,
+                text=text,
+                pdf_path=pdf,
+                page_number=span[0],
+                allow_multi_page=len(span) > 1,
+                text_filters=filters,
+            )
+            self.assertIsNotNone(table, name)
+            self.assertEqual(len(table["rows"]), n_rows, name)
+            by_face = {str(r[0]): r[1] for r in table["rows"]}
+            self.assertIn(needle, by_face[face], name)
+            blob = " ".join(by_face.values()).lower()
+            self.assertNotIn("hp 8", blob)
+            self.assertNotIn("morale", blob)
+            self.assertNotIn("wickhead", blob)
+            self.assertNotIn("grumpy", blob)
+
+    def test_wild_wickhead_tables_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        by_page = load_pdf_text_by_page(pdf)
+        filters = (load_passage_sections() or {}).get("text_filters")
+        spec_t = spec_by_name(self.manifest, "WildWickheadTraitTable")
+        spec_s = spec_by_name(self.manifest, "WildWickheadSpecialtyTable")
+        spec_v = spec_by_name(self.manifest, "WildWickheadValuesTable")
+        span = page_span(spec_t)
+        text = "\n".join(by_page.get(p, "") for p in span)
+
+        trait = extract_lookup_table(
+            spec_t, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(trait)
+        self.assertEqual(len(trait["rows"]), 4)
+        by_face = {str(r[0]): r[1] for r in trait["rows"]}
+        self.assertIn("Careless", by_face["3"])
+        blob_t = " ".join(by_face.values()).lower()
+        self.assertIn("grumpy", blob_t)
+        self.assertNotIn("hp 10", blob_t)
+        self.assertNotIn("morale", blob_t)
+
+        spec = extract_lookup_table(
+            spec_s, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(spec)
+        self.assertEqual(len(spec["rows"]), 3)
+        by_s = {str(r[0]): r[1] for r in spec["rows"]}
+        self.assertIn("Walking", by_s["1-2"])
+        self.assertIn("knife", by_s["3"].lower())
+        self.assertIn("Backstab", by_s["4"])
+        blob_s = " ".join(by_s.values()).lower()
+        self.assertNotIn("five items", blob_s)
+        self.assertNotIn("values", blob_s)
+
+        values = extract_lookup_table(
+            spec_v, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(values)
+        self.assertEqual(len(values["rows"]), 6)
+        by_v = {str(r[0]): r[1] for r in values["rows"]}
+        self.assertIn("sharp weapons", by_v["3"].lower())
+        blob_v = " ".join(by_v.values()).lower()
+        self.assertNotIn("pale", blob_v)
+        self.assertNotIn("bitter", blob_v)
+
+    def test_pale_one_tables_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        by_page = load_pdf_text_by_page(pdf)
+        filters = (load_passage_sections() or {}).get("text_filters")
+        spec_t = spec_by_name(self.manifest, "PaleOneTraitTable")
+        spec_s = spec_by_name(self.manifest, "PaleOneSpecialtyTable")
+        spec_v = spec_by_name(self.manifest, "PaleOneValuesTable")
+        span = page_span(spec_t)
+        text = "\n".join(by_page.get(p, "") for p in span)
+
+        trait = extract_lookup_table(
+            spec_t, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(trait)
+        self.assertEqual(len(trait["rows"]), 4)
+        by_face = {str(r[0]): r[1] for r in trait["rows"]}
+        self.assertIn("Mute", by_face["3"])
+        blob_t = " ".join(by_face.values()).lower()
+        self.assertIn("bitter", blob_t)
+        self.assertNotIn("hp 5", blob_t)
+        self.assertNotIn("morale", blob_t)
+        self.assertNotIn("once per day", blob_t)
+
+        spec = extract_lookup_table(
+            spec_s, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(spec)
+        self.assertEqual(len(spec["rows"]), 4)
+        by_s = {str(r[0]): r[1] for r in spec["rows"]}
+        self.assertIn("decoction", by_s["1"].lower())
+        self.assertIn("elixir vitalis", by_s["2"].lower())
+        self.assertIn("unclean", by_s["3"].lower())
+        self.assertIn("sacred", by_s["4"].lower())
+        blob_s = " ".join(by_s.values()).lower()
+        self.assertNotIn("once per day", blob_s)
+        self.assertNotIn("values", blob_s)
+        self.assertNotIn("mute", blob_s)
+
+        values = extract_lookup_table(
+            spec_v, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(values)
+        self.assertEqual(len(values["rows"]), 6)
+        by_v = {str(r[0]): r[1] for r in values["rows"]}
+        self.assertIn("melancholic", by_v["3"].lower())
+        blob_v = " ".join(by_v.values()).lower()
+        self.assertNotIn("prowler", blob_v)
+        self.assertNotIn("hp 5", blob_v)
+
+    def test_prowler_tables_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        by_page = load_pdf_text_by_page(pdf)
+        filters = (load_passage_sections() or {}).get("text_filters")
+        spec_t = spec_by_name(self.manifest, "ProwlerTraitTable")
+        spec_s = spec_by_name(self.manifest, "ProwlerSpecialtyTable")
+        spec_v = spec_by_name(self.manifest, "ProwlerValuesTable")
+        span = page_span(spec_t)
+        text = "\n".join(by_page.get(p, "") for p in span)
+
+        trait = extract_lookup_table(
+            spec_t, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(trait)
+        self.assertEqual(len(trait["rows"]), 4)
+        by_face = {str(r[0]): r[1] for r in trait["rows"]}
+        self.assertIn("Liar", by_face["3"])
+        blob_t = " ".join(by_face.values()).lower()
+        self.assertIn("lazy", blob_t)
+        self.assertNotIn("hp 8", blob_t)
+        self.assertNotIn("morale", blob_t)
+        self.assertNotIn("shortsword", blob_t)
+
+        spec = extract_lookup_table(
+            spec_s, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(spec)
+        self.assertEqual(len(spec["rows"]), 4)
+        by_s = {str(r[0]): r[1] for r in spec["rows"]}
+        self.assertIn("traps", by_s["1"].lower())
+        self.assertIn("steal", by_s["2"].lower())
+        self.assertIn("climb", by_s["3"].lower())
+        self.assertIn("hidden", by_s["4"].lower())
+        blob_s = " ".join(by_s.values()).lower()
+        self.assertNotIn("dr8", blob_s)
+        self.assertNotIn("gossip", blob_s)
+        self.assertNotIn("liar", blob_s)
+
+        values = extract_lookup_table(
+            spec_v, text=text, pdf_path=pdf, page_number=span[0],
+            allow_multi_page=False, text_filters=filters,
+        )
+        self.assertIsNotNone(values)
+        self.assertEqual(len(values["rows"]), 6)
+        by_v = {str(r[0]): r[1] for r in values["rows"]}
+        self.assertIn("Gossip", by_v["3"])
+        blob_v = " ".join(by_v.values()).lower()
+        self.assertNotIn("wander", blob_v)
+        self.assertNotIn("kerg", blob_v)
+        self.assertNotIn("hp 8", blob_v)
+
 
 class TestSplitItalic(unittest.TestCase):
     @classmethod

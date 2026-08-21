@@ -325,16 +325,18 @@ def resolve_tables_in_span(
         elif _is_hand_authored_substitute_spec(spec):
             starts.append((header.start(), "hand_authored", spec))
 
-    starts.sort(key=lambda h: h[0])
+    starts.sort(key=lambda h: (h[0], str(h[2].get("name") or "")))
     deduped: list[tuple[int, str, dict[str, Any]]] = []
-    seen: set[int] = set()
+    seen: set[tuple[int, str]] = set()
     for start, source, spec in starts:
-        if start in seen:
+        # Same PDF header may feed two specs (roll-twice keep_columns).
+        key = (start, str(spec.get("name") or ""))
+        if key in seen:
             warnings.append(
                 f"duplicate header at {start} skipped {spec.get('name')!r} ({source})"
             )
             continue
-        seen.add(start)
+        seen.add(key)
         deduped.append((start, source, spec))
 
     hits: list[TableHit] = []

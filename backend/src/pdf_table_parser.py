@@ -6,6 +6,14 @@ Modes:
 - ``aligned_columns`` — N cells per visual row from word x-coordinates
   (``pdf_extract.column_x_cuts``). Needed when the book is a 3-column list
   and ``get_text()`` stacks each cell on its own line.
+  ``visual_columns`` + ``keep_columns`` project a wider visual row onto
+  the spec columns (roll-twice lists that share a face but must not pack
+  both words into one ``HAS_ENTRY``). ``require_index`` skips lead-in
+  rows whose first kept cell is not a numeric face.
+  ``require_index_columns`` skips a row unless those kept cells are
+  numeric faces (d4×d6 matrix: require d6 so indented nested lists are
+  not packed). ``carry_index_columns`` copies a blank index from the
+  previous kept row (d4 printed only on the first row of each group).
 - ``split_italic`` — sequential index keys, then split the remainder into two
   result columns from PDF span italic (roman → column 1, italic → column 2).
   Requires ``pdf_path``. Flattened ``get_text()`` cannot do this.
@@ -77,7 +85,12 @@ def _key_boundary_pattern(key: str, *, dotted: bool = False) -> re.Pattern:
 
 
 def _parse_rows_sequential(
-    body: str, keys: list[str], index_type: str, *, dotted: bool = False
+    body: str,
+    keys: list[str],
+    index_type: str,
+    *,
+    dotted: bool = False,
+    row_stop_before: list[str] | None = None,
 ) -> list[list[Any]]:
     """Parse rows in key order so digits inside prose are not mistaken for row indices."""
     if not keys:
@@ -95,6 +108,13 @@ def _parse_rows_sequential(
             end = next_match.start() if next_match else len(body)
         else:
             end = len(body)
+        for pat in row_stop_before or []:
+            if not pat:
+                continue
+            nested = re.search(pat, body[start:end], _STREAM_REGEX_FLAGS)
+            if nested:
+                end = start + nested.start()
+                break
         label = _clean_label(body[start:end])
         if not label or len(label) > _MAX_LABEL_LEN:
             continue
@@ -220,6 +240,38 @@ def cells_from_aligned_words(
     return [" ".join(part) for part in buckets]
 
 
+def _aligned_cell_is_index_face(text: str) -> bool:
+    return bool(re.fullmatch(r"\d{1,3}", (text or "").strip()))
+
+
+def _aligned_require_index_columns(
+    cells: list[str], pdf_extract: dict[str, Any]
+) -> bool:
+    """False → drop this visual row (nested indent or non-face junk)."""
+    raw = pdf_extract.get("require_index_columns")
+    if raw is None:
+        return True
+    for i in raw:
+        idx = int(i)
+        if idx >= len(cells) or not _aligned_cell_is_index_face(cells[idx]):
+            return False
+    return True
+
+
+def _aligned_carry_index_columns(
+    cells: list[str], prev: list[Any] | None, pdf_extract: dict[str, Any]
+) -> list[str]:
+    raw = pdf_extract.get("carry_index_columns")
+    if not raw or not prev:
+        return cells
+    out = list(cells)
+    for i in raw:
+        idx = int(i)
+        if idx < len(out) and not str(out[idx]).strip() and idx < len(prev):
+            out[idx] = prev[idx]
+    return out
+
+
 def is_aligned_continuation_row(cells: list[str]) -> bool:
     """Wrapped notes: leading columns empty, last column filled.
 
@@ -313,6 +365,23 @@ def extract_table_aligned_columns(
     if len(cols) < 2:
         return None
     n_cols = len(cols)
+    keep_raw = pdf_extract.get("keep_columns")
+    keep_idx: list[int] | None = None
+    visual_n = n_cols
+    if keep_raw is not None:
+        keep_idx = [int(i) for i in keep_raw]
+        if len(keep_idx) != n_cols:
+            logging.warning(
+                "aligned_columns %s: keep_columns length %s != spec columns %s",
+                spec.get("name"),
+                len(keep_idx),
+                n_cols,
+            )
+            return None
+        visual_n = int(
+            pdf_extract.get("visual_columns")
+            or (max(keep_idx) + 1 if keep_idx else n_cols)
+        )
     header_patterns = pdf_extract.get("header_patterns") or []
     stop_before = pdf_extract.get("stop_before") or []
     span = _page_span(spec)
@@ -330,7 +399,7 @@ def extract_table_aligned_columns(
         rows: list[list[Any]] = []
         for page_number in span:
             cuts = _column_x_cuts_for_page(pdf_extract, page_number)
-            if not cuts or len(cuts) != n_cols - 1:
+            if not cuts or len(cuts) != visual_n - 1:
                 logging.warning(
                     "aligned_columns %s: missing or wrong-length column_x_cuts for page %s",
                     spec.get("name"),
@@ -360,9 +429,22 @@ def extract_table_aligned_columns(
                     return _aligned_table_result(
                         spec, cols, rows, pdf_extract, matched_header
                     )
-                cells = cells_from_aligned_words(row_words, cuts, n_cols)
+                cells = cells_from_aligned_words(row_words, cuts, visual_n)
+                if keep_idx is not None:
+                    cells = [
+                        cells[i] if i < len(cells) else "" for i in keep_idx
+                    ]
                 if not any(c.strip() for c in cells):
                     continue
+                if pdf_extract.get("require_index") and not re.fullmatch(
+                    r"\d{1,3}", (cells[0] or "").strip()
+                ):
+                    continue
+                if not _aligned_require_index_columns(cells, pdf_extract):
+                    continue
+                cells = _aligned_carry_index_columns(
+                    cells, rows[-1] if rows else None, pdf_extract
+                )
                 if rows and is_aligned_continuation_row(cells):
                     prev = rows[-1]
                     prev[-1] = _clean_label(f"{prev[-1]} {cells[-1]}")
@@ -737,6 +819,7 @@ def extract_table_from_text(
         keys,
         index_type,
         dotted=bool(pdf_extract.get("dotted_index")),
+        row_stop_before=pdf_extract.get("row_stop_before"),
     )
 
     min_rows = pdf_extract.get("min_rows") or 1

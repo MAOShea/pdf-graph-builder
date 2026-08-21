@@ -76,6 +76,18 @@ def _span_overlaps_range(span: list[int], start: int | None, end: int | None) ->
     return True
 
 
+def _stream_hit_on_spec_pages(page: int | None, spec: dict[str, Any]) -> bool:
+    """True when a full-stream header hit landed on the spec's contracted pages.
+
+    Sibling tables share headers (Trait (d4) on every Outcast page). Stream
+    resolve finds the first match; page-span fallback retries the rest.
+    """
+    span = page_span(spec)
+    if not span or page is None:
+        return True
+    return page in span
+
+
 def _pdf_extractable_specs(
     manifest: dict[str, Any],
     *,
@@ -191,6 +203,15 @@ def run_lookup_table_pipeline(
         if not spec:
             stats["pdf_tables_failed"] += 1
             stats["failures"].append(f"{name}: not in manifest")
+            continue
+        if not _stream_hit_on_spec_pages(page, spec):
+            logger.warning(
+                "lookup table pipeline: skip %s stream hit on page %s "
+                "(manifest pages %s)",
+                name,
+                page,
+                page_span(spec),
+            )
             continue
 
         table = hit.table

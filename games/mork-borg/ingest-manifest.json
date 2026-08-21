@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.15",
+  "version": "0.3.19",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (sequential index+remainder, or aligned_columns via word x-cuts when get_text() stacks a multi-column list).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -2362,6 +2362,106 @@
       "note": "Slice 3h: Adventure spark d100 pairs pp.69–70. Continuation cont. dropped by passage-sections text_filters. stop_before Bedeviled Dungeons. Not on p.75 RULES. Q1 uses pair 55-56 (not 99-00)."
     },
     {
+      "name": "BedeviledDungeonFirstTable",
+      "title": "What is it called? (first d12)",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "71",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": "7",
+            "result": "Sin"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "What is it called\\?\\s*\\(roll d12 twice\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "visual_columns": 3,
+        "keep_columns": [0, 1],
+        "require_index": true,
+        "column_x_cuts": [90, 158],
+        "min_rows": 12,
+        "max_rows": 12,
+        "stop_before": [
+          "^\\s*Status\\s*\\(d6\\)",
+          "Still active"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3i: first d12 of What is it called? (roll twice). Prefix The is lead-in, not a row. Do not pack the second-word column into this HAS_ENTRY. Not on p.75 RULES. Not used_by Place. I1 face 7 Sin."
+    },
+    {
+      "name": "BedeviledDungeonSecondTable",
+      "title": "What is it called? (second d12)",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "71",
+      "columns": [
+        {
+          "name": "d12",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": "3",
+            "result": "temple"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "What is it called\\?\\s*\\(roll d12 twice\\)"
+        ],
+        "index": {
+          "type": "d12"
+        },
+        "visual_columns": 3,
+        "keep_columns": [0, 2],
+        "require_index": true,
+        "column_x_cuts": [90, 158],
+        "min_rows": 12,
+        "max_rows": 12,
+        "stop_before": [
+          "^\\s*Status\\s*\\(d6\\)",
+          "Still active"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3i: second d12 of What is it called? (roll twice). Do not pack the first-word column into this HAS_ENTRY. Not on p.75 RULES. Not used_by Place. I2 face 3 temple."
+    },
+    {
       "name": "WanderTable",
       "phase": 3,
       "instance_of": "LookupTable",
@@ -2450,6 +2550,7 @@
     },
     {
       "name": "DwellsHereTable",
+      "title": "Who or what dwells here now? (d12)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -2466,7 +2567,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": "7",
+            "result": "Wickheads running from foreboding darkness"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -2477,11 +2585,17 @@
         },
         "min_rows": 12,
         "max_rows": 12,
+        "stop_before": [
+          "Distinctive feature",
+          "Portal to the land of the dead"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3l: Who or what dwells here now? d12 p.72. stop_before Distinctive feature. Not on p.75 RULES. Not used_by Place. X1 face 7 Wickheads."
     },
     {
       "name": "ImminentDangerTable",
+      "title": "Imminent danger (d10)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -2498,7 +2612,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d10": "2",
+            "result": "Berserkers are appearing"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -2509,11 +2630,72 @@
         },
         "min_rows": 10,
         "max_rows": 10,
+        "stop_before": [
+          "Who or what dwells here now",
+          "Animated suits of armor"
+        ],
+        "row_stop_before": [
+          "1[\\-–]2\\s+oil"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3k: Imminent danger d10 p.72. Row 1 is Is slowly flooding with (d4) — not oil/water packed. Nested FloodingWithTable. stop_before dwells-here. Not on p.75 RULES. Not used_by Place. F1 face 2 Berserkers."
+    },
+    {
+      "name": "FloodingWithTable",
+      "title": "Is slowly flooding with (d4)",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "72",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3-4",
+            "result": "water"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "Is slowly flooding with\\s*\\(d4\\)"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-2",
+            "3-4"
+          ]
+        },
+        "min_rows": 2,
+        "max_rows": 2,
+        "stop_before": [
+          "2[\\s\\x00-\\x1f]+Berserkers",
+          "Who or what dwells here now"
+        ],
+        "span_stop_before": [
+          "Who or what dwells here now"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3k: nested d4 under Imminent danger row 1. Two range bands (oil / water), not four HAS_ENTRY. Do not pack into ImminentDangerTable row 1. Not on p.75 RULES. Not used_by Place. F2 face 3 hits 3-4 water."
     },
     {
       "name": "DistinctiveFeatureTable",
+      "title": "Distinctive feature (d12)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -2530,7 +2712,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": "7",
+            "result": "Obelisk that separates body and soul"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -2541,8 +2730,68 @@
         },
         "min_rows": 12,
         "max_rows": 12,
-        "multi_table_page": false
-      }
+        "stop_before": [
+          "Sample rooms",
+          "Inscriptions, the motifs"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3m: Distinctive feature d12 p.73. stop_before Sample rooms. Not on p.75 RULES. Not used_by Place. Z1 face 7 Obelisk."
+    },
+    {
+      "name": "SampleRoomsTable",
+      "title": "Sample rooms (d4 / d6)",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "73-74",
+      "columns": [
+        {
+          "name": "d4",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "d6",
+          "role": "index",
+          "position": 1
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 2
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "2",
+            "d6": "5",
+            "result": "Freezing draft"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "mode": "aligned_columns",
+        "header_patterns": [
+          "^\\s*d4\\s+d6\\s+Sample rooms\\s*$"
+        ],
+        "visual_columns": 3,
+        "column_x_cuts": {
+          "73": [75, 96],
+          "74": [55, 76]
+        },
+        "require_index_columns": [1],
+        "carry_index_columns": [0],
+        "min_rows": 24,
+        "max_rows": 24,
+        "stop_before": [
+          "^\\s*THE WORLD\\s*$"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3n: d4×d6 matrix pp.73–74. Carry blank d4; skip nested motif/shelves/altar rows (require d6 face). Do not pack those nested lists into the parent cell. Not on p.75 RULES. Not used_by Place. SR1 cell 2,5 Freezing draft."
     },
     {
       "name": "BrokenTable",
@@ -3186,6 +3435,7 @@
     },
     {
       "name": "WieldsTable",
+      "title": "Wields (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3202,29 +3452,40 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Chained sword d6"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "Wields\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
-        "stop_before": [],
+        "stop_before": [
+          "They.{0,2}re on you",
+          "Wrat,?\\s*Wraith",
+          "Special Attacks"
+        ],
+        "span_stop_before": [
+          "They.{0,2}re on you",
+          "Wrat,?\\s*Wraith"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3p: Berserker nested Wields d4 p.59. stop_before ambush prose. Not used_by Monster (would load on every monster ask). CREATURES Berserker uses_tables deferred (sheet asks). Load via table-name tokens (wields). WL1 face 3 Chained sword."
     },
     {
-      "name": "NpcTraitTable64",
+      "name": "EarthboundTraitTable",
+      "title": "Earthbound Trait (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3241,32 +3502,34 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Joking"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "Trait\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
         "stop_before": [
-          "Specialit",
-          "Specialty"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3q: Earthbound Trait d4 p.64. stop_before Speciality. Not used_by SupportingCharacter/Monster. RULES Outcasts uses_tables deferred. Load via table-name tokens (earthbound + trait). EB1 face 3 Joking."
     },
     {
-      "name": "NpcSpecialtyTable64",
+      "name": "EarthboundSpecialtyTable",
+      "title": "Earthbound Speciality (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3283,20 +3546,21 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Senses danger"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "Speciality\\s*\\(d4\\)"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
@@ -3304,10 +3568,12 @@
           "Values\\s*\\(d6\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3q: Earthbound Speciality d4 p.64. Book spelling Speciality. stop_before Values. Not used_by SupportingCharacter/Monster. EB2 face 3 Senses danger."
     },
     {
-      "name": "NpcValuesTable64",
+      "name": "EarthboundValuesTable",
+      "title": "Earthbound Values (d6)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3324,7 +3590,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "3",
+            "result": "Endless tasks"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3335,12 +3608,21 @@
         },
         "min_rows": 6,
         "max_rows": 6,
-        "stop_before": [],
+        "stop_before": [
+          "2\\.\\s*Wild Wickhead",
+          "Wild Wickhead"
+        ],
+        "span_stop_before": [
+          "2\\.\\s*Wild Wickhead",
+          "Wild Wickhead"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3q: Earthbound Values d6 p.64. stop_before Wild Wickhead. Do not pack HP/Morale. Not used_by SupportingCharacter/Monster. EB3 face 3 Endless tasks."
     },
     {
-      "name": "NpcTraitTable65",
+      "name": "WildWickheadTraitTable",
+      "title": "Wild Wickhead Trait (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3357,31 +3639,34 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Careless"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "Trait\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
         "stop_before": [
-          "Specialty\\s*\\(d4\\)"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3r: Wild Wickhead Trait d4 p.65. stop_before Specialty. Not used_by SupportingCharacter/Monster. RULES Outcasts uses_tables deferred. Load via table-name tokens (wickhead + trait). WK1 face 3 Careless."
     },
     {
-      "name": "NpcSpecialtyTable65",
+      "name": "WildWickheadSpecialtyTable",
+      "title": "Wild Wickhead Specialty (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3398,11 +3683,18 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Expert with a knife (d4+2)"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "Specialty\\s*\\(d4\\)"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "index": {
           "type": "range_list",
@@ -3415,13 +3707,19 @@
         "min_rows": 3,
         "max_rows": 3,
         "stop_before": [
+          "Aside from their specialty",
           "Values\\s*\\(d6\\)"
         ],
+        "row_stop_before": [
+          "Aside from their specialty"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3r: Wild Wickhead Specialty d4 p.65. Three HAS_ENTRY (1-2 / 3 / 4), not four. Carry-five-items leftover not packed into Backstab. Not used_by SupportingCharacter/Monster. WK2 face 3 Expert with a knife."
     },
     {
-      "name": "NpcValuesTable65",
+      "name": "WildWickheadValuesTable",
+      "title": "Wild Wickhead Values (d6)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3438,7 +3736,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "3",
+            "result": "Getting paid in sharp weapons"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3449,12 +3754,21 @@
         },
         "min_rows": 6,
         "max_rows": 6,
-        "stop_before": [],
+        "stop_before": [
+          "3\\.\\s*Pale one",
+          "Pale one"
+        ],
+        "span_stop_before": [
+          "3\\.\\s*Pale one",
+          "Pale one"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3r: Wild Wickhead Values d6 p.65. stop_before Pale one. Do not pack HP/Morale. Not used_by SupportingCharacter/Monster. WK3 face 3 Getting paid in sharp weapons."
     },
     {
-      "name": "NpcTraitTable66",
+      "name": "PaleOneTraitTable",
+      "title": "Pale one Trait (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3471,31 +3785,34 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Mute"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "Trait\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
         "stop_before": [
-          "Specialit"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3s: Pale one Trait d4 p.66. stop_before Speciality. Not used_by SupportingCharacter/Monster. RULES Outcasts uses_tables deferred. Load via table-name tokens (pale + trait). PL1 face 3 Mute."
     },
     {
-      "name": "NpcSpecialtyTable66",
+      "name": "PaleOneSpecialtyTable",
+      "title": "Pale one Speciality (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3512,20 +3829,21 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Use one random unclean Power"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "Speciality\\s*\\(d4\\)"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
@@ -3533,10 +3851,12 @@
           "Values\\s*\\(d6\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3s: Pale one Speciality d4 p.66. Book spelling Speciality. Header 'once per day' is not a HAS_ENTRY. Four rows, not a 1-2 band. stop_before Values. Not used_by SupportingCharacter/Monster. PL2 face 3 unclean Power."
     },
     {
-      "name": "NpcValuesTable66",
+      "name": "PaleOneValuesTable",
+      "title": "Pale one Values (d6)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3553,7 +3873,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "3",
+            "result": "Listening to melancholic melodies"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3564,12 +3891,21 @@
         },
         "min_rows": 6,
         "max_rows": 6,
-        "stop_before": [],
+        "stop_before": [
+          "4\\.\\s*Prowler",
+          "Prowler"
+        ],
+        "span_stop_before": [
+          "4\\.\\s*Prowler",
+          "Prowler"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3s: Pale one Values d6 p.66. stop_before Prowler. Do not pack HP/Morale. Not used_by SupportingCharacter/Monster. PL3 face 3 Listening to melancholic melodies."
     },
     {
-      "name": "NpcTraitTable67",
+      "name": "ProwlerTraitTable",
+      "title": "Prowler Traits (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3586,31 +3922,34 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Liar"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "Traits?\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
         "stop_before": [
-          "Specialit"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3t: Prowler Traits d4 p.67. Book heading Traits (plural). stop_before Speciality. Not used_by SupportingCharacter/Monster. RULES Outcasts uses_tables deferred. Load via table-name tokens (prowler + trait). PR1 face 3 Liar."
     },
     {
-      "name": "NpcSpecialtyTable67",
+      "name": "ProwlerSpecialtyTable",
+      "title": "Prowler Speciality (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3627,20 +3966,21 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3",
+            "result": "Climb impossible routes alone"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
-          "Speciality\\s*\\(d4\\)"
+          "Special(?:ity|ty)\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
@@ -3648,10 +3988,12 @@
           "Values\\s*\\(d6\\)"
         ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3t: Prowler Speciality d4 p.67. Book spelling Speciality. Header DR8 is not a HAS_ENTRY. Four rows. stop_before Values. Not used_by SupportingCharacter/Monster. PR2 face 3 Climb impossible routes alone."
     },
     {
-      "name": "NpcValuesTable67",
+      "name": "ProwlerValuesTable",
+      "title": "Prowler Values (d6)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3668,7 +4010,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "3",
+            "result": "Gossip"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3679,12 +4028,21 @@
         },
         "min_rows": 6,
         "max_rows": 6,
-        "stop_before": [],
+        "stop_before": [
+          "Even more reasons",
+          "Where do you wander"
+        ],
+        "span_stop_before": [
+          "Even more reasons",
+          "Where do you wander"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3t: Prowler Values d6 p.67. stop_before Even more reasons. Do not pack HP/Morale or filthy-shortsword. Not used_by SupportingCharacter/Monster. PR3 face 3 Gossip."
     },
     {
       "name": "StatusTable",
+      "title": "Status (d6)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3701,7 +4059,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "1-2",
+            "result": "Still active"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3716,13 +4081,17 @@
         },
         "min_rows": 2,
         "max_rows": 2,
-        "stop_before": [],
+        "stop_before": [
+          "1[\\s\\x00-\\x1f]+The place was invaded",
+          "Imminent danger"
+        ],
         "multi_table_page": true
       },
-      "note": "Row 3-6 means inactive; use InactiveBecauseTable for the d4 sub-roll."
+      "note": "Slice 3j: Status d6 two bands. Row 3-6 is Inactive, because (d4) — not the four nested reasons. stop_before nested d4 row 1. Not on p.75 RULES. Not used_by Place. Y1 face 1 hits 1-2 Still active."
     },
     {
       "name": "InactiveBecauseTable",
+      "title": "Inactive, because (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3739,29 +4108,39 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "1",
+            "result": "The place was invaded"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "Inactive, because\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
-        "stop_before": [],
+        "stop_before": [
+          "Imminent danger",
+          "Who or what dwells"
+        ],
+        "span_stop_before": [
+          "Imminent danger",
+          "Who or what dwells"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Slice 3j: nested d4 under Status 3-6. Do not pack these four into StatusTable row 3-6. Not on p.75 RULES. Not used_by Place. Y2 face 1 invaded."
     },
     {
       "name": "InscriptionMotifsTable",
+      "title": "Inscriptions, the motifs are (d6)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3778,7 +4157,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d6": "3",
+            "result": "Hypnotic"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3790,14 +4176,18 @@
         "min_rows": 6,
         "max_rows": 6,
         "stop_before": [
-          "Bloodied beds"
+          "2[\\s\\x00-\\x1f]+Bloodied"
+        ],
+        "span_stop_before": [
+          "THE WORLD"
         ],
         "multi_table_page": true
       },
-      "note": "Nested under Sample rooms d4/d6 matrix on p.73."
+      "note": "Slice 3n: nested d6 under Sample rooms d4=1 d6=1. Do not pack into SampleRoomsTable cell 1,1. Not on p.75 RULES. Not used_by Place. SR2 face 3 Hypnotic."
     },
     {
       "name": "ShelvesWithTable",
+      "title": "Shelves with (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3814,7 +4204,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3-4",
+            "result": "rotting food"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3830,14 +4227,18 @@
         "min_rows": 2,
         "max_rows": 2,
         "stop_before": [
-          "4\\s+Abyssal pits"
+          "4[\\s\\x00-\\x1f]+Abyssal"
+        ],
+        "span_stop_before": [
+          "THE WORLD"
         ],
         "multi_table_page": true
       },
-      "note": "Sub-table when Sample rooms d6 roll is 3 on certain d4 rows."
+      "note": "Slice 3o: nested d4 under Sample rooms d4=3 d6=3. Two range bands (literature / food), not four HAS_ENTRY. Do not pack into SampleRoomsTable cell 3,3. Not on p.75 RULES. Not used_by Place. SH1 face 3 hits 3-4 rotting food."
     },
     {
       "name": "SacrificialAltarTable",
+      "title": "Sacrificial altar (d4)",
       "phase": 3,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -3854,7 +4255,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "3-4",
+            "result": "fresh blood"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -3870,11 +4278,14 @@
         "min_rows": 2,
         "max_rows": 2,
         "stop_before": [
-          "4\\s+Remains of a throne"
+          "4[\\s\\x00-\\x1f]+Remains"
+        ],
+        "span_stop_before": [
+          "THE WORLD"
         ],
         "multi_table_page": true
       },
-      "note": "Sub-table when Sample rooms d6 roll is 3 on d4 row 4."
+      "note": "Slice 3o: nested d4 under Sample rooms d4=4 d6=3. Two range bands (cracked / fresh blood), not four HAS_ENTRY. Do not pack into SampleRoomsTable cell 4,3. Not on p.75 RULES. Not used_by Place. SA1 face 3 hits 3-4 fresh blood."
     }
   ],
   "character_creation": {

@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Slice 3b Omens FOR Omen (start d2 without classes / regain when depleted / five spends as THEN). Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Slice 3b Omens FOR Omen (start d2 without classes / regain when depleted / five spends as THEN). Slice 3u Outcasts (followers) FOR Outcast (no silver / morale check + highest Presence / consider values as THEN). Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-21",
   "creature_dr_overrides": {
@@ -562,6 +562,39 @@
         "text_contains_any": ["Use Omens to", "begins with d2"]
       },
       "notes": "Slice 3b N1–N3. Optional luck pool as THEN (book wording). No Compare. No ELSE. Class-specific omen dice stay in optional-class prose. Not Rest (D2). Not Power. Not Arcane Catastrophes."
+    },
+    {
+      "id": "if:outcast-followers",
+      "for_procedure": "Outcast",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:outcast-followers",
+        "name": "Outcasts (followers)"
+      },
+      "bool_id": "bool:outcast-followers",
+      "then": [
+        {
+          "id": "outcome:outcast-no-silver",
+          "name": "do-not-cost-silver-to-hire",
+          "summary": "Money might cross hands but these weirdos don't cost silver to hire."
+        },
+        {
+          "id": "outcome:outcast-morale-presence",
+          "name": "morale-check-plus-highest-presence",
+          "summary": "The GM makes a morale check from time to time (succeed and the outcast stays) and adds the group's highest Presence to the roll."
+        },
+        {
+          "id": "outcome:outcast-consider-values",
+          "name": "consider-whether-group-provides-values",
+          "summary": "The GM should also consider whether or not the group provides the outcast with the things he/she/it values."
+        }
+      ],
+      "evidence": {
+        "section_id": "outcasts-followers",
+        "text_contains_any": ["cost silver", "highest Presence"]
+      },
+      "notes": "Slice 3u OC1–OC3. Hire/stay how-to as THEN (book wording). No Compare. No ELSE. Not 2c MoraleCheck. Not SupportingCharacter. Not 3q–3t generator tables."
     }
   ]
 }
