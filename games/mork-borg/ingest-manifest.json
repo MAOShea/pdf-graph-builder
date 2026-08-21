@@ -2309,6 +2309,9 @@
           "Optional Classes",
           "EARLIEST MEMORIES"
         ],
+        "row_stop_before": [
+          "To leave\\s*\\(d4\\)"
+        ],
         "multi_table_page": false,
         "min_rows": 20,
         "max_rows": 20
@@ -2332,7 +2335,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d100": "55-56",
+            "result": "Find the way to Cube-Violet"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -2341,10 +2351,15 @@
         "index": {
           "type": "d100_pairs"
         },
-        "multi_table_page": false,
+        "multi_table_page": true,
         "min_rows": 50,
-        "max_rows": 50
-      }
+        "max_rows": 50,
+        "stop_before": [
+          "One of the many",
+          "Bedeviled Dungeons"
+        ]
+      },
+      "note": "Slice 3h: Adventure spark d100 pairs pp.69–70. Continuation cont. dropped by passage-sections text_filters. stop_before Bedeviled Dungeons. Not on p.75 RULES. Q1 uses pair 55-56 (not 99-00)."
     },
     {
       "name": "WanderTable",
@@ -2364,7 +2379,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d12": "7",
+            "result": "In the untamed wilds of Tveland"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -2375,8 +2397,56 @@
         },
         "min_rows": 12,
         "max_rows": 12,
-        "multi_table_page": false
-      }
+        "stop_before": [
+          "WHO\\s*\\(or what\\)\\s*contacts you",
+          "Adventure spark"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3f: Where do you wander (d12) p.68. stop_before cuts the same-page sibling WHO (or what) contacts you? so face 12 is Graven-Tosk only. Not on p.75 RULES — no IndexEntry uses_tables this pass. Not used_by Place."
+    },
+    {
+      "name": "WhoContactsYouTable",
+      "phase": 3,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "68-69",
+      "columns": [
+        {
+          "name": "d20",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "result",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": "13",
+            "result": "Monk who was bitten at night"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "WHO\\s*\\(or what\\)\\s*contacts you\\?"
+        ],
+        "index": {
+          "type": "d20"
+        },
+        "min_rows": 20,
+        "max_rows": 20,
+        "stop_before": [
+          "Adventure spark\\s*\\(d100\\)"
+        ],
+        "multi_table_page": true
+      },
+      "note": "Slice 3g: WHO (or what) contacts you? d20 pp.68–69. Continuation header dropped by passage-sections text_filters. stop_before Adventure spark so face 20 is not packed. Not on p.75 RULES. Not used_by Place. H1 uses face 13 (Wander is d12 1–12)."
     },
     {
       "name": "DwellsHereTable",
@@ -2972,29 +3042,37 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": "1",
+            "result": "Slay riddling Kulvan (strong goblin, page 58) who holds three colorless pearls."
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
           "To leave\\s*\\(d4\\)"
         ],
         "index": {
-          "type": "d6",
-          "values": [
-            1,
-            2,
-            3,
-            4
-          ]
+          "type": "d4"
         },
         "min_rows": 4,
         "max_rows": 4,
         "stop_before": [
+          "20[\\s\\x00-\\x1f]+Perhaps",
+          "20\\t",
           "Optional Classes"
+        ],
+        "span_stop_before": [
+          "Optional Classes",
+          "EARLIEST MEMORIES"
         ],
         "multi_table_page": true,
         "dotted_index": true
-      }
+      },
+      "note": "Slice 3e: nested d4 inside Arcane Catastrophes row 19 (Cube-Violet). Not four extra HAS_ENTRY on face 19. Parent row_stop_before cuts at this header. Extract stop_before is catastrophe 20; span_stop_before is Optional Classes so face 20 is not leftover prose after this table. Catalog Arcane catastrophes uses_tables this table."
     },
     {
       "name": "GutterbornSpecialtyTable",

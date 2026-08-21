@@ -390,6 +390,182 @@ class TestManifestPdfParser(unittest.TestCase):
         self.assertNotIn("Battle axe", by_item)
         self.assertNotIn("10 bolts", by_item)
 
+    def test_wander_table_stops_before_who_contacts(self):
+        spec = spec_by_name(self.manifest, "WanderTable")
+        sample = (
+            "Where do you wander? (d12)\n"
+            "1\tOn the barren fields of Kergüs\n"
+            "2\tIn the centre of Alliáns\n"
+            "3\tOn a beach not distant from Grift\n"
+            "4\tOn a dirty Schleswig street\n"
+            "5\tIn the poor Wästland countryside\n"
+            "6\tAt the city wall of Galgenbeck\n"
+            "7\tIn the untamed wilds of Tveland\n"
+            "8\tNear the Valley of the Unfortunate Undead\n"
+            "9\tPretty much lost in Sarkash\n"
+            "10\tAt the Bergen Chrypt tree line\n"
+            "11\tOnboard a ship on the Endless Sea\n"
+            "12\tIn a forgotten part of Graven-Tosk\n"
+            "WHO (or what) contacts you?\n"
+            "1\tOne-eyed woman who rules the thieves\n"
+            "2\tBureaucrat with enemies and no honor\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=68, allow_multi_page=True)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 12)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Tveland", by_face["7"])
+        self.assertIn("Graven-Tosk", by_face["12"])
+        self.assertNotIn("One-eyed", by_face["12"])
+        self.assertNotIn("contacts", by_face["12"].lower())
+
+    def test_wander_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "WanderTable")
+        self.assertIsNotNone(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 12)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Tveland", by_face["7"])
+        self.assertIn("Graven-Tosk", by_face["12"])
+        self.assertNotIn("One-eyed", by_face["12"])
+        self.assertNotIn("contacts", by_face["12"].lower())
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("one-eyed", blob)
+
+    def test_who_contacts_stops_before_adventure_spark(self):
+        spec = spec_by_name(self.manifest, "WhoContactsYouTable")
+        body_rows = "\n".join(
+            f"{i}\tcontact-{i}" if i != 13 else "13\tMonk who was bitten at night"
+            for i in range(1, 21)
+        )
+        sample = (
+            "WHO (or what) contacts you?\n"
+            f"{body_rows}\n"
+            "Adventure spark (d100)\n"
+            "1–2\tThe undead-riddled Valley awaits\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=68, allow_multi_page=True)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 20)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("bitten", by_face["13"].lower())
+        self.assertNotIn("Valley", by_face["20"])
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("adventure spark", blob)
+        self.assertNotIn("undead-riddled", blob)
+
+    def test_who_contacts_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.section_chunking import filter_page_texts
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "WhoContactsYouTable")
+        self.assertIsNotNone(spec)
+        contract = load_passage_sections() or {}
+        by_page = filter_page_texts(
+            load_pdf_text_by_page(pdf),
+            contract.get("text_filters"),
+            normalize_whitespace=True,
+        )
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=contract.get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 20)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("One-eyed", by_face["1"])
+        self.assertIn("bitten", by_face["13"].lower())
+        self.assertIn("Terrified soldier", by_face["20"])
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("undead-riddled", blob)
+        self.assertNotIn("adventure spark", blob)
+        self.assertNotIn("cont.", blob)
+
+    def test_adventure_spark_stops_before_bedeviled(self):
+        spec = spec_by_name(self.manifest, "AdventureSparkTable")
+        pairs = [(i, i + 1) for i in range(1, 99, 2)] + [(99, 0)]
+        lines = ["Adventure spark (d100)"]
+        for lo, hi in pairs:
+            key = f"{lo}-{hi:02d}" if hi == 0 else f"{lo}-{hi}"
+            result = "Find the way to Cube-Violet" if lo == 55 else f"spark-{lo}"
+            lines.append(f"{key}\t{result}")
+        lines.append("One of the many")
+        lines.append("Bedeviled Dungeons")
+        sample = "\n".join(lines) + "\n"
+        table = extract_table_from_text(sample, spec, page_number=69, allow_multi_page=True)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 50)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Cube-Violet", by_face["55-56"])
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("bedeviled", blob)
+        self.assertNotIn("one of the many", blob)
+
+    def test_adventure_spark_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.section_chunking import filter_page_texts
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "AdventureSparkTable")
+        self.assertIsNotNone(spec)
+        contract = load_passage_sections() or {}
+        by_page = filter_page_texts(
+            load_pdf_text_by_page(pdf),
+            contract.get("text_filters"),
+            normalize_whitespace=True,
+        )
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=contract.get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 50)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Cube-Violet", by_face["55-56"])
+        self.assertIn("Sarkash", by_face["99-00"])
+        blob = " ".join(by_face.values()).lower()
+        self.assertNotIn("bedeviled", blob)
+        self.assertNotIn("cont.", blob)
+
 
 class TestSplitItalic(unittest.TestCase):
     @classmethod
@@ -461,6 +637,88 @@ class TestSplitItalic(unittest.TestCase):
         blob = " ".join(" ".join(str(c) for c in r) for r in table["rows"])
         self.assertNotIn("cont.", blob.lower())
         self.assertNotIn("BORG", blob.upper())
+        row19 = by_face["19"]
+        self.assertIn("Cube-Violet", row19[1])
+        self.assertNotIn("Kulvan", row19[1])
+        self.assertNotIn("To leave", row19[1])
+        row20 = by_face["20"]
+        self.assertIn("basilisk", row20[1].lower())
+
+    def test_to_leave_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "ToLeaveTable")
+        self.assertIsNotNone(spec)
+        self.assertEqual((spec.get("pdf_extract") or {}).get("index", {}).get("type"), "d4")
+        by_page = load_pdf_text_by_page(pdf)
+        span = page_span(spec)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=(load_passage_sections() or {}).get("text_filters"),
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 4)
+        by_face = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("Kulvan", by_face["1"])
+        self.assertIn("Sict-Shroom", by_face["2"])
+        self.assertIn("golden key", by_face["3"].lower())
+        self.assertIn("empty", by_face["4"].lower())
+        self.assertNotIn("basilisk", by_face["4"].lower())
+        self.assertNotIn("Perhaps", by_face["4"])
+
+    def test_to_leave_stops_before_catastrophe_20_with_bel_bullet(self):
+        spec = spec_by_name(self.manifest, "ToLeaveTable")
+        sample = (
+            "To leave (d4):\n"
+            "1. Slay riddling Kulvan (strong goblin, page 58) who holds three colorless pearls.\n"
+            "2. Poison a close friend with crumbled Sict-Shroom.\n"
+            "3. Reach up through the fire to the golden key above.\n"
+            "4. The cube is perfect, and empty. You can only wait.\n"
+            "20\t\n\x07Perhaps it's for the best. HE emerges from the shadows.\n"
+            "Optional Classes (d6)\n"
+        )
+        table = extract_table_from_text(sample, spec, page_number=45, allow_multi_page=True)
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 4)
+        self.assertNotIn("Perhaps", table["rows"][3][1])
+        self.assertNotIn("basilisk", table["rows"][3][1].lower())
+
+    def test_to_leave_span_covers_catastrophe_20_prose(self):
+        from src.document_extract import resolve_tables_in_span
+
+        sample = (
+            "To leave (d4):\n"
+            "1. Slay riddling Kulvan (strong goblin, page 58) who holds three colorless pearls.\n"
+            "2. Poison a close friend with crumbled Sict-Shroom.\n"
+            "3. Reach up through the fire to the golden key above.\n"
+            "4. The cube is perfect, and empty. You can only wait.\n"
+            "20\t\n\x07Perhaps it's for the best. HE emerges from the shadows.\n"
+            "as the two-headed basilisk devour you.\n"
+            "Optional Classes (d6)\n"
+        )
+        hits, warnings = resolve_tables_in_span(
+            sample, names_filter=["ToLeaveTable"]
+        )
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(hits), 1)
+        hit = hits[0]
+        self.assertNotIn("Perhaps", hit.table["rows"][3][1])
+        self.assertNotIn("basilisk", hit.table["rows"][3][1].lower())
+        covered = sample[hit.start : hit.end]
+        self.assertIn("Perhaps", covered)
+        leftover = sample[hit.end :]
+        self.assertNotIn("Perhaps", leftover)
+        self.assertNotIn("basilisk", leftover.lower())
 
 
 if __name__ == "__main__":

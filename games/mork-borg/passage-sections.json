@@ -1,12 +1,12 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.24",
+  "version": "0.5.28",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-16",
-  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. index_titles for compound RULES→section MAPS_TO_SECTION (Briefing 16) 2026-08-10. optional-classes 1.–6. class subsections + nested tables (2026-08-12). seed_evidence=false on front-matter (Briefing 21) 2026-08-14. reaction-morale index_titles Reaction+Morale (Briefing 24 / slice 2c) 2026-08-16. reaction-morale contains_lookup_tables ReactionTable 2026-08-16. index_source maps_to_seed Powers+Scrolls→Power (slice 2e) 2026-08-20. index_source Create a character MAPS_TO_SEED CharacterCreation; Starting equipment / Weapons / Armor uses_tables (slice 2f) 2026-08-20. index_source Equipment uses_tables EquipmentTable + ServicesTable + WeaponShopTable + BeastsTable (slice 2g) 2026-08-20. index_source optional_class titles uses_tables nested CONTAINS lists (slice 2h) 2026-08-20. index_source Terrible traits / Broken bodies / Bad habit / Troubling tales uses_tables (slice 3c) 2026-08-21. index_source Arcane catastrophes uses_tables + maps_to_seed Catastrophe (slice 3d) 2026-08-21. Operator PDF pass welcome to amend.",
+  "verified_note": "Index columns parsed from p.75 (parse_index_page / PDF). entry_kind authored 2026-07-19 (operator may amend). RULES section anchors from heading probe on PDF text. entity_passage.stop_before authored 2026-08-04 from Bare Bones bestiary layout (bounty/loot tallies). character-names content_source → name-table.json (2026-08-04). text_filters for Bare Bones running footer 2026-08-06. THE WORLD place sections + What Was Written Roman splits 2026-08-06. violence-combat Melee/Ranged/Defence passage_split (Briefing 14 / slice 2a) 2026-08-10. crit-fumble-rest Fumble/round/Rest passage_split (Briefing 15 / slice 2b) 2026-08-10. index_titles for compound RULES→section MAPS_TO_SECTION (Briefing 16) 2026-08-10. optional-classes 1.–6. class subsections + nested tables (2026-08-12). seed_evidence=false on front-matter (Briefing 21) 2026-08-14. reaction-morale index_titles Reaction+Morale (Briefing 24 / slice 2c) 2026-08-16. reaction-morale contains_lookup_tables ReactionTable 2026-08-16. index_source maps_to_seed Powers+Scrolls→Power (slice 2e) 2026-08-20. index_source Create a character MAPS_TO_SEED CharacterCreation; Starting equipment / Weapons / Armor uses_tables (slice 2f) 2026-08-20. index_source Equipment uses_tables EquipmentTable + ServicesTable + WeaponShopTable + BeastsTable (slice 2g) 2026-08-20. index_source optional_class titles uses_tables nested CONTAINS lists (slice 2h) 2026-08-20. index_source Terrible traits / Broken bodies / Bad habit / Troubling tales uses_tables (slice 3c) 2026-08-21. index_source Arcane catastrophes uses_tables + maps_to_seed Catastrophe (slice 3d) 2026-08-21. where-do-you-wander section (slice 3f) 2026-08-21 — not on p.75 RULES, no IndexEntry. who-contacts-you section (slice 3g) 2026-08-21 — continuation cont. in text_filters. Operator PDF pass welcome to amend.",
   "handoff": {
     "source_of_truth": "pdf-graph-builder",
     "path": "games/mork-borg/passage-sections.json",
@@ -16,7 +16,9 @@
     "notes": "Running header/footer on Bare Bones pages. Applied per page in the shared extract path (document_extract / section_chunking / table pipeline). Not table-specific — lives here, not ingest-manifest.",
     "drop_line_patterns": [
       "^M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION\\s*$",
-      "^Unclean Scrolls d10,\\s*cont\\.\\s*$"
+      "^Unclean Scrolls d10,\\s*cont\\.\\s*$",
+      "^WHO\\s*\\(or what\\)\\s*contacts you\\?\\s*cont\\.\\s*$",
+      "^Adventure spark\\s*\\(d100\\)\\s*cont\\.\\s*$"
     ],
     "strip_inline_patterns": [
       "\\s*M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION(?:\\s+\\d+)?\\s*"
@@ -249,7 +251,8 @@
           "Catastrophe"
         ],
         "uses_tables": [
-          "ArcaneCatastrophesTable"
+          "ArcaneCatastrophesTable",
+          "ToLeaveTable"
         ]
       },
       {
@@ -1285,9 +1288,10 @@
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
       "contains_lookup_tables": [
-        "ArcaneCatastrophesTable"
+        "ArcaneCatastrophesTable",
+        "ToLeaveTable"
       ],
-      "notes": "Coverage 3d. Arcane Catastrophes d20. Catalog uses_tables + MAPS_TO_SEED Catastrophe. Not used_by Power. End anchor is Optional Classes (p.46). Table columns: immediate (roman) / unrealized (italic). Legend is this section's lead-in, not a HAS_ENTRY."
+      "notes": "Coverage 3d parent + 3e nested To leave (d4). Catalog uses_tables both. MAPS_TO_SEED Catastrophe. Not used_by Power. End anchor is Optional Classes (p.46). Parent columns: immediate (roman) / unrealized (italic). Nested ToLeaveTable is not packed into row 19."
     },
     {
       "id": "optional-classes",
@@ -1337,6 +1341,69 @@
         "HerbmasterDecoctionsTable"
       ],
       "notes": "Optional Classes (D6): six class packages. Flat OptionalClassesTable remains the d6 chooser (hand-authored); nested tables stay manifest pdf_extract. Section Chunk + RulePassages delimit class prose (intro, Abilities, HP/Omens) with nested tables in-span."
+    },
+    {
+      "id": "where-do-you-wander",
+      "phase": 3,
+      "title": "Where do you wander?",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Where do you wander\\?\\s*\\(d12\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*WHO\\s*\\(or what\\)\\s*contacts you\\?\\s*$"
+      },
+      "operator_page_hint": "68",
+      "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "WanderTable"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Coverage 3f. Wander d12 — ingest-manifest WanderTable pdf_extract. Not on p.75 RULES (no index_title / uses_tables). Stop before WHO (or what) contacts you? so face 12 is not that sibling list. Not used_by Place. Contacts d20 is 3g."
+    },
+    {
+      "id": "who-contacts-you",
+      "phase": 3,
+      "title": "WHO (or what) contacts you?",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*WHO\\s*\\(or what\\)\\s*contacts you\\?\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Adventure spark\\s*\\(d100\\)\\s*$"
+      },
+      "operator_page_hint": "68-69",
+      "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "WhoContactsYouTable"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Coverage 3g. Contacts d20 pp.68–69 — ingest-manifest WhoContactsYouTable. Continuation cont. dropped by text_filters. Stop before Adventure spark. Not on p.75 RULES. Not used_by Place. H1 face 13. Adventure spark is 3h."
+    },
+    {
+      "id": "adventure-spark",
+      "phase": 3,
+      "title": "Adventure spark",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Adventure spark\\s*\\(d100\\)\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*One of the many\\s*$"
+      },
+      "operator_page_hint": "69-70",
+      "links_to_seed_labels": [],
+      "contains_lookup_tables": [
+        "AdventureSparkTable"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Coverage 3h. Adventure spark d100 pairs pp.69–70. Continuation cont. dropped by text_filters. Stop before Bedeviled Dungeons (One of the many). Not on p.75 RULES. Q1 pair 55-56."
     }
   ]
 }

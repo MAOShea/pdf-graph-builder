@@ -345,8 +345,14 @@ def resolve_tables_in_span(
         header = _find_header(span_text, pe.get("header_patterns") or [])
         if header is None:
             continue
-        if pe.get("stop_before"):
-            sliced = _slice_body(span_text, header.end(), pe.get("stop_before") or [])
+        # Extract uses pdf_extract.stop_before. Stream coverage (pdf-as-md /
+        # table-chunk span) may extend further via span_stop_before so a
+        # nested table does not leak the parent table's following rows as prose.
+        span_stops = pe.get("span_stop_before")
+        if span_stops is None:
+            span_stops = pe.get("stop_before") or []
+        if span_stops:
+            sliced = _slice_body(span_text, header.end(), span_stops)
             end = min(next_start, header.end() + len(sliced))
         else:
             end = next_start

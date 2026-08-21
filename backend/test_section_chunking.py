@@ -281,6 +281,32 @@ def test_apply_text_filters_strips_bare_bones_footer():
     assert "1" in out  # mid-page index kept
 
 
+def test_apply_text_filters_drops_who_contacts_continuation():
+    contract = load_passage_sections("mork-borg")
+    raw = (
+        "12 Sacrifice who escaped a death-cult\n"
+        "WHO (or what) contacts you? cont.\n"
+        "13 Monk who was bitten at night\n"
+    )
+    out = apply_text_filters(raw, contract["text_filters"], page_number=69)
+    assert "cont." not in out
+    assert "bitten" in out
+    assert "Sacrifice" in out
+
+
+def test_apply_text_filters_drops_adventure_spark_continuation():
+    contract = load_passage_sections("mork-borg")
+    raw = (
+        "41–42 Take part in a holy mass burial\n"
+        "Adventure spark (d100) cont.\n"
+        "43–44 The entire kingdom has nightmares\n"
+    )
+    out = apply_text_filters(raw, contract["text_filters"], page_number=70)
+    assert "cont." not in out
+    assert "nightmares" in out
+    assert "mass burial" in out
+
+
 def test_apply_text_filters_drops_unclean_scrolls_continuation():
     contract = load_passage_sections("mork-borg")
     raw = (

@@ -54,6 +54,8 @@ def _index_keys(index_type: str, index_cfg: dict) -> list[str]:
         return [str(i) for i in range(1, 9)]
     if index_type == "d6":
         return [str(i) for i in range(1, 7)]
+    if index_type == "d4":
+        return [str(i) for i in range(1, 5)]
     if index_type == "d20":
         return [str(i) for i in range(1, 21)]
     if index_type == "d100":
@@ -153,7 +155,7 @@ def _parse_index_value(raw: str, index_type: str) -> Any:
             return int(raw)
         except ValueError:
             return raw
-    if index_type in ("d12", "d10", "d8", "d6", "d20", "d100"):
+    if index_type in ("d12", "d10", "d8", "d6", "d4", "d20", "d100"):
         try:
             return int(raw)
         except ValueError:
@@ -614,6 +616,13 @@ def extract_table_split_italic(
             end = next_match.start() if next_match else len(body_full)
         else:
             end = len(body_full)
+        for pat in pdf_extract.get("row_stop_before") or []:
+            if not pat:
+                continue
+            nested = re.search(pat, body_full[start:end], _STREAM_REGEX_FLAGS)
+            if nested:
+                end = start + nested.start()
+                break
         pieces = _pieces_overlapping(body_full, body_ranges, start, end)
         immediate, unrealized = _split_immediate_unrealized(pieces)
         if not immediate and not unrealized:
