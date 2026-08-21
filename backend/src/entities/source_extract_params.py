@@ -26,6 +26,19 @@ def skip_extract_llm(ingest_mode: Optional[str], scaffold_diff_llm: bool) -> boo
         return not bool(scaffold_diff_llm)
     return False
 
+
+def skip_chunk_embeddings(
+    ingest_mode: Optional[str], scaffold_diff_embed: bool
+) -> bool:
+    """Skip MiniLM / Chunk.embedding only for scaffold-diff when the opt-in is off.
+
+    Bottom-up extract still embeds (Graph Builder RAG). Page TokenTextSplitter
+    is not gated here — deferred until there is evidence it is unused.
+    """
+    if ingest_mode == "scaffold-diff":
+        return not bool(scaffold_diff_embed)
+    return False
+
 class SourceScanExtractParams(BaseModel):
     source_url: Optional[str] = Field(None, description="Source URL")
     aws_access_key_id: Optional[str] = Field(None, description="AWS Access Key ID")
@@ -63,6 +76,14 @@ class SourceScanExtractParams(BaseModel):
             "Default false — contracts (Stage 1) do not need it. Bottom-up extract ignores this and always calls the LLM."
         ),
     )
+    scaffold_diff_embed: bool = Field(
+        False,
+        description=(
+            "Scaffold-diff: write Chunk.embedding (Sentence Transformers). "
+            "Default false — ADA retrieve does not read vectors. Bottom-up extract ignores this and still embeds. "
+            "Does not skip page TokenTextSplitter."
+        ),
+    )
 
 def get_source_scan_extract_params(
     source_url: Optional[str] = Form(None),
@@ -92,6 +113,7 @@ def get_source_scan_extract_params(
     end_page: Optional[int] = Form(None),
     section_phase: Optional[int] = Form(None),
     scaffold_diff_llm: Optional[str] = Form(None),
+    scaffold_diff_embed: Optional[str] = Form(None),
 ) -> SourceScanExtractParams:
     return SourceScanExtractParams(
         source_url=source_url,
@@ -121,4 +143,5 @@ def get_source_scan_extract_params(
         end_page=end_page,
         section_phase=section_phase,
         scaffold_diff_llm=parse_form_flag(scaffold_diff_llm, default=False),
+        scaffold_diff_embed=parse_form_flag(scaffold_diff_embed, default=False),
     )

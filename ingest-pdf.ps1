@@ -5,6 +5,7 @@
 #   .\ingest-pdf.ps1
 #   .\ingest-pdf.ps1 -SectionPhase 2
 #   .\ingest-pdf.ps1 -ScaffoldDiffLlm
+#   .\ingest-pdf.ps1 -ScaffoldDiffEmbed
 #   .\ingest-pdf.ps1 -StartPage 27 -EndPage 31
 #   .\ingest-pdf.ps1 -PdfPath .\mork-borg.pdf -AdditionalInstructions "Extract RulePassage nodes..."
 
@@ -18,7 +19,8 @@ param(
     [string]$IngestMode = "scaffold-diff",
     [string]$AdditionalInstructions = "",
     [switch]$Cleanup,
-    [switch]$ScaffoldDiffLlm
+    [switch]$ScaffoldDiffLlm,
+    [switch]$ScaffoldDiffEmbed
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,6 +37,7 @@ $args = @(
 )
 if ($Cleanup) { $args += "--cleanup" }
 if ($ScaffoldDiffLlm) { $args += "--scaffold-diff-llm" }
+if ($ScaffoldDiffEmbed) { $args += "--scaffold-diff-embed" }
 if ($StartPage -gt 0) { $args += @("--start-page", $StartPage) }
 if ($EndPage -gt 0) { $args += @("--end-page", $EndPage) }
 if ($AdditionalInstructions) { $args += @("--additional-instructions", $AdditionalInstructions) }

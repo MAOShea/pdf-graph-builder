@@ -75,6 +75,8 @@ Uses LangChain loaders and Neo4j’s `llm-graph-transformer` patterns. Optional 
 
 **Ollama’s job is narrow and opt-in.** Product ingest (`.\ingest-morkborg.ps1`) runs **Stage 1 only** by default. Pass `-ScaffoldDiffLlm` / `--scaffold-diff-llm` / form `scaffold_diff_llm=true` to run Stage 2. Given chunk prose and a scaffold map (labels + seed IDs), that pass emits extractions that post-processing turns into evidence edges—chiefly `CONFIRMS_SEED` and flags—not a new ontology. It does **not** replace table parsers, section cutters, or spine/sheet materializers. Play-time confidence is contracts + gates + ADA smokes, not this confirmer.
 
+**Chunk embeddings are the same class of leftover.** Product ingest does **not** write `Chunk.embedding` unless `-ScaffoldDiffEmbed` / `--scaffold-diff-embed` / form `scaffold_diff_embed=true`. ADA retrieve does not read vectors. Bottom-up Graph Builder extract still embeds. Page `TokenTextSplitter` still runs (deferred: prove page Chunks unused before ripping). Env `IS_EMBEDDING` is the Graph Builder global; do not conflate it with this product flag.
+
 ### Where the LLM prompt lives
 
 | Piece | Location |
@@ -96,20 +98,21 @@ Inside extract ([`backend/src/main.py`](backend/src/main.py)), after PDF read / 
 
 1. **Fetch scaffold map** from Neo4j (nodes with `tier` / `seed_id`). Fail if empty—bootstrap first (ADA).
 2. **Materialize passage sections** (`passage-sections.json`, phase ≤ `section_phase`).
-3. **Rulebook catalog** (index + fiction instances + entity passages).
-4. If `section_phase >= 2`: **operational spines**, then **creature sheets**.
-5. **Lookup-table pipeline** — PDF on disk → parse per manifest → Neo4j (`run_lookup_table_pipeline`). Neo4j is the sink, never the table text source.
+3. **Lookup-table pipeline** — PDF on disk → parse per manifest → Neo4j (`run_lookup_table_pipeline`). Neo4j is the sink, never the table text source. Must run **before** catalog: `IndexEntry-[:USES]->` table needs those `:IngestNode`s. `--cleanup` deletes them; catalog-before-tables skips USES and `check-section-gates` fails.
+4. **Rulebook catalog** (index + fiction instances + entity passages).
+5. If `section_phase >= 2`: **operational spines**, then **creature sheets**.
 6. **Build LLM chunk list** — section chunks (eligible for seed evidence) + filtered page chunks.
-7. **Ollama batches (opt-in)** — only if `scaffold_diff_llm=true`; then coverage propagation (`research-only` → `ingest-confirmed` when `CONFIRMS_SEED` exists). Default skip: still mark `Document` Completed.
+7. **Chunk embeddings (opt-in)** — only if `scaffold_diff_embed=true`. Default skip: no MiniLM, no `Chunk.embedding`.
+8. **Ollama batches (opt-in)** — only if `scaffold_diff_llm=true`; then coverage propagation (`research-only` → `ingest-confirmed` when `CONFIRMS_SEED` exists). Default skip: still mark `Document` Completed.
 
 ```mermaid
 flowchart TB
   subgraph Contracts["Stage 1 — deterministic (no Ollama)"]
     A[passage-sections.json] --> B[Section chunks / RulePassage]
-    C[index + fiction + entity passages]
-    D[operational-spines.json]
-    E[creature sheets]
-    F[ingest-manifest lookup tables]
+    B --> F[ingest-manifest lookup tables]
+    F --> C[index + fiction + entity passages]
+    C --> D[operational-spines.json]
+    D --> E[creature sheets]
   end
   subgraph LLM["Stage 2 — Ollama (opt-in -ScaffoldDiffLlm)"]
     G[Scaffold map from Neo4j]
@@ -117,7 +120,7 @@ flowchart TB
     I[CONFIRMS_SEED / DOCUMENTED_BY / flags]
   end
   PDF[PDF on disk] --> Contracts
-  PDF --> Chunks[Page Chunk + embed]
+  PDF --> Chunks[Page Chunk]
   B -.-> H
   Chunks -.-> H
   G -.-> H
@@ -126,13 +129,13 @@ flowchart TB
 
 ### Entry points: full ingest vs light CLIs
 
-| Path | Entry | Runs Stage 1 | Runs Stage 2 (Ollama) | When |
-|---|---|---|---|---|
-| **Full product ingest** | `.\ingest-morkborg.ps1` / `POST /extract` `scaffold-diff` | Yes | **No** (default). `-ScaffoldDiffLlm` / `scaffold_diff_llm=true` to enable | After DB reset, or whenever contracted graph + Completed `Document` are required |
-| **Tables only** | `.\ingest-tables.ps1` | Lookup tables (+ bundles) | No | Iterate table contracts without a full extract |
-| **Sections / index / spines / sheets** | `materialize-passage-sections.ps1`, `materialize-rulebook-index.ps1`, and related Python CLIs | That slice only | No | Dev / recovery when iterating one materializer |
+| Path | Entry | Runs Stage 1 | Embeddings | Stage 2 (Ollama) | When |
+|---|---|---|---|---|---|
+| **Full product ingest** | `.\ingest-morkborg.ps1` / `POST /extract` `scaffold-diff` | Yes | **No** (default). `-ScaffoldDiffEmbed` to enable | **No** (default). `-ScaffoldDiffLlm` to enable | After DB reset, or whenever contracted graph + Completed `Document` are required |
+| **Tables only** | `.\ingest-tables.ps1` | Lookup tables (+ bundles) | No | No | Iterate table contracts without a full extract |
+| **Sections / index / spines / sheets** | `materialize-passage-sections.ps1`, `materialize-rulebook-index.ps1`, and related Python CLIs | That slice only | No | No | Dev / recovery when iterating one materializer |
 
-Light CLIs are **correct** to skip Ollama. Full extract also skips Stage 2 by default so a reset+ingest does not wait on a confirmer the product graph does not read. The ops mistake is treating a single `materialize-*` CLI as a substitute for full ingest **after a reset**—you miss the other Stage 1 materializers and a Completed document.
+Light CLIs are **correct** to skip Ollama and embeddings. Full extract also skips both by default so a reset+ingest does not wait on MiniLM or a confirmer the product graph does not read. The ops mistake is treating a single `materialize-*` CLI as a substitute for full ingest **after a reset**—you miss the other Stage 1 materializers and a Completed document.
 
 The Graph Builder **drag-drop UI** is not a third architecture: it hits the same upload/extract API. Prefer contract-first CLI wrappers for Mörk Borg so settings (`ingest_mode`, `section_phase`) stay explicit.
 
@@ -280,9 +283,9 @@ No extraction yet — only file storage and registration.
 
 1. **Read PDF** — PyMuPDF loads page text. Image-only/scanned PDFs fail here.
 2. **Chunk** — Token-sized splits → `Chunk` nodes (`PART_OF`, `FIRST_CHUNK`, `NEXT_CHUNK`; id = content hash).
-3. **Embed** — Vector index on `Chunk.embedding` (RAG / vector chat).
+3. **Embed** — `Chunk.embedding` (RAG / vector chat). **scaffold-diff default: skip** (`-ScaffoldDiffEmbed` to enable). Bottom-up still embeds.
 4. **Mode-specific graph write:**
-   - **scaffold-diff** — Stage 1 contracts (see product path). Stage 2 Ollama only if `scaffold_diff_llm=true`. Default: skip LLM; `Document` still `Completed`. No `HAS_ENTITY`.
+   - **scaffold-diff** — Stage 1 contracts (see product path). Embeddings only if `scaffold_diff_embed=true`. Stage 2 Ollama only if `scaffold_diff_llm=true`. Default: skip both; `Document` still `Completed`. No `HAS_ENTITY`.
    - **default (bottom-up)** — Ollama via `LLMGraphTransformer` with optional UI schema; `(:Chunk)-[:HAS_ENTITY]->(entity)`.
 5. **Status** — `Document` → `Completed` with counts (full extract only).
 
@@ -333,7 +336,7 @@ ADA chat retrieval is a separate consumer of the same Neo4j database.
 
 - **Contract quality:** PDF anchors and `stop_before` cuts in JSON; probe before claiming tables done.
 - **Extraction quality:** selectable-text PDFs; scaffold-diff prompt + seed map; avoid relying on LLM for tabular structure.
-- **Speed:** Ollama is optional on full ingest (`-ScaffoldDiffLlm`). Light CLIs skip it always. Default `.\ingest-morkborg.ps1` does not wait on a model.
+- **Speed:** Ollama and MiniLM embeddings are optional on full ingest (`-ScaffoldDiffLlm`, `-ScaffoldDiffEmbed`). Light CLIs skip both always. Default `.\ingest-morkborg.ps1` does not wait on a model or Sentence Transformers.
 - **Schema framing:** see [Two layers of knowledge](#two-layers-of-knowledge-domain-agnostic-framing) above.
 
 ---

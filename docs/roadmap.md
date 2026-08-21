@@ -43,7 +43,7 @@ Terminal ingest and web UI must use the **same** `/extract` scaffold-diff path â
 
 **Do:**
 
-- Run **`backend\start.ps1`**, then **`.\ingest-morkborg.ps1`** for normal ingest (CLI replaces the web UI only). Ollama Stage 2 is **off** unless **`-ScaffoldDiffLlm`**.
+- Run **`backend\start.ps1`**, then **`.\ingest-morkborg.ps1`** for normal ingest (CLI replaces the web UI only). Ollama Stage 2 is **off** unless **`-ScaffoldDiffLlm`**. Chunk embeddings are **off** unless **`-ScaffoldDiffEmbed`**.
 - **Restart the backend** after code changes, then run a full ingest so hooks (section chunking, rulebook catalog, tables) load from current `main.py`.
 - Run **`.\check-section-gates.ps1`** after ingest to verify contracted section/index/spine shape, then **`.\check-coverage.ps1`** for manifest tables.
 

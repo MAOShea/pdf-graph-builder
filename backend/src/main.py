@@ -26,7 +26,7 @@ from src.document_sources.s3_bucket import get_documents_from_s3, get_s3_files_i
 from src.document_sources.web_pages import get_documents_from_web_page
 from src.document_sources.wikipedia import get_documents_from_wikipedia
 from src.document_sources.youtube import get_documents_from_youtube, get_youtube_combined_transcript
-from src.entities.source_extract_params import skip_extract_llm
+from src.entities.source_extract_params import skip_chunk_embeddings, skip_extract_llm
 from src.entities.source_node import sourceNode
 from src.graph_query import get_graphDB_driver
 from src.graphDB_dataAccess import graphDBdataAccess
@@ -519,7 +519,18 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
   logging.info(f'Time taken database connection: {elapsed_create_connection:.2f} seconds')
   uri_latency["create_connection"] = f'{elapsed_create_connection:.2f}'
   graphDb_data_Access = graphDBdataAccess(graph)
-  create_chunk_vector_index(graph, params.embedding_provider,params.embedding_model)
+  ingest_mode = getattr(params, "ingest_mode", None)
+  skip_embed = skip_chunk_embeddings(
+      ingest_mode, bool(getattr(params, "scaffold_diff_embed", False))
+  )
+  embed_provider = None if skip_embed else params.embedding_provider
+  embed_model = params.embedding_model
+  if skip_embed:
+    logging.info(
+        "scaffold-diff: skipping chunk embeddings (scaffold_diff_embed=false); "
+        "page TokenTextSplitter still runs"
+    )
+  create_chunk_vector_index(graph, embed_provider, embed_model)
 
   # In scaffold-diff mode, read the pre-existing scaffold before touching any chunks.
   scaffold_map = None
@@ -565,6 +576,35 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
     logging.info("section_chunking: %s", section_stats)
     uri_latency["section_chunking"] = section_stats
 
+    # Tables before catalog: IndexEntry-[:USES]-> needs :IngestNode tables.
+    # Cleanup deletes those nodes; catalog-before-tables skips USES and
+    # check-section-gates fails even though later pipeline created the tables.
+    if scaffold_map:
+      try:
+        pipeline_pdf = resolve_pdf_path(
+          params.file_name,
+          merged_file_path=merged_file_path,
+        )
+      except FileNotFoundError as exc:
+        raise LLMGraphBuilderException(str(exc)) from exc
+
+      pipeline_stats = run_lookup_table_pipeline(
+        graph,
+        params.file_name,
+        scaffold_map,
+        pdf_path=pipeline_pdf,
+        start_page=start_page,
+        end_page=end_page,
+      )
+      logging.info(
+        "lookup table pipeline: parsed=%s materialized=%s failed=%s pdf=%s",
+        pipeline_stats.get("pdf_tables_parsed"),
+        pipeline_stats.get("pdf_tables_materialized"),
+        pipeline_stats.get("pdf_tables_failed"),
+        pipeline_stats.get("pdf_path"),
+      )
+      uri_latency["lookup_table_pipeline"] = pipeline_stats
+
     index_stats = materialize_rulebook_catalog(
       graph,
       params.file_name,
@@ -598,32 +638,6 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
     chunkId_chunkDoc_list = section_chunk_list + page_chunk_list
     total_chunks = len(chunkId_chunkDoc_list)
     uri_latency["total_chunks"] = total_chunks
-
-  if getattr(params, "ingest_mode", None) == "scaffold-diff" and scaffold_map:
-    try:
-      pipeline_pdf = resolve_pdf_path(
-        params.file_name,
-        merged_file_path=merged_file_path,
-      )
-    except FileNotFoundError as exc:
-      raise LLMGraphBuilderException(str(exc)) from exc
-
-    pipeline_stats = run_lookup_table_pipeline(
-      graph,
-      params.file_name,
-      scaffold_map,
-      pdf_path=pipeline_pdf,
-      start_page=start_page,
-      end_page=end_page,
-    )
-    logging.info(
-      "lookup table pipeline: parsed=%s materialized=%s failed=%s pdf=%s",
-      pipeline_stats.get("pdf_tables_parsed"),
-      pipeline_stats.get("pdf_tables_materialized"),
-      pipeline_stats.get("pdf_tables_failed"),
-      pipeline_stats.get("pdf_path"),
-    )
-    uri_latency["lookup_table_pipeline"] = pipeline_stats
 
   start_status_document_node = time.time()
   result = graphDb_data_Access.get_current_status_document_node(params.file_name)
@@ -686,7 +700,7 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
         else:
           processing_chunks_start_time = time.time()
           chunks_to_combine = params.chunks_to_combine or 1
-          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map, scaffold_diff_llm=bool(getattr(params, "scaffold_diff_llm", False)))
+          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,chunks_to_combine,node_count, rel_count, params.additional_instructions, embed_provider, embed_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map, scaffold_diff_llm=bool(getattr(params, "scaffold_diff_llm", False)))
           logging.info("Token used in processing chunks: %s", token_usage)
           tokens_per_file += token_usage
           logging.info("Total token used per file: %s", tokens_per_file)

@@ -13,6 +13,7 @@ Operator may open **this repo and AI-DM-Assistant** in one Cursor window. Then *
 - Same chat can edit both trees. Edit SoT **here** (`games/<game>/`). Do **not** copy contracts into ADA `corpus/`.
 - Do not write briefing/handoff courier files. Historical `*-briefing-*.md` / `*-handoff-*.md` live in git only.
 - Seeds (`deltas.json`) stay in ADA. After ADA seed changes: ADA reset+bootstrap, then re-ingest here.
+- Coverage/contracts may need new JSON and materializer tweaks. **Stable operator scripts** (`ingest-morkborg.ps1`, `ingest-pdf.ps1`, `check-section-gates.ps1`, `check-coverage.ps1`, `start.ps1`, and similar wrappers) must not be edited unless you ask first.
 
 ## PDF lookup tables — user says “parse table XYZ”
 
@@ -31,7 +32,7 @@ When the user asks for a table to be **parsed from the PDF** (e.g. “get `Weapo
 
 | Flavour | Entry | When |
 |---|---|---|
-| **Online service** | `.\ingest-pdf.ps1` → `POST /extract` with `ingest_mode=scaffold-diff` | Full ingest: lookup tables + embeddings; Ollama Stage 2 only with `-ScaffoldDiffLlm` |
+| **Online service** | `.\ingest-pdf.ps1` → `POST /extract` with `ingest_mode=scaffold-diff` | Full ingest: lookup tables; MiniLM embeddings only with `-ScaffoldDiffEmbed`; Ollama Stage 2 only with `-ScaffoldDiffLlm` |
 | **CLI** | `.\ingest-tables.ps1` or `backend\ingest_tables.py` | Tables only (no LLM); same `run_lookup_table_pipeline()` |
 
 Both call `src/table_pipeline.py` → `run_lookup_table_pipeline()`. **Source text is always the PDF file on disk.** Neo4j is the **sink** (tables, optional chunk `table_json` evidence), not the source.
@@ -55,7 +56,7 @@ Do **not** stop at “add a manifest entry” unless the user asked for explanat
 
 Contract reference: `README.md` (Use Case 2 → Lookup tables), `docs/roadmap.md`, `games/mork-borg/hand-authored-overrides/README.md`.
 
-**Architecture pin:** contracts vs Ollama, scaffold-diff edges, prompt location, and full ingest vs light CLIs — `design.md` → *Product path: contracts first, Ollama second*. Stage 2 is **opt-in** (`-ScaffoldDiffLlm`). After a DB reset, use full `.\ingest-morkborg.ps1` (not only `materialize-*`).
+**Architecture pin:** contracts vs Ollama, scaffold-diff edges, prompt location, and full ingest vs light CLIs — `design.md` → *Product path: contracts first, Ollama second*. Stage 2 is **opt-in** (`-ScaffoldDiffLlm`). Chunk embeddings are **opt-in** (`-ScaffoldDiffEmbed`). After a DB reset, use full `.\ingest-morkborg.ps1` (not only `materialize-*`).
 
 After ingest, run `.\check-section-gates.ps1` (section Chunks, IndexEntry `MAPS_TO_SECTION`, passage splits, spine `DOCUMENTED_BY` — fail closed) then `.\check-coverage.ps1` (tables). Do not treat table coverage as a substitute for the section-shape gate. ADA chat smokes come after both.
 

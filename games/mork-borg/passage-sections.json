@@ -407,7 +407,10 @@
       {
         "page": 37,
         "title": "Omens",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Omen"
+        ]
       },
       {
         "page": 63,
@@ -1149,10 +1152,12 @@
         "pattern": "^\\s*Optional Tables\\s*$"
       },
       "operator_page_hint": "37",
-      "links_to_seed_labels": [],
+      "links_to_seed_labels": [
+        "Omen"
+      ],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "notes": "Omens optional rule."
+      "notes": "Coverage 3b. Optional Omens luck pool. Catalog MAPS_TO_SEED Omen. If FOR Omen (start d2 / regain / five spends). Not a lookup table. Not Calendar/Misery. Not Arcane Catastrophes."
     },
     {
       "id": "optional-tables-traits",

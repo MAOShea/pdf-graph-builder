@@ -13,8 +13,8 @@ def test_load_d1_and_d2_spines():
     spines = contract.get("spines") or []
     by_id = {s["id"]: s for s in spines}
 
-    assert contract.get("version") == "0.4.5"
-    assert len(spines) == 15
+    assert contract.get("version") == "0.4.7"
+    assert len(spines) == 17
     assert {
         "if:melee-hit-default",
         "if:ranged-hit-default",
@@ -31,6 +31,8 @@ def test_load_d1_and_d2_spines():
         "if:ability-change-low",
         "if:power-daily-uses",
         "if:power-scroll-read",
+        "if:create-pc-bare-bones",
+        "if:omen-optional-rule",
     } <= set(by_id)
 
     for sid in (
@@ -207,3 +209,31 @@ def test_proc_default_if_map():
     assert _PROC_DEFAULT_IF["MeleeAttack"] == "if:melee-hit-default"
     assert _PROC_DEFAULT_IF["RangedAttack"] == "if:ranged-hit-default"
     assert _PROC_DEFAULT_IF["DefenseRoll"] == "if:defence-default"
+
+
+def test_spines_for_section_omens_preview():
+    from src.spine_materialization import (
+        load_operational_spines,
+        spine_operator_preview,
+        spines_for_section,
+    )
+
+    load_operational_spines.cache_clear()
+    citing = spines_for_section("mork-borg", "optional-rules-omens")
+    assert [s["id"] for s in citing] == ["if:omen-optional-rule"]
+    span = (
+        "Every class gains a number of Omens. If you play without "
+        "classes every character begins with d2 Omens. Use Omens to:"
+    )
+    preview = spine_operator_preview(citing[0], span)
+    assert preview["procedures"] == ["Omen"]
+    assert preview["evidence"] == [
+        ("Use Omens to", True),
+        ("begins with d2", True),
+    ]
+    assert any("maximum damage" in row for row in preview["then"])
+    miss = spine_operator_preview(citing[0], "no omen text here")
+    assert miss["evidence"] == [
+        ("Use Omens to", False),
+        ("begins with d2", False),
+    ]

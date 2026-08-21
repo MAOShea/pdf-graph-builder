@@ -93,6 +93,206 @@ def _emit_body(text: str) -> str:
     return text.strip() + ("\n" if text.strip() else "")
 
 
+_PDF_BULLET_GLYPHS = frozenset("\u2020\u2021\u2022\u2023\u2043")
+
+
+def _fold_preview_text(text: str) -> str:
+    return (
+        (text or "")
+        .replace("\u2019", "'")
+        .replace("\u2018", "'")
+        .casefold()
+    )
+
+
+def _is_pdf_bullet_marker_line(line: str) -> bool:
+    visible = "".join(
+        ch for ch in (line or "") if not ch.isspace() and ord(ch) >= 32
+    )
+    return bool(visible) and all(ch in _PDF_BULLET_GLYPHS for ch in visible)
+
+
+def _line_starts_with_pdf_bullet(line: str) -> bool:
+    if _is_pdf_bullet_marker_line(line):
+        return True
+    stripped = (line or "").lstrip()
+    if stripped.startswith("\x07"):
+        return True
+    return bool(stripped) and stripped[0] in _PDF_BULLET_GLYPHS
+
+
+def _clean_pdf_bullet_item(line: str) -> str:
+    cleaned = "".join(
+        ch
+        for ch in (line or "")
+        if ch.isprintable() and ch not in _PDF_BULLET_GLYPHS and ch != "\x07"
+    )
+    return cleaned.strip()
+
+
+def _collect_pdf_bullet_runs(
+    lines: list[str],
+) -> list[tuple[int, int, list[str]]]:
+    """Inclusive start, exclusive end, cleaned item texts. Marker-only + item pairs."""
+    runs: list[tuple[int, int, list[str]]] = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        if not (
+            _is_pdf_bullet_marker_line(lines[i])
+            or _line_starts_with_pdf_bullet(lines[i])
+        ):
+            i += 1
+            continue
+        start = i
+        items: list[str] = []
+        while i < n and lines[i].strip():
+            ln = lines[i]
+            if _is_pdf_bullet_marker_line(ln):
+                i += 1
+                continue
+            if _line_starts_with_pdf_bullet(ln) or (
+                i > start and _is_pdf_bullet_marker_line(lines[i - 1])
+            ):
+                text = _clean_pdf_bullet_item(ln)
+                if text:
+                    items.append(text)
+                i += 1
+                continue
+            break
+        if len(items) >= 2:
+            runs.append((start, i, items))
+        else:
+            i = start + 1
+    return runs
+
+
+def _match_then_summary(item: str, then_rows: list[str]) -> str | None:
+    needle = _fold_preview_text(item)
+    if len(needle) < 8:
+        return None
+    for row in then_rows:
+        hay = _fold_preview_text(row)
+        if needle in hay or hay in needle:
+            return row
+    return None
+
+
+def _replace_pdf_bullet_runs(
+    text: str,
+    *,
+    game: str,
+    section_id: str | None,
+    warnings: list[str],
+) -> str:
+    """In-place: PDF dagger/BEL lists become a tagged markdown list (table-grid analogue).
+
+    Render only. Does not parse bullets into Neo4j. Needs a spine citing the section.
+    """
+    if not text or not section_id:
+        return text
+    from src.spine_materialization import spine_operator_preview, spines_for_section
+
+    spines = spines_for_section(game, section_id)
+    if not spines:
+        return text
+    lines = text.splitlines()
+    runs = _collect_pdf_bullet_runs(lines)
+    if not runs:
+        return text
+    previews = [spine_operator_preview(s, text) for s in spines]
+    out: list[str] = []
+    cursor = 0
+    for start, end, items in runs:
+        out.extend(lines[cursor:start])
+        scored: list[tuple[int, dict[str, Any]]] = []
+        for preview in previews:
+            then_rows = list(preview.get("then") or [])
+            hits = sum(1 for it in items if _match_then_summary(it, then_rows))
+            scored.append((hits, preview))
+        scored.sort(key=lambda x: -x[0])
+        preview = scored[0][1]
+        then_rows = list(preview.get("then") or [])
+        matched = 0
+        rendered: list[str] = []
+        for it in items:
+            hit = _match_then_summary(it, then_rows)
+            if hit:
+                matched += 1
+                rendered.append(f"- {hit}")
+            else:
+                rendered.append(f"- {it}")
+                warnings.append(
+                    f"section {section_id!r}: spine {preview.get('if_id')} "
+                    f"list item not in THEN: {it!r}"
+                )
+        if_id = preview.get("if_id") or "?"
+        procs = ", ".join(str(p) for p in (preview.get("procedures") or []) if p) or "?"
+        out.append(
+            f"> spine `{if_id}` FOR {procs} · {matched}/{len(items)} list items"
+        )
+        out.append("")
+        out.extend(rendered)
+        cursor = end
+    out.extend(lines[cursor:])
+    body = "\n".join(out)
+    if text.endswith("\n") and not body.endswith("\n"):
+        body += "\n"
+    return body
+
+
+def _render_spine_preview_md(preview: dict[str, Any]) -> list[str]:
+    """Operator panel: contracted If (not PDF-parsed). Same role as table markdown."""
+    if_id = preview.get("if_id") or "?"
+    procs = ", ".join(str(p) for p in (preview.get("procedures") or []) if p) or "?"
+    ev_bits: list[str] = []
+    for needle, ok in preview.get("evidence") or []:
+        ev_bits.append(f"`{needle}` {'yes' if ok else 'MISSING'}")
+    ev_line = " · ".join(ev_bits) if ev_bits else "(no text_contains_any)"
+    lines = [
+        f"> spine `{if_id}` FOR {procs} · contract (not PDF-parsed)",
+        f"> evidence in this span: {ev_line}",
+        "",
+    ]
+    then = [t for t in (preview.get("then") or []) if t]
+    if then:
+        lines.append("**THEN**")
+        for row in then:
+            lines.append(f"- {row}")
+        lines.append("")
+    else_rows = [t for t in (preview.get("else") or []) if t]
+    if else_rows:
+        lines.append("**ELSE**")
+        for row in else_rows:
+            lines.append(f"- {row}")
+        lines.append("")
+    return lines
+
+
+def _append_spine_previews(
+    lines: list[str],
+    *,
+    game: str,
+    section_id: str,
+    span_text: str,
+    warnings: list[str],
+) -> None:
+    from src.spine_materialization import spine_operator_preview, spines_for_section
+
+    spines = spines_for_section(game, section_id)
+    if not spines:
+        return
+    for spine in spines:
+        preview = spine_operator_preview(spine, span_text)
+        lines.extend(_render_spine_preview_md(preview))
+        missing = [n for n, ok in preview.get("evidence") or [] if not ok]
+        for needle in missing:
+            warnings.append(
+                f"section {section_id!r}: spine {preview.get('if_id')} "
+                f"evidence needle missing: {needle!r}"
+            )
+
+
 def _render_table_block(
     block: dict[str, Any], *, omit_title: str | None = None
 ) -> list[str]:
@@ -181,6 +381,7 @@ def _render_span_with_tables(
     omit_heading: str | None = None,
     pdf_path: Path | None = None,
     text_filters: dict[str, Any] | None = None,
+    section_id: str | None = None,
 ) -> str:
     hits, tw = resolve_tables_in_span(
         span_text,
@@ -192,7 +393,10 @@ def _render_span_with_tables(
     for w in tw:
         warnings.append(f"{label}: {w}")
     if not hits:
-        return _emit_body(_strip_leading_heading_block(span_text, omit_heading))
+        body = _emit_body(_strip_leading_heading_block(span_text, omit_heading))
+        return _replace_pdf_bullet_runs(
+            body, game=game, section_id=section_id, warnings=warnings
+        )
 
     parts: list[str] = []
     cursor = 0
@@ -233,7 +437,10 @@ def _render_span_with_tables(
     if after:
         parts.append(after)
         parts.append("")
-    return "\n".join(parts).rstrip() + "\n"
+    joined = "\n".join(parts).rstrip() + "\n"
+    return _replace_pdf_bullet_runs(
+        joined, game=game, section_id=section_id, warnings=warnings
+    )
 
 
 def _append_section_md(
@@ -295,6 +502,13 @@ def _append_section_md(
             assert rendered is not None
             lines.append(rendered.rstrip())
             lines.append("")
+        _append_spine_previews(
+            lines,
+            game=extract.game,
+            section_id=str(sid),
+            span_text=extract.stream[item.content_start : item.content_end],
+            warnings=warnings,
+        )
         return
 
     raw_names = section.get("contains_lookup_tables") or []
@@ -319,6 +533,7 @@ def _append_section_md(
             label=f"section {sid!r} heading",
             names_filter=names_filter,
             omit_heading=item.matched_heading,
+            section_id=str(sid),
             **_table_resolve_kwargs(extract),
         ).rstrip()
         if sentinel.strip() and head_md.endswith(sentinel.strip()):
@@ -349,10 +564,18 @@ def _append_section_md(
                     label=f"section {sid!r}#p{i}",
                     names_filter=p_filter,
                     omit_heading=child_heading,
+                    section_id=str(sid),
                     **_table_resolve_kwargs(extract),
                 ).rstrip()
             )
             lines.append("")
+        _append_spine_previews(
+            lines,
+            game=extract.game,
+            section_id=str(sid),
+            span_text=body,
+            warnings=warnings,
+        )
         return
 
     pdf_span = extract.stream[item.heading_start : item.content_end]
@@ -364,10 +587,18 @@ def _append_section_md(
             label=f"section {sid!r}",
             names_filter=names_filter,
             omit_heading=item.matched_heading,
+            section_id=str(sid),
             **_table_resolve_kwargs(extract),
         ).rstrip()
     )
     lines.append("")
+    _append_spine_previews(
+        lines,
+        game=extract.game,
+        section_id=str(sid),
+        span_text=body,
+        warnings=warnings,
+    )
 
 
 def render_options(
@@ -430,7 +661,8 @@ def render_markdown(
         "",
         "> Sink only: parse/resolve via ``backend/src/document_extract.py`` "
         "(same path as ingest ``section_chunking`` + ``resolve_tables_in_span`` / "
-        "lookup-table pipeline). **Not** written to Neo4j.",
+        "lookup-table pipeline). Spines citing the section render as a contract "
+        "THEN/ELSE panel (not PDF-parsed). **Not** written to Neo4j.",
         "",
         f"- PDF path: `{extract.pdf_path}`",
         f"- Contract: `{extract.contract.get('id')}` v{extract.contract.get('version')} "

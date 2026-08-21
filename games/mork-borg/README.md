@@ -9,7 +9,7 @@ Tier-5 materialization contracts for this game. **This folder is the only copy.*
 | [`operational-spines.json`](./operational-spines.json) | **This repo** | Altitude-D If spines |
 | [`hand-authored-overrides/`](./hand-authored-overrides/) | **This repo** | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
 
-Edit contracts **here**. After ingest, run `.\check-section-gates.ps1` then `.\check-coverage.ps1`. Full ingest: `.\ingest-morkborg.ps1` (Ollama Stage 2 off unless `-ScaffoldDiffLlm`).
+Edit contracts **here**. After ingest, run `.\check-section-gates.ps1` then `.\check-coverage.ps1`. Full ingest: `.\ingest-morkborg.ps1` (Ollama Stage 2 off unless `-ScaffoldDiffLlm`; MiniLM embeddings off unless `-ScaffoldDiffEmbed`).
 
 **Design:** passage/table **boundaries live in JSON**, not hardcoded in Python. Amend the contract after a PDF pass; re-run ingest or the relevant materializer.
 
@@ -158,7 +158,7 @@ After editing: re-run full ingest, or recovery
 5. Bump `version` / `verified_note` when you change boundaries; set `status: verified` when happy.
 6. After full ingest, from the pgb repo root run `.\check-section-gates.ps1` (fail-closed section/index/spine shape) then `.\check-coverage.ps1` (tables). ADA smokes are the consumer check, not this gate.
 
-**Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump (clips to that span; skips CREATURES appendix). Do not add parse logic in the tool.
+**Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump (clips to that span; skips CREATURES appendix). Tables in the span render as markdown rows. Spines that cite the section render as a **THEN/ELSE contract panel**; PDF dagger/BEL lists in that span are replaced with a tagged markdown list (same metadata line as a table). Do not add parse logic in the tool.
 
 ---
 

@@ -1,11 +1,11 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Slice 3b Omens FOR Omen (start d2 without classes / regain when depleted / five spends as THEN). Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-08-20",
+  "verified_date": "2026-08-21",
   "creature_dr_overrides": {
     "enabled": true,
     "circumstance_role": "fighting",
@@ -509,6 +509,59 @@
         "text_contains_any": ["Randomize your starting equipment"]
       },
       "notes": "Slice 2f K1. Numbered Bare Bones list as THEN Outcomes (book wording). Optional class / pp.38–42 / Omens stay off this If — they are Optional rules in the same passage (citation only). No Compare. No ELSE."
+    },
+    {
+      "id": "if:omen-optional-rule",
+      "for_procedure": "Omen",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:omens",
+        "name": "Omens"
+      },
+      "bool_id": "bool:omen-optional-rule",
+      "then": [
+        {
+          "id": "outcome:omen-start-no-class",
+          "name": "begin-d2-without-classes",
+          "summary": "Every class gains a number of Omens. If you play without classes every character begins with d2 Omens."
+        },
+        {
+          "id": "outcome:omen-regain",
+          "name": "regain-after-six-hours",
+          "summary": "When depleted roll the class's designated die (d2 if playing without classes) and regain that many Omens after resting at least six hours."
+        },
+        {
+          "id": "outcome:omen-spend-max-damage",
+          "name": "deal-maximum-damage",
+          "summary": "Use an Omen to deal maximum damage with an attack."
+        },
+        {
+          "id": "outcome:omen-spend-reroll",
+          "name": "reroll-a-dice-roll",
+          "summary": "Use an Omen to reroll a dice roll (yours or someone else's)."
+        },
+        {
+          "id": "outcome:omen-spend-lower-damage",
+          "name": "lower-damage-d6",
+          "summary": "Use an Omen to lower damage dealt to you by d6."
+        },
+        {
+          "id": "outcome:omen-spend-neutralize",
+          "name": "neutralize-crit-or-fumble",
+          "summary": "Use an Omen to neutralize a Crit or Fumble."
+        },
+        {
+          "id": "outcome:omen-spend-lower-dr",
+          "name": "lower-one-test-dr-by-4",
+          "summary": "Use an Omen to lower one test's DR by -4."
+        }
+      ],
+      "evidence": {
+        "section_id": "optional-rules-omens",
+        "text_contains_any": ["Use Omens to", "begins with d2"]
+      },
+      "notes": "Slice 3b N1–N3. Optional luck pool as THEN (book wording). No Compare. No ELSE. Class-specific omen dice stay in optional-class prose. Not Rest (D2). Not Power. Not Arcane Catastrophes."
     }
   ]
 }

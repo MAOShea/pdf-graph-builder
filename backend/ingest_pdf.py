@@ -7,6 +7,7 @@ Examples (from workspace root):
   backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --ingest-mode scaffold-diff --cleanup
   backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --section-phase 2 --cleanup
   backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --scaffold-diff-llm --cleanup
+  backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --scaffold-diff-embed --cleanup
   backend\\venv\\Scripts\\python.exe backend\\ingest_pdf.py mork-borg.pdf --start-page 27 --end-page 31 --ingest-mode scaffold-diff --cleanup
 """
 from __future__ import annotations
@@ -159,6 +160,15 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--scaffold-diff-embed",
+        action="store_true",
+        help=(
+            "Opt in to Chunk.embedding (Sentence Transformers) on scaffold-diff. "
+            "Default: skip — ADA retrieve does not read vectors. "
+            "Does not skip page TokenTextSplitter."
+        ),
+    )
+    parser.add_argument(
         "--cleanup",
         action="store_true",
         help="Clear ingest nodes, flags, and document chunks before upload (keeps scaffold)",
@@ -214,6 +224,8 @@ def _run_ingest(args: argparse.Namespace, pdf_path: Path, file_name: str, creds:
     }
     if args.scaffold_diff_llm:
         extract_opts["scaffold_diff_llm"] = "true"
+    if args.scaffold_diff_embed:
+        extract_opts["scaffold_diff_embed"] = "true"
 
     page_note = ""
     if args.start_page or args.end_page:
@@ -222,7 +234,8 @@ def _run_ingest(args: argparse.Namespace, pdf_path: Path, file_name: str, creds:
     print(
         f"ingest_pdf: {pdf_path.name}{page_note} -> {args.backend_url} "
         f"({args.database}, section_phase={args.section_phase}, "
-        f"scaffold_diff_llm={'on' if args.scaffold_diff_llm else 'off'})"
+        f"scaffold_diff_llm={'on' if args.scaffold_diff_llm else 'off'}, "
+        f"scaffold_diff_embed={'on' if args.scaffold_diff_embed else 'off'})"
     )
 
     with httpx.Client(base_url=args.backend_url.rstrip("/")) as client:

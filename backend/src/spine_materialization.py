@@ -181,6 +181,55 @@ def _normalize_procedures(spine: dict[str, Any]) -> list[str]:
     return [proc] if proc else []
 
 
+def _normalize_else_list(spine: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = spine.get("else")
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return raw
+    return [raw]
+
+
+def _outcome_line(outcome: dict[str, Any]) -> str:
+    return str(
+        outcome.get("summary") or outcome.get("name") or outcome.get("id") or ""
+    ).strip()
+
+
+def spines_for_section(game: str, section_id: str) -> list[dict[str, Any]]:
+    """Spines whose evidence.section_id cites this passage-section."""
+    contract = load_operational_spines(game)
+    sid = (section_id or "").strip()
+    if not sid:
+        return []
+    out: list[dict[str, Any]] = []
+    for spine in contract.get("spines") or []:
+        ev = spine.get("evidence") or {}
+        if ev.get("section_id") == sid:
+            out.append(spine)
+    return out
+
+
+def spine_operator_preview(
+    spine: dict[str, Any], span_text: str
+) -> dict[str, Any]:
+    """Contract preview for pdf-as-md: THEN/ELSE + evidence needles vs span text.
+
+    Does not parse PDF glyphs. Needles match ingest ``text_contains_any``
+    (case-insensitive substring).
+    """
+    ev = spine.get("evidence") or {}
+    needles = [str(n) for n in (ev.get("text_contains_any") or []) if n]
+    hay = (span_text or "").lower()
+    return {
+        "if_id": str(spine.get("id") or ""),
+        "procedures": _normalize_procedures(spine),
+        "evidence": [(n, n.lower() in hay) for n in needles],
+        "then": [_outcome_line(o) for o in _normalize_then_list(spine) if _outcome_line(o)],
+        "else": [_outcome_line(o) for o in _normalize_else_list(spine) if _outcome_line(o)],
+    }
+
+
 def _normalize_atoms(spine: dict[str, Any]) -> list[dict[str, Any]]:
     """Resolve atom list; support D1 flat threshold fields as compare_dr."""
     if spine.get("atoms"):

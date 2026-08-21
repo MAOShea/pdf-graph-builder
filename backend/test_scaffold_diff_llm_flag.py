@@ -20,3 +20,17 @@ def test_skip_extract_llm_scaffold_diff_default_off():
 def test_bottom_up_always_calls_llm():
     assert skip_extract_llm(None, False) is False
     assert skip_extract_llm(None, True) is False
+
+
+def test_skip_chunk_embeddings_scaffold_diff_default_off():
+    from src.entities.source_extract_params import skip_chunk_embeddings
+
+    assert skip_chunk_embeddings("scaffold-diff", False) is True
+    assert skip_chunk_embeddings("scaffold-diff", True) is False
+
+
+def test_bottom_up_always_embeds():
+    from src.entities.source_extract_params import skip_chunk_embeddings
+
+    assert skip_chunk_embeddings(None, False) is False
+    assert skip_chunk_embeddings(None, True) is False
