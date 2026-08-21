@@ -62,6 +62,7 @@ def test_powers_and_scrolls_map_to_power_seed():
     assert by_title["Equipment"]["uses_tables"] == [
         "EquipmentTable",
         "ServicesTable",
+        "RepairArmorTable",
         "WeaponShopTable",
         "BeastsTable",
     ]

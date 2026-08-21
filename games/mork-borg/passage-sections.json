@@ -314,6 +314,7 @@
         "uses_tables": [
           "EquipmentTable",
           "ServicesTable",
+          "RepairArmorTable",
           "WeaponShopTable",
           "BeastsTable"
         ]
@@ -822,10 +823,11 @@
       "contains_lookup_tables": [
         "EquipmentTable",
         "ServicesTable",
+        "RepairArmorTable",
         "WeaponShopTable",
         "BeastsTable"
       ],
-      "notes": "General equipment list before abilities chapter (p.24–26 shop catalogs). RULES index Equipment uses_tables those four; do not put WeaponShopTable on Weapons (p.23 creation d10). Come back: Repair Armor* (p.25) is two priced rows (tier 1 to 2, tier 2 to 3) plus an asterisk footnote — not a lookup table this pass."
+      "notes": "General equipment list before abilities chapter (p.24–26 shop catalogs). RULES index Equipment uses_tables those five; do not put WeaponShopTable on Weapons (p.23 creation d10). RepairArmorTable is two priced rows plus the asterisk in notes (not extra Services rows)."
     },
     {
       "id": "abilities",

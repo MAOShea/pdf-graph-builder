@@ -13,5 +13,6 @@ Referenced from `ingest-manifest.json` via `hand_authored.file` or used by `bund
 | `agony-end.json` | `AgonyEndTable` — label→die chooser on p.17 (not index-first) |
 | `traps-and-weather.json` | Reference copy; `TrapsTable` / `WeatherTable` materialize from PDF p.4 |
 | `occult-treasures.json` | Reference copy (5/10 rows); graph uses PDF parse (10 rows) |
+| `repair-armor.json` | `RepairArmorTable` — two priced rows + asterisk in `notes` (p.25) |
 
 PDF ingest still runs for chunks and LLM extract; materialization prefers these files where manifest says `hand_authored` / `pdf_extract.status: hand-authored`.

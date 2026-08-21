@@ -16,18 +16,19 @@ This tool only renders that model to `.as.md` (no Neo4j).
 
 ```powershell
 .\tools\pdf-as-md\pdf-as-md.ps1
-# → tools/pdf-as-md/out/mork-borg.as.md
+# → tools/pdf-as-md/out/mork-borg.as.md  (full book + (unsectioned) gaps)
 
-# Focused review by contract section id
+# Focused review by contract section id (clips to those spans; skips CREATURES appendix)
+.\tools\pdf-as-md\pdf-as-md.ps1 -Section equipment
 .\tools\pdf-as-md\pdf-as-md.ps1 -Section reaction-morale,crit-fumble-rest
 ```
 
 | Flag | Meaning |
 |---|---|
-| `-Section` / `--section ID` | Include only these contract section ids (repeatable; comma-separated OK). Default: all matched sections. Not an ingest `section_phase` gate. |
+| `-Section` / `--section ID` | Include only these contract section ids (repeatable; comma-separated OK). **Focused dump:** clip to those spans — `(unsectioned)` only *between* selected ids, not the rest of the book. Skips the CREATURES appendix. Default (no `-Section`): all matched sections. Not an ingest `section_phase` gate. |
 | `--pages-only` | Full normalized stream only |
-| `--sections-only` | Contract sections only |
-| `--no-entities` | Skip CREATURES appendix |
+| `--sections-only` | Contract sections only — no `(unsectioned)` gaps (even between two `-Section` ids) |
+| `--no-entities` | Skip CREATURES appendix (implied by `-Section`) |
 | `-o PATH` | Output path |
 
 ## Design

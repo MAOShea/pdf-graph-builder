@@ -4,7 +4,7 @@ param(
     [string]$Game = "mork-borg",
     [string]$FileName = "mork-borg.pdf",
     [string]$Pdf = "",
-    [string[]]$Section = @(),
+    [string[]]$Section = @(),  # focused dump: clip to these ids; skip CREATURES appendix
     [string]$Output = "",
     [switch]$PagesOnly,
     [switch]$SectionsOnly,

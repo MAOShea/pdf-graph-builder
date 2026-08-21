@@ -598,7 +598,7 @@
         "max_rows": 45,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, WeaponShopTable, BeastsTable. Come back: Repair Armor* (tier 1→2, tier 2→3, asterisk footnote)."
+      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, RepairArmorTable, WeaponShopTable, BeastsTable."
     },
     {
       "name": "ServicesTable",
@@ -649,7 +649,66 @@
         "max_rows": 6,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Two-column service list (item / silver). Stop before Repair Armor*."
+      "note": "Slice 2g. Two-column service list (item / silver). Stop before Repair Armor* (RepairArmorTable is a sibling, not extra Services rows)."
+    },
+    {
+      "name": "RepairArmorTable",
+      "title": "Repair Armor",
+      "phase": 2,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "25",
+      "columns": [
+        {
+          "name": "item",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "silver",
+          "role": "result",
+          "position": 1
+        },
+        {
+          "name": "notes",
+          "role": "result",
+          "position": 2
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "item": "Tier 1 to 2",
+            "silver": "25s",
+            "notes": "Armor cannot be repaired to a tier higher than its original."
+          }
+        },
+        {
+          "cells": {
+            "item": "Tier 2 to 3",
+            "silver": "40s",
+            "notes": "Armor cannot be repaired to a tier higher than its original."
+          }
+        }
+      ],
+      "hand_authored": {
+        "file": "games/mork-borg/hand-authored-overrides/repair-armor.json",
+        "skip_pdf_extract": true
+      },
+      "pdf_extract": {
+        "status": "hand-authored",
+        "header_patterns": [
+          "Repair Armor"
+        ],
+        "stop_before": [
+          "^\\s*Weapons\\s*$"
+        ],
+        "min_rows": 2,
+        "max_rows": 2,
+        "prefer_page": 25,
+        "multi_table_page": true
+      },
+      "note": "Slice 2g come-back. Two priced rows (tier 1 to 2 / 25s, tier 2 to 3 / 40s). Asterisk footnote is notes on both rows — not a third HAS_ENTRY, not folded into ServicesTable. Armor tier here is the book's light/medium/heavy steps (ArmorTable), not seed Tiers 0–5."
     },
     {
       "name": "WeaponShopTable",

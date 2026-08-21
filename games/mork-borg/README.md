@@ -158,7 +158,7 @@ After editing: re-run full ingest, or recovery
 5. Bump `version` / `verified_note` when you change boundaries; set `status: verified` when happy.
 6. After full ingest, from the pgb repo root run `.\check-section-gates.ps1` (fail-closed section/index/spine shape) then `.\check-coverage.ps1` (tables). ADA smokes are the consumer check, not this gate.
 
-**Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump. Do not add parse logic in the tool.
+**Validate extract vs PDF:** run [`tools/pdf-as-md`](../../tools/pdf-as-md) — Markdown **sink** over `backend/src/document_extract.py` (shared with ingest). Optional `-Section <id>` for a focused dump (clips to that span; skips CREATURES appendix). Do not add parse logic in the tool.
 
 ---
 

@@ -370,11 +370,59 @@ def _append_section_md(
     lines.append("")
 
 
+def render_options(
+    *,
+    section_ids: list[str],
+    pages_only: bool,
+    sections_only: bool,
+    no_entities: bool,
+) -> tuple[str, bool, bool]:
+    """Return ``(mode, clip_to_sections, skip_entities)``.
+
+    Bare run: full stream with ``(unsectioned)`` gaps. ``--section`` is a
+    focused dump: clip to those spans (gaps only *between* selected ids) and
+    skip the CREATURES appendix. ``--sections-only`` still means no
+    unsectioned gaps at all.
+    """
+    focused = bool(section_ids)
+    skip_entities = bool(no_entities or pages_only or focused)
+    if pages_only:
+        return "pages-only", False, skip_entities
+    if sections_only:
+        return "sections-only", False, skip_entities
+    return "document", focused, skip_entities
+
+
+def _append_unsectioned_gap(
+    lines: list[str],
+    extract: DocumentExtract,
+    warnings: list[str],
+    start: int,
+    end: int,
+) -> None:
+    gap = extract.stream[start:end].strip()
+    if not gap:
+        return
+    lines.append("### (unsectioned)")
+    lines.append("")
+    lines.append(
+        _render_span_with_tables(
+            gap,
+            game=extract.game,
+            warnings=warnings,
+            label="unsectioned",
+            **_table_resolve_kwargs(extract),
+        ).rstrip()
+    )
+    lines.append("")
+
+
 def render_markdown(
     extract: DocumentExtract,
     *,
     mode: str,
     entity_appendix: str | None,
+    clip_to_sections: bool = False,
 ) -> str:
     warnings = list(extract.warnings)
     lines: list[str] = [
@@ -405,40 +453,21 @@ def render_markdown(
     else:
         lines.append("## Document extract (section headings from contract)")
         lines.append("")
-        cursor = 0
-        for item in extract.sections:
+        sections = extract.sections
+        cursor = (
+            sections[0].heading_start if clip_to_sections and sections else 0
+        )
+        for item in sections:
             if item.heading_start > cursor:
-                gap = extract.stream[cursor : item.heading_start].strip()
-                if gap:
-                    lines.append("### (unsectioned)")
-                    lines.append("")
-                    lines.append(
-                        _render_span_with_tables(
-                            gap,
-                            game=extract.game,
-                            warnings=warnings,
-                            label="unsectioned",
-                            **_table_resolve_kwargs(extract),
-                        ).rstrip()
-                    )
-                    lines.append("")
+                _append_unsectioned_gap(
+                    lines, extract, warnings, cursor, item.heading_start
+                )
             _append_section_md(lines, item, extract, warnings)
             cursor = max(cursor, item.content_end)
-        if cursor < len(extract.stream):
-            gap = extract.stream[cursor:].strip()
-            if gap:
-                lines.append("### (unsectioned)")
-                lines.append("")
-                lines.append(
-                    _render_span_with_tables(
-                        gap,
-                        game=extract.game,
-                        warnings=warnings,
-                        label="unsectioned",
-                        **_table_resolve_kwargs(extract),
-                    ).rstrip()
-                )
-                lines.append("")
+        if not clip_to_sections and cursor < len(extract.stream):
+            _append_unsectioned_gap(
+                lines, extract, warnings, cursor, len(extract.stream)
+            )
 
     if entity_appendix:
         lines.append(entity_appendix)
@@ -606,7 +635,9 @@ def main(argv: list[str] | None = None) -> int:
         metavar="ID",
         help=(
             "Contract section id to include (repeatable; comma-separated OK). "
-            "Default: all matched sections. Not an ingest section_phase gate."
+            "Focused dump: clip to those spans (unsectioned gaps only between "
+            "selected ids) and skip the CREATURES appendix. Default: all "
+            "matched sections. Not an ingest section_phase gate."
         ),
     )
     parser.add_argument("--pages-only", action="store_true")
@@ -655,8 +686,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
 
+    mode, clip_to_sections, skip_entities = render_options(
+        section_ids=section_ids,
+        pages_only=args.pages_only,
+        sections_only=args.sections_only,
+        no_entities=args.no_entities,
+    )
     entity_appendix = None
-    if not args.no_entities and not args.pages_only:
+    if not skip_entities:
         entity_appendix, ent_warn = render_entity_appendix(
             game=args.game,
             file_name=args.file_name,
@@ -665,14 +702,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         extract.warnings.extend(ent_warn)
 
-    if args.pages_only:
-        mode = "pages-only"
-    elif args.sections_only:
-        mode = "sections-only"
-    else:
-        mode = "document"
-
-    md = render_markdown(extract, mode=mode, entity_appendix=entity_appendix)
+    md = render_markdown(
+        extract,
+        mode=mode,
+        entity_appendix=entity_appendix,
+        clip_to_sections=clip_to_sections,
+    )
     out = Path(args.output) if args.output else default_output_path(args.file_name)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
