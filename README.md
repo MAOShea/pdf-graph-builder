@@ -279,13 +279,15 @@ curl -X POST http://localhost:8000/extract \
   -F "database=morkborg"
 ```
 
-`section_phase` (optional): max `passage-sections.json` phase to materialize / send to LLM. Omit → backend default **1**. CLI wrappers default to **2** (THE WORLD).
+`section_phase` (optional): max `passage-sections.json` phase to materialize. Omit → backend default **1**. CLI wrappers default to **2** (THE WORLD).
+
+`scaffold_diff_llm` (optional, default **false**): run Ollama Stage 2 (`CONFIRMS_SEED` / flags). Product ingest does not need it. Opt in with `-ScaffoldDiffLlm` or `-F "scaffold_diff_llm=true"`.
 
 The backend will:
 
 1. Read all scaffold nodes from the target database (nodes with `tier` or `seed_id` properties).
-2. Inject the scaffold labels and seed IDs directly into the LLM extraction prompt, constraining it to the existing schema.
-3. Classify every extracted concept against the scaffold:
+2. Materialize Stage 1 contracts (sections, catalog, tables, spines, sheets).
+3. If `scaffold_diff_llm=true`: inject the scaffold into the LLM extraction prompt and classify extracts against the scaffold (otherwise skip Ollama and still mark the `Document` Completed):
 
 | Signal | Written as | Meaning |
 |---|---|---|
@@ -324,8 +326,8 @@ Scaffold-diff ingest runs **two pipelines**. They are not interchangeable.
 
 | Pipeline | Produces | Needs manifest? |
 |---|---|---|
-| **LLM extraction** | Passages, `CONFIRMS_SEED`, ad-hoc `IngestNode`s | No |
-| **Lookup table materialization** | `:IngestNode` tables with `:HAS_COLUMN` / `:HAS_ENTRY` rows (e.g. `WeaponTable`, `DRTable`) | **Yes** |
+| **Stage 1 contracts** | Sections, catalog, tables, spines, sheets | **Yes** (JSON under `games/<game>/`) |
+| **Stage 2 Ollama** (opt-in `-ScaffoldDiffLlm`) | Extra `CONFIRMS_SEED` / flags from chunk prose | No |
 
 **Tables never appear “naturally.”** Ingesting a PDF page puts text in `:Chunk` nodes, but structured lookup tables are only created from entries in `games/<game>/ingest-manifest.json` → `lookup_tables[]`. The PDF parser and materializer both iterate that list only; a JSON file in `hand-authored-overrides/` without a manifest entry is ignored.
 
@@ -340,8 +342,9 @@ Scaffold-diff ingest runs **two pipelines**. They are not interchangeable.
 
 ```powershell
 .\ingest-tables.ps1
-# or full ingest (tables + LLM):
+# full ingest (Stage 1 contracts; Ollama off unless -ScaffoldDiffLlm):
 .\ingest-morkborg.ps1                  # section_phase default 2 (RULES + THE WORLD)
+.\ingest-morkborg.ps1 -ScaffoldDiffLlm # opt in Stage 2 confirmer
 .\ingest-pdf.ps1 -SectionPhase 2       # same flag on the generic wrapper
 .\ingest-pdf.ps1 -StartPage 23 -EndPage 23
 ```

@@ -50,6 +50,7 @@ def test_powers_and_scrolls_map_to_power_seed():
     assert section["links_to_seed_labels"] == ["Power"]
     by_title = {r["title"]: r for r in contract["index_source"]["rules_index"]}
     assert by_title["Powers"]["maps_to_seed"] == ["Power"]
+    assert by_title["Powers"]["uses_tables"] == ["BasilisksDemandTable"]
     assert by_title["Scrolls"]["maps_to_seed"] == ["Power"]
     assert by_title["Create a character"]["maps_to_seed"] == ["CharacterCreation"]
     assert by_title["Weapons"]["uses_tables"] == ["WeaponTable"]

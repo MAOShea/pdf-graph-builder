@@ -2,6 +2,7 @@
 # Run from the workspace root:
 #   .\ingest-morkborg.ps1
 #   .\ingest-morkborg.ps1 -SectionPhase 2
+#   .\ingest-morkborg.ps1 -ScaffoldDiffLlm
 #   .\ingest-morkborg.ps1 -StartPage 27 -EndPage 31
 #
 # After ingest: .\check-section-gates.ps1 then .\check-coverage.ps1
@@ -9,11 +10,13 @@
 # -SectionPhase: ingest filter = coverage phase (ADA DESIGN §4.5.1). Inclusive max:
 #   1 = tests/DR/HP only (no spines/sheets); 2 = default (WORLD + combat/powers + spines);
 #   3 = optional tables too. Not a slice id (2a–2g). Backend /extract omit still defaults to 1.
+# -ScaffoldDiffLlm: opt in to Ollama Stage 2 (CONFIRMS_SEED / flags). Default off.
 
 param(
     [int]$StartPage = 0,
     [int]$EndPage = 0,
-    [int]$SectionPhase = 2
+    [int]$SectionPhase = 2,
+    [switch]$ScaffoldDiffLlm
 )
 
 $invokeArgs = @{
@@ -23,6 +26,7 @@ $invokeArgs = @{
 }
 if ($StartPage -gt 0) { $invokeArgs.StartPage = $StartPage }
 if ($EndPage -gt 0) { $invokeArgs.EndPage = $EndPage }
+if ($ScaffoldDiffLlm) { $invokeArgs.ScaffoldDiffLlm = $true }
 
 & "$PSScriptRoot\ingest-pdf.ps1" @invokeArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

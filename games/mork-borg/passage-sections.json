@@ -420,6 +420,9 @@
         "entry_kind": "rule_topic",
         "maps_to_seed": [
           "Power"
+        ],
+        "uses_tables": [
+          "BasilisksDemandTable"
         ]
       },
       {
@@ -1130,7 +1133,7 @@
         "SacredScrollsTable",
         "BasilisksDemandTable"
       ],
-      "notes": "Powers and scroll usage (index lists Scrolls p.34). Unclean/Sacred d10 are first-class tables. FoulPsychopompSummonTable is nested in Unclean row 8 — omit from this allowlist so its inline header does not steal the Unclean span. Basilisks Demand is on p.36 in this section (manifest phase 3; keep out of 2e smokes)."
+      "notes": "Powers and scroll usage (index lists Scrolls p.34). Unclean/Sacred d10 are first-class tables. FoulPsychopompSummonTable is nested in Unclean row 8 — omit from this allowlist so its inline header does not steal the Unclean span. Basilisks Demand is on p.36 in this section (manifest phase 3; coverage 3a; keep out of 2e smokes). Catalog Powers uses_tables = BasilisksDemandTable only — not used_by Power."
     },
     {
       "id": "optional-rules-omens",

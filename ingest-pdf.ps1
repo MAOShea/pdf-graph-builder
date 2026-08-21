@@ -4,6 +4,7 @@
 # Examples:
 #   .\ingest-pdf.ps1
 #   .\ingest-pdf.ps1 -SectionPhase 2
+#   .\ingest-pdf.ps1 -ScaffoldDiffLlm
 #   .\ingest-pdf.ps1 -StartPage 27 -EndPage 31
 #   .\ingest-pdf.ps1 -PdfPath .\mork-borg.pdf -AdditionalInstructions "Extract RulePassage nodes..."
 
@@ -16,7 +17,8 @@ param(
     [string]$Model = "ollama_llama3",
     [string]$IngestMode = "scaffold-diff",
     [string]$AdditionalInstructions = "",
-    [switch]$Cleanup
+    [switch]$Cleanup,
+    [switch]$ScaffoldDiffLlm
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,6 +34,7 @@ $args = @(
     "--section-phase", $SectionPhase
 )
 if ($Cleanup) { $args += "--cleanup" }
+if ($ScaffoldDiffLlm) { $args += "--scaffold-diff-llm" }
 if ($StartPage -gt 0) { $args += @("--start-page", $StartPage) }
 if ($EndPage -gt 0) { $args += @("--end-page", $EndPage) }
 if ($AdditionalInstructions) { $args += @("--additional-instructions", $AdditionalInstructions) }

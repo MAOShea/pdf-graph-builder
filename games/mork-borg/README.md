@@ -9,7 +9,7 @@ Tier-5 materialization contracts for this game. **This folder is the only copy.*
 | [`operational-spines.json`](./operational-spines.json) | **This repo** | Altitude-D If spines |
 | [`hand-authored-overrides/`](./hand-authored-overrides/) | **This repo** | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
 
-Edit contracts **here**. After ingest, run `.\check-section-gates.ps1` then `.\check-coverage.ps1`.
+Edit contracts **here**. After ingest, run `.\check-section-gates.ps1` then `.\check-coverage.ps1`. Full ingest: `.\ingest-morkborg.ps1` (Ollama Stage 2 off unless `-ScaffoldDiffLlm`).
 
 **Design:** passage/table **boundaries live in JSON**, not hardcoded in Python. Amend the contract after a PDF pass; re-run ingest or the relevant materializer.
 

@@ -15,4 +15,4 @@ Referenced from `ingest-manifest.json` via `hand_authored.file` or used by `bund
 | `occult-treasures.json` | Reference copy (5/10 rows); graph uses PDF parse (10 rows) |
 | `repair-armor.json` | `RepairArmorTable` — two priced rows + asterisk in `notes` (p.25) |
 
-PDF ingest still runs for chunks and LLM extract; materialization prefers these files where manifest says `hand_authored` / `pdf_extract.status: hand-authored`.
+PDF ingest still runs for chunks; materialization prefers these files where manifest says `hand_authored` / `pdf_extract.status: hand-authored`. Ollama extract is opt-in (`-ScaffoldDiffLlm`), not required.

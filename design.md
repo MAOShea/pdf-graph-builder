@@ -1,6 +1,6 @@
 # Design: PDF Graph Builder (local)
 
-Ingest unstructured documents (PDFs first) into a **structured knowledge graph** in Neo4j. The repo started as a local spinoff of [Neo4j’s LLM Knowledge Graph Builder](https://neo4j.com/labs/genai-ecosystem/llm-graph-builder/); the **product path** for rulebook work (Mörk Borg ↔ AI-DM-Assistant) is **contract-first materialization**, then a **narrow Ollama scaffold-diff** pass—not free-form LLM invent-the-schema extraction.
+Ingest unstructured documents (PDFs first) into a **structured knowledge graph** in Neo4j. The repo started as a local spinoff of [Neo4j’s LLM Knowledge Graph Builder](https://neo4j.com/labs/genai-ecosystem/llm-graph-builder/); the **product path** for rulebook work (Mörk Borg ↔ AI-DM-Assistant) is **contract-first materialization**. A **narrow Ollama scaffold-diff** confirmer exists but is **opt-in** (`-ScaffoldDiffLlm`) — not free-form LLM invent-the-schema extraction, and not the default full ingest.
 
 **Working name:** `pdf-graph-builder` — no subject-matter domain in the name.
 
@@ -15,17 +15,17 @@ Agent ops for tables/sections: [`AGENTS.md`](AGENTS.md). Product README (Use Cas
 | Mode | Role | Ollama? |
 |---|---|---|
 | **Upstream / bottom-up** | Classic Graph Builder: chunk → embed → LLM invents entities → `HAS_ENTITY` | Yes (primary) |
-| **Product / scaffold-diff** | Dress a pre-bootstrapped seed ontology with PDF evidence; deterministic contracts first | Yes, **only** for seed confirmation from prose |
+| **Product / scaffold-diff** | Dress a pre-bootstrapped seed ontology with PDF evidence; deterministic contracts first | **No** by default. `-ScaffoldDiffLlm` for seed-confirmation from prose |
 
 Primary product capability today:
 
-> *Against a companion scaffold in Neo4j, run operator-maintained JSON contracts (passages, catalogs, tables, spines, sheets) from the PDF on disk, then use Ollama to confirm seeds from chunk prose (`CONFIRMS_SEED` / `DOCUMENTED_BY`).*
+> *Against a companion scaffold in Neo4j, run operator-maintained JSON contracts (passages, catalogs, tables, spines, sheets) from the PDF on disk. Ollama seed confirmation from chunk prose is opt-in (`-ScaffoldDiffLlm`).*
 
 | | **Neo4j-AutoMechanic-SME** (parent) | **This repo (product path)** |
 |---|---|---|
 | **Primary goal** | Diagnostic Q&A | Document → graph against a curated scaffold |
-| **Structured graph** | Hand-authored seed | ADA/bootstrap seeds + pgb contracts + LLM evidence |
-| **PDF handling** | Chunk + embed | Chunk + embed + **deterministic materializers** + scaffold-diff LLM |
+| **Structured graph** | Hand-authored seed | ADA/bootstrap seeds + pgb contracts (LLM evidence opt-in) |
+| **PDF handling** | Chunk + embed | Chunk + embed + **deterministic materializers** (+ optional scaffold-diff LLM) |
 | **App** | Custom FastAPI + chat | Graph Builder API/UI **plus** PowerShell CLIs (`ingest-morkborg.ps1`, `ingest-tables.ps1`, `materialize-*`) |
 | **Domain** | Auto mechanics | Domain-agnostic core; **Mörk Borg** is the first full contract pack |
 | **Docker** | Not used | **Not used** |
@@ -73,7 +73,7 @@ Uses LangChain loaders and Neo4j’s `llm-graph-transformer` patterns. Optional 
 | `operational-spines.json` | Altitude / DR / circumstance spines |
 | Hand-authored overrides | Tables that cannot be PDF-parsed cleanly |
 
-**Ollama’s job is narrow:** given chunk prose and a scaffold map (labels + seed IDs), emit extractions that post-processing turns into evidence edges—chiefly `CONFIRMS_SEED` and `DOCUMENTED_BY`—not invent a new ontology. It does **not** replace table parsers, section cutters, or spine/sheet materializers.
+**Ollama’s job is narrow and opt-in.** Product ingest (`.\ingest-morkborg.ps1`) runs **Stage 1 only** by default. Pass `-ScaffoldDiffLlm` / `--scaffold-diff-llm` / form `scaffold_diff_llm=true` to run Stage 2. Given chunk prose and a scaffold map (labels + seed IDs), that pass emits extractions that post-processing turns into evidence edges—chiefly `CONFIRMS_SEED` and flags—not a new ontology. It does **not** replace table parsers, section cutters, or spine/sheet materializers. Play-time confidence is contracts + gates + ADA smokes, not this confirmer.
 
 ### Where the LLM prompt lives
 
@@ -100,7 +100,7 @@ Inside extract ([`backend/src/main.py`](backend/src/main.py)), after PDF read / 
 4. If `section_phase >= 2`: **operational spines**, then **creature sheets**.
 5. **Lookup-table pipeline** — PDF on disk → parse per manifest → Neo4j (`run_lookup_table_pipeline`). Neo4j is the sink, never the table text source.
 6. **Build LLM chunk list** — section chunks (eligible for seed evidence) + filtered page chunks.
-7. **Ollama batches** — scaffold-diff save path; then **coverage propagation** (`research-only` → `ingest-confirmed` when `CONFIRMS_SEED` exists).
+7. **Ollama batches (opt-in)** — only if `scaffold_diff_llm=true`; then coverage propagation (`research-only` → `ingest-confirmed` when `CONFIRMS_SEED` exists). Default skip: still mark `Document` Completed.
 
 ```mermaid
 flowchart TB
@@ -111,16 +111,16 @@ flowchart TB
     E[creature sheets]
     F[ingest-manifest lookup tables]
   end
-  subgraph LLM["Stage 2 — Ollama scaffold-diff"]
+  subgraph LLM["Stage 2 — Ollama (opt-in -ScaffoldDiffLlm)"]
     G[Scaffold map from Neo4j]
     H[LLMGraphTransformer + SCAFFOLD_DIFF_INSTRUCTIONS]
     I[CONFIRMS_SEED / DOCUMENTED_BY / flags]
   end
   PDF[PDF on disk] --> Contracts
   PDF --> Chunks[Page Chunk + embed]
-  B --> H
-  Chunks --> H
-  G --> H
+  B -.-> H
+  Chunks -.-> H
+  G -.-> H
   H --> I
 ```
 
@@ -128,11 +128,11 @@ flowchart TB
 
 | Path | Entry | Runs Stage 1 | Runs Stage 2 (Ollama) | When |
 |---|---|---|---|---|
-| **Full product ingest** | `.\ingest-morkborg.ps1` / `POST /extract` `scaffold-diff` | Yes (all of the above for the phase) | **Yes** | After DB reset, or whenever seed evidence + Completed `Document` are required |
-| **Tables only** | `.\ingest-tables.ps1` | Lookup tables (+ bundles) | No | Iterate table contracts without paying for LLM |
-| **Sections / index / spines / sheets** | `materialize-passage-sections.ps1`, `materialize-rulebook-index.ps1`, and related Python CLIs | That slice only | No | Dev / recovery / briefing fill when LLM evidence is already present or not needed |
+| **Full product ingest** | `.\ingest-morkborg.ps1` / `POST /extract` `scaffold-diff` | Yes | **No** (default). `-ScaffoldDiffLlm` / `scaffold_diff_llm=true` to enable | After DB reset, or whenever contracted graph + Completed `Document` are required |
+| **Tables only** | `.\ingest-tables.ps1` | Lookup tables (+ bundles) | No | Iterate table contracts without a full extract |
+| **Sections / index / spines / sheets** | `materialize-passage-sections.ps1`, `materialize-rulebook-index.ps1`, and related Python CLIs | That slice only | No | Dev / recovery when iterating one materializer |
 
-Light CLIs are **correct** to skip Ollama: they are not a stealth bypass of LLM work. The ops mistake is treating them as a substitute for full ingest **after a reset**—you get dressed contracts without a Completed document and without `CONFIRMS_SEED` fan-out from prose.
+Light CLIs are **correct** to skip Ollama. Full extract also skips Stage 2 by default so a reset+ingest does not wait on a confirmer the product graph does not read. The ops mistake is treating a single `materialize-*` CLI as a substitute for full ingest **after a reset**—you miss the other Stage 1 materializers and a Completed document.
 
 The Graph Builder **drag-drop UI** is not a third architecture: it hits the same upload/extract API. Prefer contract-first CLI wrappers for Mörk Borg so settings (`ingest_mode`, `section_phase`) stay explicit.
 
@@ -248,7 +248,7 @@ flowchart LR
     F --> G[Chunk in Neo4j]
     G --> H[Embed chunks]
     H --> I{ingest_mode?}
-    I -->|scaffold-diff| J[Contracts then Ollama scaffold-diff]
+    I -->|scaffold-diff| J[Contracts; Ollama only if scaffold_diff_llm]
     I -->|default| K[Ollama bottom-up + HAS_ENTITY]
   end
   subgraph Neo4j["DB"]
@@ -282,7 +282,7 @@ No extraction yet — only file storage and registration.
 2. **Chunk** — Token-sized splits → `Chunk` nodes (`PART_OF`, `FIRST_CHUNK`, `NEXT_CHUNK`; id = content hash).
 3. **Embed** — Vector index on `Chunk.embedding` (RAG / vector chat).
 4. **Mode-specific graph write:**
-   - **scaffold-diff** — Stage 1 contracts (see product path), then Ollama with `SCAFFOLD_DIFF_INSTRUCTIONS`; persist via scaffold-diff saver (`CONFIRMS_SEED` / `DOCUMENTED_BY` / …). No `HAS_ENTITY`.
+   - **scaffold-diff** — Stage 1 contracts (see product path). Stage 2 Ollama only if `scaffold_diff_llm=true`. Default: skip LLM; `Document` still `Completed`. No `HAS_ENTITY`.
    - **default (bottom-up)** — Ollama via `LLMGraphTransformer` with optional UI schema; `(:Chunk)-[:HAS_ENTITY]->(entity)`.
 5. **Status** — `Document` → `Completed` with counts (full extract only).
 
@@ -333,7 +333,7 @@ ADA chat retrieval is a separate consumer of the same Neo4j database.
 
 - **Contract quality:** PDF anchors and `stop_before` cuts in JSON; probe before claiming tables done.
 - **Extraction quality:** selectable-text PDFs; scaffold-diff prompt + seed map; avoid relying on LLM for tabular structure.
-- **Speed:** Ollama is the bottleneck on full ingest; use light CLIs when iterating contracts only.
+- **Speed:** Ollama is optional on full ingest (`-ScaffoldDiffLlm`). Light CLIs skip it always. Default `.\ingest-morkborg.ps1` does not wait on a model.
 - **Schema framing:** see [Two layers of knowledge](#two-layers-of-knowledge-domain-agnostic-framing) above.
 
 ---
@@ -369,11 +369,11 @@ Parent design notes: [../docs/DESIGN.md](../docs/DESIGN.md)
 
 - [x] Graph Builder stack running locally (backend + frontend, no Docker)  
 - [x] Dedicated Neo4j Desktop database (5.23+, APOC) for this project  
-- [x] Ollama available for extraction (embeddings: Sentence Transformers locally)  
-- [x] Scaffold-diff product path: contracts + `CONFIRMS_SEED` / `DOCUMENTED_BY` against ADA bootstrap  
+- [x] Ollama available for **opt-in** Stage 2 / Graph Builder UI (embeddings: Sentence Transformers locally)
+- [x] Keep `design.md` aligned when extract order or LLM role changes  
+- [x] Scaffold-diff product path: Stage 1 contracts default; Stage 2 Ollama opt-in (`-ScaffoldDiffLlm`)  
 - [x] Manifest-driven lookup tables and passage-section contracts for Mörk Borg  
 - [ ] Chat / ADA retrieval grounded answers continuously verified after major contract changes  
-- [ ] Keep `design.md` aligned when extract order or LLM role changes  
 
 ---
 
@@ -390,7 +390,7 @@ Parent design notes: [../docs/DESIGN.md](../docs/DESIGN.md)
 
 ## Possible future work
 
-- Further shrink Ollama surface (more deterministic extractors where LLM is still noisy)  
+- Further shrink Ollama surface (Stage 2 already opt-in; drop remaining confirmer if unused)  
 - Extraction schema / contract templates for additional games  
 - Entity resolution and deduplication post-processing  
 - Stronger Bloom / Browser perspectives for Tier-5 + evidence  

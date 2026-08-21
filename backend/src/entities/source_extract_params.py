@@ -1,6 +1,30 @@
 from pydantic import BaseModel, Field
 from fastapi import Form
-from typing import Optional
+from typing import Optional, Union
+
+
+def parse_form_flag(value: Optional[Union[str, bool]], *, default: bool = False) -> bool:
+    """Parse a FastAPI Form bool (string or bool). Empty/omit → default."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    token = str(value).strip().lower()
+    if token in ("1", "true", "yes", "on"):
+        return True
+    if token in ("", "0", "false", "no", "off"):
+        return False
+    return default
+
+
+def skip_extract_llm(ingest_mode: Optional[str], scaffold_diff_llm: bool) -> bool:
+    """Skip Ollama only for scaffold-diff when the opt-in flag is off.
+
+    Bottom-up extract always calls the LLM (that mode *is* the extract).
+    """
+    if ingest_mode == "scaffold-diff":
+        return not bool(scaffold_diff_llm)
+    return False
 
 class SourceScanExtractParams(BaseModel):
     source_url: Optional[str] = Field(None, description="Source URL")
@@ -32,6 +56,13 @@ class SourceScanExtractParams(BaseModel):
         None,
         description="Max passage-sections.json phase to materialize and send to LLM (inclusive). Omit to use extract default.",
     )
+    scaffold_diff_llm: bool = Field(
+        False,
+        description=(
+            "Scaffold-diff Stage 2: run Ollama LLMGraphTransformer (CONFIRMS_SEED / flags). "
+            "Default false — contracts (Stage 1) do not need it. Bottom-up extract ignores this and always calls the LLM."
+        ),
+    )
 
 def get_source_scan_extract_params(
     source_url: Optional[str] = Form(None),
@@ -60,6 +91,7 @@ def get_source_scan_extract_params(
     start_page: Optional[int] = Form(None),
     end_page: Optional[int] = Form(None),
     section_phase: Optional[int] = Form(None),
+    scaffold_diff_llm: Optional[str] = Form(None),
 ) -> SourceScanExtractParams:
     return SourceScanExtractParams(
         source_url=source_url,
@@ -88,4 +120,5 @@ def get_source_scan_extract_params(
         start_page=start_page,
         end_page=end_page,
         section_phase=section_phase,
+        scaffold_diff_llm=parse_form_flag(scaffold_diff_llm, default=False),
     )

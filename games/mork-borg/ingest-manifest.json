@@ -2047,7 +2047,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": 7,
+            "result": "The cuticle of an executed innocent"
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [

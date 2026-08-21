@@ -26,6 +26,7 @@ from src.document_sources.s3_bucket import get_documents_from_s3, get_s3_files_i
 from src.document_sources.web_pages import get_documents_from_web_page
 from src.document_sources.wikipedia import get_documents_from_wikipedia
 from src.document_sources.youtube import get_documents_from_youtube, get_youtube_combined_transcript
+from src.entities.source_extract_params import skip_extract_llm
 from src.entities.source_node import sourceNode
 from src.graph_query import get_graphDB_driver
 from src.graphDB_dataAccess import graphDBdataAccess
@@ -685,7 +686,7 @@ async def processing_source(credentials, params, pages, merged_file_path=None, i
         else:
           processing_chunks_start_time = time.time()
           chunks_to_combine = params.chunks_to_combine or 1
-          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map)
+          node_count,rel_count,latency_processed_chunk,token_usage = await processing_chunks(selected_chunks,graph,credentials,params.file_name,params.model,params.allowedNodes,params.allowedRelationship,chunks_to_combine,node_count, rel_count, params.additional_instructions, params.embedding_provider, params.embedding_model, ingest_mode=getattr(params,"ingest_mode",None), scaffold_map=scaffold_map, scaffold_diff_llm=bool(getattr(params, "scaffold_diff_llm", False)))
           logging.info("Token used in processing chunks: %s", token_usage)
           tokens_per_file += token_usage
           logging.info("Total token used per file: %s", tokens_per_file)
@@ -793,7 +794,7 @@ async def processing_chunks(
     chunkId_chunkDoc_list, graph, credentials, file_name, model,
     allowedNodes, allowedRelationship, chunks_to_combine, node_count, rel_count,
     additional_instructions, embedding_provider, embedding_model,
-    ingest_mode=None, scaffold_map=None,
+    ingest_mode=None, scaffold_map=None, scaffold_diff_llm=False,
 ):
   latency_processing_chunk = {}
   if graph is not None:
@@ -808,6 +809,19 @@ async def processing_chunks(
   elapsed_update_embedding = end_update_embedding - start_update_embedding
   logging.info(f'Time taken to update embedding in chunk node: {elapsed_update_embedding:.2f} seconds')
   latency_processing_chunk["update_embedding"] = f'{elapsed_update_embedding:.2f}'
+
+  if skip_extract_llm(ingest_mode, scaffold_diff_llm):
+    logging.info(
+        "scaffold-diff: skipping Ollama (scaffold_diff_llm=false); "
+        "Stage 1 contracts already materialized"
+    )
+    latency_processing_chunk["entity_extraction"] = "skipped"
+    graphDb_data_Access = graphDBdataAccess(graph)
+    count_response = graphDb_data_Access.update_node_relationship_count(file_name)
+    node_count = count_response[file_name].get('nodeCount', "0")
+    rel_count = count_response[file_name].get('relationshipCount', "0")
+    return node_count, rel_count, latency_processing_chunk, 0
+
   logging.info("Get graph document list from models")
   
   start_entity_extraction = time.time()
