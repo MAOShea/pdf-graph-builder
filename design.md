@@ -141,7 +141,7 @@ The Graph Builder **drag-drop UI** is not a third architecture: it hits the same
 
 ### Boundary: JSON contracts, not Python hardcodes
 
-Chunk/passage spans and table cuts are operator-maintained JSON (`start_anchor` / `end_anchor`, `entity_passage.stop_before`, lookup `pdf_extract.stop_before` / `column_x_cuts`). Amend JSON after a PDF pass; re-materialize. Field guide: `games/mork-borg/README.md`. Do not copy contracts into ADA.
+Chunk/passage spans and table cuts are operator-maintained JSON (`start_anchor` / `end_anchor`, `entity_passage.stop_before`, lookup `pdf_extract.stop_before` / `column_x_cuts` / `mode: split_italic`). Amend JSON after a PDF pass; re-materialize. Field guide: `games/mork-borg/README.md`. Do not copy contracts into ADA.
 
 ---
 

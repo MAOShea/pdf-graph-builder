@@ -116,6 +116,7 @@ Match against **PDF text on disk**, not Neo4j chunk text.
 
 - **Sequential (default):** `extract_table_from_text` on the flattened `get_text()` stream — index token + remainder. That is enough for die/DR lists.
 - **`aligned_columns`:** when the book is a 2- or 3-column list and `get_text()` stacks each cell on its own line. Parser reads PDF word x-coordinates; `column_x_cuts` in the manifest are the left edges of columns 1..n-1 (operator-maintained, like `stop_before`). Wrapped notes (only the last column filled) join the previous row.
+- **`split_italic`:** sequential index keys, then two result columns from PDF span italic (roman → column 1 `immediate`, italic → column 2 `unrealized`). Flattened `get_text()` cannot do this. Regular glyph islands (`d4`, `HP`) between italic neighbors inherit italic — that is PDF subset encoding, not a second roman outcome. Continuation headers (`… (d20) cont.`) are dropped. Requires the PDF file.
 - **`content_source` / hand-authored:** `passage-sections.json` override when PDF text still cannot represent the span (e.g. two-column name grid).
 
 `passage-sections.json` `contains_lookup_tables` is an optional allowlist when auto-detect would pick the wrong table.

@@ -2278,14 +2278,27 @@
           "position": 0
         },
         {
-          "name": "result",
+          "name": "immediate",
           "role": "result",
           "position": 1
+        },
+        {
+          "name": "unrealized",
+          "role": "result",
+          "position": 2
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d20": "7",
+            "immediate": "Your skin tatters like paper, your flesh melts like wax and your intestines bloat like balloons, bursting and falling out until all that is left is a walking, talking skeleton."
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
+        "mode": "split_italic",
         "header_patterns": [
           "Arcane catastrophes\\s*\\(d20\\)"
         ],

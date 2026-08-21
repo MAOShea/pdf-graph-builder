@@ -2,8 +2,8 @@
 
 Owns the parse/resolve path that ``tools/pdf-as-md`` and Neo4j materializers share:
 normalized PDF stream, contract section spans, and lookup-table hits
-(PDF ``extract_lookup_table`` — sequential stream or ``aligned_columns`` —
-or manifest ``hand_authored.file`` substitution).
+(PDF ``extract_lookup_table`` — sequential stream, ``aligned_columns``, or
+``split_italic`` — or manifest ``hand_authored.file`` substitution).
 
 Sinks only choose where to write (Neo4j vs Markdown) — not how to parse.
 """
@@ -304,7 +304,7 @@ def resolve_tables_in_span(
     """
     Find lookup tables in a text span (shared by ingest helpers and pdf-as-md).
 
-    - verified/partial pdf_extract → extract_lookup_table (stream or aligned_columns)
+    - verified/partial pdf_extract → extract_lookup_table (stream, aligned_columns, or split_italic)
     - hand_authored + header_patterns → load JSON; PDF shred for [start,end) skipped
     """
     warnings: list[str] = []

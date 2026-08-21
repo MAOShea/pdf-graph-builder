@@ -235,6 +235,9 @@ def materialize_lookup_table(
             WITH t
             OPTIONAL MATCH (t)-[r:HAS_ENTRY]->(:TableEntry)
             DELETE r
+            WITH t
+            OPTIONAL MATCH (t)-[:HAS_COLUMN]->(col:TableColumn)
+            DETACH DELETE col
             """,
             {
                 "table_id": table_name,

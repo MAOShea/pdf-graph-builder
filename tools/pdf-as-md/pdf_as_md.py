@@ -305,6 +305,9 @@ def _render_table_block(
         lines.append("")
     columns = block.get("columns") or []
     rows = block.get("rows") or []
+    italic_cols = {
+        str(c) for c in (block.get("italic_columns") or []) if str(c).strip()
+    }
     if not columns and rows and isinstance(rows[0], list):
         columns = [f"c{i}" for i in range(len(rows[0]))]
     if isinstance(columns, list) and columns and isinstance(columns[0], dict):
@@ -323,6 +326,9 @@ def _render_table_block(
         else:
             cells = [str(row)]
         cells = [c.replace("|", "\\|").replace("\n", " ") for c in cells]
+        for i, header in enumerate(headers):
+            if header in italic_cols and cells[i].strip():
+                cells[i] = f"*{cells[i]}*"
         lines.append("| " + " | ".join(cells) + " |")
     return lines
 
@@ -427,6 +433,7 @@ def _render_span_with_tables(
                     "title": display,
                     "columns": hit.table.get("columns") or [],
                     "rows": hit.table.get("rows") or [],
+                    "italic_columns": hit.table.get("italic_columns") or [],
                 },
                 omit_title=omit_heading,
             )

@@ -34,7 +34,7 @@ This tool only renders that model to `.as.md` (no Neo4j).
 
 ## Design
 
-- **Default tables:** `resolve_tables_in_span` (manifest `pdf_extract` sequential or `aligned_columns` / `hand_authored`)
+- **Default tables:** `resolve_tables_in_span` (manifest `pdf_extract` sequential, `aligned_columns`, `split_italic`, or `hand_authored`). `split_italic` tables render the italic result column in `*markdown italics*` so the operator can check vs the PDF.
 - **Spines:** Ifs whose `evidence.section_id` cites the section — contracted THEN/ELSE plus whether `text_contains_any` hits the span. PDF dagger/BEL bullet runs in that section are replaced in-place with a tagged markdown list (same role as a table grid). Not a parse into Neo4j.
 - **Overrides:** `passage-sections.json` `content_source`, optional `contains_lookup_tables` allowlist
 - Change parse behavior in `document_extract` / manifest — not by forking logic in this folder

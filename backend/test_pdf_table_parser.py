@@ -391,5 +391,77 @@ class TestManifestPdfParser(unittest.TestCase):
         self.assertNotIn("10 bolts", by_item)
 
 
+class TestSplitItalic(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.manifest = load_ingest_manifest()
+
+    def test_sandwich_die_token_inherits_italic(self):
+        from src.pdf_table_parser import _fill_italic_sandwich, _split_immediate_unrealized
+
+        pieces = [
+            ("You feel fine. It's fine. ", False),
+            ("You pustulate within ", True),
+            ("d4", False),
+            (" days then rise.", True),
+        ]
+        filled = _fill_italic_sandwich(pieces)
+        self.assertFalse(filled[0][1])
+        self.assertTrue(filled[2][1])
+        immediate, unrealized = _split_immediate_unrealized(pieces)
+        self.assertIn("feel fine", immediate)
+        self.assertNotIn("d4", immediate)
+        self.assertIn("d4", unrealized)
+        self.assertIn("pustulate", unrealized)
+
+    def test_text_only_extract_skips_split_italic_mode(self):
+        spec = spec_by_name(self.manifest, "ArcaneCatastrophesTable")
+        self.assertIsNotNone(spec)
+        self.assertEqual((spec.get("pdf_extract") or {}).get("mode"), "split_italic")
+        sample = (
+            "Arcane catastrophes (d20) 1 One by one your teeth fall out. "
+            "2 You feel fine. 7 Your skin tatters like paper "
+            "Optional Classes (d6)"
+        )
+        self.assertIsNone(extract_table_from_text(sample, spec, page_number=43))
+
+    def test_arcane_catastrophes_split_italic_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        spec = spec_by_name(self.manifest, "ArcaneCatastrophesTable")
+        self.assertIsNotNone(spec)
+        filters = (load_passage_sections() or {}).get("text_filters")
+        table = extract_lookup_table(spec, pdf_path=pdf, text_filters=filters)
+        self.assertIsNotNone(table)
+        self.assertEqual(table["columns"], ["d20", "immediate", "unrealized"])
+        self.assertEqual(table.get("italic_columns"), ["unrealized"])
+        self.assertEqual(len(table["rows"]), 20)
+        by_face = {str(r[0]): r for r in table["rows"]}
+        row7 = by_face["7"]
+        self.assertIn("tatters", row7[1].lower())
+        self.assertEqual(row7[2], "")
+        row1 = by_face["1"]
+        self.assertIn("teeth", row1[1].lower())
+        self.assertIn("smile", row1[2].lower())
+        self.assertNotIn("teeth", row1[2].lower())
+        row2 = by_face["2"]
+        self.assertIn("d4", row2[2].lower())
+        self.assertNotIn("d4", row2[1].lower())
+        row11 = by_face["11"]
+        self.assertEqual(row11[1], "")
+        self.assertIn("d4", row11[2].lower())
+        row18 = by_face["18"]
+        self.assertIn("hp", row18[2].lower())
+        row6 = by_face["6"]
+        self.assertIn("No armor Bite/pinch", row6[1])
+        blob = " ".join(" ".join(str(c) for c in r) for r in table["rows"])
+        self.assertNotIn("cont.", blob.lower())
+        self.assertNotIn("BORG", blob.upper())
+
+
 if __name__ == "__main__":
     unittest.main()

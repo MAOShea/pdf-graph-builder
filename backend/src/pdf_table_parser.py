@@ -1,11 +1,14 @@
 """Extract lookup tables from PDF using ingest-manifest pdf_extract signatures.
 
-Two modes:
+Modes:
 
 - default — sequential index+remainder on the flattened ``get_text()`` stream
 - ``aligned_columns`` — N cells per visual row from word x-coordinates
   (``pdf_extract.column_x_cuts``). Needed when the book is a 3-column list
   and ``get_text()`` stacks each cell on its own line.
+- ``split_italic`` — sequential index keys, then split the remainder into two
+  result columns from PDF span italic (roman → column 1, italic → column 2).
+  Requires ``pdf_path``. Flattened ``get_text()`` cannot do this.
 """
 
 import json
@@ -21,6 +24,9 @@ from src.ingest_manifest import column_names, load_ingest_manifest, lookup_table
 
 _CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f]+")
 _MAX_LABEL_LEN = 2000
+# PyMuPDF TEXT_FONT_ITALIC. Font-name fallback covers truncated subset names.
+_TEXT_FONT_ITALIC = 2
+_ITALIC_FONT_RE = re.compile(r"itali", re.IGNORECASE)
 
 
 def _skip_pdf_extract(spec: dict[str, Any]) -> bool:
@@ -391,6 +397,255 @@ def _aligned_table_result(
     }
 
 
+def _span_is_italic(span: dict[str, Any]) -> bool:
+    flags = int(span.get("flags") or 0)
+    font = str(span.get("font") or "")
+    return bool(flags & _TEXT_FONT_ITALIC) or bool(_ITALIC_FONT_RE.search(font))
+
+
+def _iter_page_spans(page) -> list[dict[str, Any]]:
+    """Reading-order spans; newline between visual lines (row index tokens live there)."""
+    out: list[dict[str, Any]] = []
+    first_line = True
+    for block in page.get_text("dict").get("blocks") or []:
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines") or []:
+            line_spans = [
+                span
+                for span in (line.get("spans") or [])
+                if span.get("text")
+            ]
+            if not line_spans:
+                continue
+            if not first_line:
+                out.append({"text": "\n", "italic": False})
+            first_line = False
+            for span in line_spans:
+                out.append(
+                    {
+                        "text": span.get("text") or "",
+                        "italic": _span_is_italic(span),
+                    }
+                )
+    return out
+
+
+def _fill_italic_sandwich(
+    pieces: list[tuple[str, bool]],
+) -> list[tuple[str, bool]]:
+    """Italic-neighbor fill for Regular glyph islands (d4, HP) inside italic.
+
+    The book's outcome split is italic vs roman. PDF subsets often switch to
+    Regular for a die token or ``HP`` in the middle of an italic sentence.
+    Those spans are not a second roman outcome — they sit between italic
+    neighbors and inherit italic.
+    """
+    if len(pieces) < 3:
+        return list(pieces)
+    out = list(pieces)
+
+    def _neighbor_italic(idx: int, step: int) -> bool | None:
+        j = idx + step
+        while 0 <= j < len(out):
+            if _clean_label(out[j][0]):
+                return out[j][1]
+            j += step
+        return None
+
+    for i, (_text, italic) in enumerate(out):
+        if italic:
+            continue
+        prev = _neighbor_italic(i, -1)
+        nxt = _neighbor_italic(i, 1)
+        if prev is True and nxt is True:
+            out[i] = (out[i][0], True)
+    return out
+
+
+def _split_immediate_unrealized(pieces: list[tuple[str, bool]]) -> tuple[str, str]:
+    immediate_parts: list[str] = []
+    unrealized_parts: list[str] = []
+    for text, italic in _fill_italic_sandwich(pieces):
+        (unrealized_parts if italic else immediate_parts).append(text)
+    return _clean_label("".join(immediate_parts)), _clean_label(
+        "".join(unrealized_parts)
+    )
+
+
+def _join_span_texts(
+    spans: list[dict[str, Any]],
+) -> tuple[str, list[tuple[int, int, dict[str, Any]]]]:
+    parts: list[str] = []
+    ranges: list[tuple[int, int, dict[str, Any]]] = []
+    pos = 0
+    for span in spans:
+        text = span["text"]
+        parts.append(text)
+        ranges.append((pos, pos + len(text), span))
+        pos += len(text)
+    return "".join(parts), ranges
+
+
+def _pieces_overlapping(
+    full: str,
+    ranges: list[tuple[int, int, dict[str, Any]]],
+    start: int,
+    end: int,
+) -> list[tuple[str, bool]]:
+    pieces: list[tuple[str, bool]] = []
+    for a, b, span in ranges:
+        if b <= start or a >= end:
+            continue
+        lo = max(a, start)
+        hi = min(b, end)
+        frag = full[lo:hi]
+        if frag:
+            pieces.append((frag, bool(span.get("italic"))))
+    return pieces
+
+
+def extract_table_split_italic(
+    spec: dict[str, Any],
+    pdf_path: str | Path,
+    *,
+    text_filters: dict[str, Any] | None = None,
+) -> dict | None:
+    """Sequential index keys; remainder split by PDF italic into two result columns."""
+    pdf_extract = spec.get("pdf_extract") or {}
+    if pdf_extract.get("status") == "todo" or _skip_pdf_extract(spec):
+        return None
+    if pdf_extract.get("mode") != "split_italic":
+        return None
+
+    cols = column_names(spec)
+    if len(cols) != 3:
+        logging.warning(
+            "split_italic %s: need 3 columns (index, roman, italic); got %s",
+            spec.get("name"),
+            cols,
+        )
+        return None
+
+    header_patterns = pdf_extract.get("header_patterns") or []
+    stop_before = pdf_extract.get("stop_before") or []
+    span = _page_span(spec)
+    if not header_patterns or not span:
+        return None
+
+    path = Path(pdf_path)
+    if not path.is_file():
+        return None
+
+    index_cfg = pdf_extract.get("index") or {}
+    index_type = index_cfg.get("type") or ""
+    keys = _index_keys(index_type, index_cfg)
+    if not keys:
+        return None
+
+    doc = fitz_open(path)
+    try:
+        kept: list[dict[str, Any]] = []
+        started = False
+        for page_number in span:
+            page_index = page_number - 1
+            if page_index < 0 or page_index >= len(doc):
+                return None
+            if started and kept and kept[-1].get("text") != "\n":
+                kept.append({"text": "\n", "italic": False})
+            for raw in _iter_page_spans(doc[page_index]):
+                if raw["text"] == "\n" or not _clean_label(raw["text"]):
+                    if started:
+                        kept.append(raw)
+                    continue
+                line = _clean_label(raw["text"])
+                if _drop_spatial_row(raw["text"], text_filters, page_number):
+                    continue
+                if started and _row_text_matches(line, header_patterns):
+                    continue
+                kept.append(raw)
+                if not started and _row_text_matches(line, header_patterns):
+                    started = True
+    finally:
+        doc.close()
+
+    if not started:
+        return None
+
+    full, ranges = _join_span_texts(kept)
+    header = _find_header(full, header_patterns)
+    if not header:
+        return None
+    body = _slice_body(full, header.end(), stop_before)
+    if not body:
+        return None
+    body_start = header.end()
+    body_end = body_start + len(body)
+    body_full = full[body_start:body_end]
+    body_ranges: list[tuple[int, int, dict[str, Any]]] = []
+    for a, b, sp in ranges:
+        if b <= body_start or a >= body_end:
+            continue
+        lo = max(a, body_start)
+        hi = min(b, body_end)
+        frag = full[lo:hi]
+        if not frag:
+            continue
+        body_ranges.append(
+            (
+                lo - body_start,
+                hi - body_start,
+                {"text": frag, "italic": bool(sp.get("italic"))},
+            )
+        )
+
+    dotted = bool(pdf_extract.get("dotted_index"))
+    rows: list[list[Any]] = []
+    search_from = 0
+    for i, key in enumerate(keys):
+        match = _key_boundary_pattern(key, dotted=dotted).search(body_full, search_from)
+        if not match:
+            break
+        start = match.end()
+        if i + 1 < len(keys):
+            next_match = _key_boundary_pattern(keys[i + 1], dotted=dotted).search(
+                body_full, start
+            )
+            end = next_match.start() if next_match else len(body_full)
+        else:
+            end = len(body_full)
+        pieces = _pieces_overlapping(body_full, body_ranges, start, end)
+        immediate, unrealized = _split_immediate_unrealized(pieces)
+        if not immediate and not unrealized:
+            search_from = end
+            continue
+        if len(immediate) > _MAX_LABEL_LEN or len(unrealized) > _MAX_LABEL_LEN:
+            search_from = end
+            continue
+        rows.append(
+            [_parse_index_value(key, index_type), immediate, unrealized]
+        )
+        search_from = end
+
+    min_rows = pdf_extract.get("min_rows") or 1
+    if len(rows) < min_rows:
+        return None
+    max_rows = pdf_extract.get("max_rows")
+    if max_rows is not None and len(rows) > max_rows:
+        rows = rows[:max_rows]
+
+    pdf_heading = _clean_pdf_heading(header.group(0))
+    return {
+        "manifest_name": spec["name"],
+        "title": table_display_title(spec, matched_header=pdf_heading),
+        "pdf_heading": pdf_heading,
+        "lead_in": str(spec["lead_in"]).strip() if spec.get("lead_in") else "",
+        "columns": cols,
+        "rows": rows,
+        "italic_columns": [cols[2]],
+    }
+
+
 def extract_lookup_table(
     spec: dict[str, Any],
     *,
@@ -400,12 +655,18 @@ def extract_lookup_table(
     allow_multi_page: bool = False,
     text_filters: dict[str, Any] | None = None,
 ) -> dict | None:
-    """Dispatch pdf_extract.mode (aligned_columns vs sequential text)."""
+    """Dispatch pdf_extract.mode (aligned_columns / split_italic / sequential)."""
     pdf_extract = spec.get("pdf_extract") or {}
     if pdf_extract.get("mode") == "aligned_columns":
         if not pdf_path:
             return None
         return extract_table_aligned_columns(
+            spec, pdf_path, text_filters=text_filters
+        )
+    if pdf_extract.get("mode") == "split_italic":
+        if not pdf_path:
+            return None
+        return extract_table_split_italic(
             spec, pdf_path, text_filters=text_filters
         )
     if not text:
@@ -430,7 +691,7 @@ def extract_table_from_text(
         return None
 
     pdf_extract = spec.get("pdf_extract") or {}
-    if pdf_extract.get("mode") == "aligned_columns":
+    if pdf_extract.get("mode") in ("aligned_columns", "split_italic"):
         return None
     if pdf_extract.get("status") == "todo" or _skip_pdf_extract(spec):
         return None
