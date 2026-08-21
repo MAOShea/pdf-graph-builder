@@ -677,6 +677,34 @@ class TestManifestPdfParser(unittest.TestCase):
         self.assertNotIn("Imminent", nested_by["4"])
         self.assertNotIn("flooding", nested_by["4"].lower())
 
+    def test_abilities_table_from_pdf(self):
+        from src.ingest_manifest import _project_root, load_passage_sections
+        from src.pdf_table_parser import extract_lookup_table, page_span
+        from src.table_pipeline import load_pdf_text_by_page
+
+        pdf = _project_root() / "mork-borg.pdf"
+        if not pdf.is_file():
+            self.skipTest("mork-borg.pdf not at repo root")
+        filters = (load_passage_sections() or {}).get("text_filters")
+        spec = spec_by_name(self.manifest, "AbilitiesTable")
+        span = page_span(spec)
+        by_page = load_pdf_text_by_page(pdf)
+        text = "\n".join(by_page.get(p, "") for p in span)
+        table = extract_lookup_table(
+            spec,
+            text=text,
+            pdf_path=pdf,
+            page_number=span[0],
+            allow_multi_page=len(span) > 1,
+            text_filters=filters,
+        )
+        self.assertIsNotNone(table)
+        self.assertEqual(len(table["rows"]), 7)
+        by_key = {str(r[0]): r[1] for r in table["rows"]}
+        self.assertIn("0", by_key["9-12"].replace("±", "").replace("+", ""))
+        self.assertNotIn("Defend", by_key["1-4"])
+        self.assertNotIn("Tests", " ".join(by_key.values()))
+
     def test_imminent_danger_does_not_pack_flooding_bands(self):
         spec = spec_by_name(self.manifest, "ImminentDangerTable")
         sample = (

@@ -231,8 +231,8 @@ def _replace_pdf_bullet_runs(
         out.append(
             f"> spine `{if_id}` FOR {procs} · {matched}/{len(items)} list items"
         )
-        out.append("")
-        out.extend(rendered)
+        out.append(">")
+        out.extend(f"> {row}" for row in rendered)
         cursor = end
     out.extend(lines[cursor:])
     body = "\n".join(out)
@@ -252,20 +252,20 @@ def _render_spine_preview_md(preview: dict[str, Any]) -> list[str]:
     lines = [
         f"> spine `{if_id}` FOR {procs} · contract (not PDF-parsed)",
         f"> evidence in this span: {ev_line}",
-        "",
     ]
     then = [t for t in (preview.get("then") or []) if t]
     if then:
-        lines.append("**THEN**")
+        lines.append(">")
+        lines.append("> **THEN**")
         for row in then:
-            lines.append(f"- {row}")
-        lines.append("")
+            lines.append(f"> - {row}")
     else_rows = [t for t in (preview.get("else") or []) if t]
     if else_rows:
-        lines.append("**ELSE**")
+        lines.append(">")
+        lines.append("> **ELSE**")
         for row in else_rows:
-            lines.append(f"- {row}")
-        lines.append("")
+            lines.append(f"> - {row}")
+    lines.append("")
     return lines
 
 

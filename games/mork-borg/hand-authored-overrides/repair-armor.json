@@ -1,5 +1,5 @@
 {
-  "_note": "Hand-authored — heading plus two priced rows plus an asterisk footnote, not a clean aligned_columns grid. PDF stream: Repair Armor* / Tier 1 to 2 25s / Tier 2 to 3 40s / *Armor cannot be repaired to a tier higher than its original. Asterisk lives in notes on both rows (not a third HAS_ENTRY, not a MAPS_TO_SECTION body).",
+  "_note": "Hand-authored — heading plus two priced rows plus an asterisk footnote, not a clean aligned_columns grid. PDF stream: Repair Armor* / Tier 1 to 2 25s / Tier 2 to 3 40s / *Armor cannot be repaired to a tier higher than its original. Rows are item / silver only. The asterisk is If FOR Repair THEN (if:repair-armor), not notes on both rows, not a third HAS_ENTRY, not a MAPS_TO_SECTION body.",
   "source": "mork-borg",
   "manifest_table": "RepairArmorTable",
   "override_pdf": true,
@@ -11,19 +11,16 @@
       "title": "Repair Armor",
       "columns": [
         "item",
-        "silver",
-        "notes"
+        "silver"
       ],
       "rows": [
         [
           "Tier 1 to 2",
-          "25s",
-          "Armor cannot be repaired to a tier higher than its original."
+          "25s"
         ],
         [
           "Tier 2 to 3",
-          "40s",
-          "Armor cannot be repaired to a tier higher than its original."
+          "40s"
         ]
       ]
     }

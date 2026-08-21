@@ -77,7 +77,8 @@ def test_render_spine_preview_md_shows_then_and_evidence():
     assert "spine `if:omen-optional-rule` FOR Omen · contract (not PDF-parsed)" in md
     assert "`Use Omens to` yes" in md
     assert "`begins with d2` MISSING" in md
-    assert "maximum damage" in md
+    assert "> **THEN**" in md
+    assert "> - Use an Omen to deal maximum damage with an attack." in md
 
 
 def test_replace_pdf_bullet_run_tags_like_a_table():
@@ -106,7 +107,7 @@ def test_replace_pdf_bullet_run_tags_like_a_table():
     assert "\u2020" not in out
     assert "\x07" not in out
     assert "> spine `if:omen-optional-rule` FOR Omen · 5/5 list items" in out
-    assert "- Use an Omen to deal maximum damage with an attack." in out
+    assert "> - Use an Omen to deal maximum damage with an attack." in out
     assert warnings == []
     leftover = _replace_pdf_bullet_runs(
         text,

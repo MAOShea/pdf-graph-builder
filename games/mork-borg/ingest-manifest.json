@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.19",
+  "version": "0.3.23",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (sequential index+remainder, or aligned_columns via word x-cuts when get_text() stacks a multi-column list).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -75,9 +75,7 @@
       "phase": 1,
       "instance_of": "LookupTable",
       "applies_to": "DR",
-      "used_by": [
-        "AbilityTest"
-      ],
+      "used_by": [],
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "28",
       "columns": [
@@ -161,7 +159,60 @@
         "prefer_page": 28,
         "multi_table_page": false
       },
-      "note": "Phase 1. Ingest creates :IngestNode DRTable with :HAS_COLUMN and :HAS_ENTRY rows. Extract from Chunk.table_json; validate against acceptance_rows."
+      "note": "Coverage 1. Unique-row DT1 (normal = 12). used_by AbilityTest deferred — that dumps all seven bands on every test ask. Load via table-name / label tokens."
+    },
+    {
+      "name": "AbilitiesTable",
+      "phase": 1,
+      "instance_of": "LookupTable",
+      "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
+      "pages": "27",
+      "columns": [
+        {
+          "name": "3d6",
+          "role": "index",
+          "position": 0
+        },
+        {
+          "name": "modifier",
+          "role": "result",
+          "position": 1
+        }
+      ],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "3d6": "9-12",
+            "modifier": "±0"
+          }
+        }
+      ],
+      "pdf_extract": {
+        "status": "verified",
+        "header_patterns": [
+          "^\\s*Abilities\\s*$"
+        ],
+        "stop_before": [
+          "^\\s*Tests\\s*$"
+        ],
+        "index": {
+          "type": "range_list",
+          "values": [
+            "1-4",
+            "5-6",
+            "7-8",
+            "9-12",
+            "13-14",
+            "15-16",
+            "17-20"
+          ]
+        },
+        "min_rows": 7,
+        "max_rows": 7,
+        "prefer_page": 27,
+        "multi_table_page": false
+      },
+      "note": "Coverage 1. Unique-row AB3 face 11 → 9–12 ±0. used_by deferred (do not dump seven bands on every abilities how-to). Load via table-name tokens (abilities + 3d6). Not FOR Agility. Header Abilities is the section title; 1–4 is the first key after the uses-list."
     },
     {
       "name": "StartingPossessionsTable",
@@ -668,26 +719,19 @@
           "name": "silver",
           "role": "result",
           "position": 1
-        },
-        {
-          "name": "notes",
-          "role": "result",
-          "position": 2
         }
       ],
       "acceptance_rows": [
         {
           "cells": {
             "item": "Tier 1 to 2",
-            "silver": "25s",
-            "notes": "Armor cannot be repaired to a tier higher than its original."
+            "silver": "25s"
           }
         },
         {
           "cells": {
             "item": "Tier 2 to 3",
-            "silver": "40s",
-            "notes": "Armor cannot be repaired to a tier higher than its original."
+            "silver": "40s"
           }
         }
       ],
@@ -708,7 +752,8 @@
         "prefer_page": 25,
         "multi_table_page": true
       },
-      "note": "Slice 2g come-back. Two priced rows (tier 1 to 2 / 25s, tier 2 to 3 / 40s). Asterisk footnote is notes on both rows — not a third HAS_ENTRY, not folded into ServicesTable. Armor tier here is the book's light/medium/heavy steps (ArmorTable), not seed Tiers 0–5."
+      "used_by": [],
+      "note": "Slice 2g. Two priced rows (tier 1 to 2 / 25s, tier 2 to 3 / 40s). Asterisk footnote is If FOR Repair THEN (if:repair-armor), not notes on both rows, not a third HAS_ENTRY, not folded into ServicesTable. Do not used_by Repair. Armor tier here is the book's light/medium/heavy steps (ArmorTable), not seed Tiers 0–5."
     },
     {
       "name": "WeaponShopTable",
@@ -1465,14 +1510,12 @@
         "prefer_page": 17,
         "multi_table_page": true
       },
-      "note": "Campaign-length chooser (label→die), not a dice-index lookup. Hand-authored: PDF lines alternate duration/die with BEL-prefixed labels.",
+      "note": "Campaign-length chooser (label→die), not a dice-index lookup. Hand-authored. used_by Misery deferred — that dumps all five durations on Calendar how-to. Load via table-name tokens (T2). Unique-row T2. Calendar how-to is If FOR Calendar.",
       "hand_authored": {
         "file": "games/mork-borg/hand-authored-overrides/agony-end.json",
         "skip_pdf_extract": true
       },
-      "used_by": [
-        "Misery"
-      ]
+      "used_by": []
     },
     {
       "name": "OptionalClassesTable",
@@ -2795,7 +2838,7 @@
     },
     {
       "name": "BrokenTable",
-      "phase": 3,
+      "phase": 1,
       "instance_of": "LookupTable",
       "source_ref": "MÖRK BORG BARE BONES EDITION.pdf",
       "pages": "29",
@@ -2811,7 +2854,14 @@
           "position": 1
         }
       ],
-      "acceptance_rows": [],
+      "acceptance_rows": [
+        {
+          "cells": {
+            "d4": 3,
+            "result": "Hemorrhage: death in d2 hours unless treated. All tests are DR16 the first hour. DR18 the last hour."
+          }
+        }
+      ],
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -2828,9 +2878,12 @@
         },
         "min_rows": 4,
         "max_rows": 4,
-        "stop_before": [],
+        "stop_before": [
+          "^\\s*Violence\\s*$"
+        ],
         "multi_table_page": true
-      }
+      },
+      "note": "Coverage 1. Unique-row BK1 face 3 Hemorrhage. Not used_by HitPoints (sheet). Not BrokenBodiesTable. Load via table-name tokens (broken + d4). Name Broken d4 vs Broken bodies."
     },
     {
       "name": "InitiativeTable",

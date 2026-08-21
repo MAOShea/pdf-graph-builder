@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.8",
+  "version": "0.4.12",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Slice 3b Omens FOR Omen (start d2 without classes / regain when depleted / five spends as THEN). Slice 3u Outcasts (followers) FOR Outcast (no silver / morale check + highest Presence / consider values as THEN). Closed vocabulary only.",
+  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Slice 3b Omens FOR Omen (start d2 without classes / regain when depleted / five spends as THEN). Slice 3u Outcasts (followers) FOR Outcast (no silver / morale check + highest Presence / consider values as THEN). Coverage 1 Tests FOR Test (d20 ± ability ≥ DR); Carrying FOR Carrying (Strength+8 / +2 DR / twice cap); Broken FOR Broken (Toughness+d8 / 0 HP / negative dead); Abilities FOR Abilities (uses-list + 3d6 generation); Calendar FOR Calendar (dawn Misery / d66 / 7:7). Slice 2g Repair FOR Repair (cannot-higher-than-original footnote; prices stay RepairArmorTable). Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-21",
   "creature_dr_overrides": {
@@ -595,6 +595,194 @@
         "text_contains_any": ["cost silver", "highest Presence"]
       },
       "notes": "Slice 3u OC1–OC3. Hire/stay how-to as THEN (book wording). No Compare. No ELSE. Not 2c MoraleCheck. Not SupportingCharacter. Not 3q–3t generator tables."
+    },
+    {
+      "id": "if:tests-d20-vs-dr",
+      "for_procedure": "Test",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:tests",
+        "name": "Tests"
+      },
+      "bool_id": "bool:tests-d20-vs-dr",
+      "then": [
+        {
+          "id": "outcome:test-d20-ability-vs-dr",
+          "name": "d20-plus-ability-vs-dr",
+          "summary": "Tests are made against a Difficulty Rating. To succeed roll d20 ±your ability with a result equal to or greater than the DR."
+        },
+        {
+          "id": "outcome:test-creatures-plain-d20",
+          "name": "creatures-roll-d20-against-dr",
+          "summary": "Creatures don't use abilities, they just roll a d20 against DR."
+        }
+      ],
+      "evidence": {
+        "section_id": "tests-and-dr",
+        "text_contains_any": ["equal to or greater", "just roll a d20"]
+      },
+      "notes": "Coverage 1 TS1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR AbilityTest. Not melee/ranged/defence. DRTable is unique-row DT1, not packed here."
+    },
+    {
+      "id": "if:carrying-capacity",
+      "for_procedure": "Carrying",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:carrying-capacity",
+        "name": "Carrying Capacity"
+      },
+      "bool_id": "bool:carrying-capacity",
+      "then": [
+        {
+          "id": "outcome:carry-strength-plus-8",
+          "name": "strength-plus-8-normal-items",
+          "summary": "You can carry Strength+8 normal-sized items (for example crowbars, lard, scrolls, torches but not anvils, chests, ladders, corpses) without a problem."
+        },
+        {
+          "id": "outcome:carry-overload-dr-plus-2",
+          "name": "overload-raises-dr-by-2",
+          "summary": "After that when testing Strength and Agility DR increases by 2 (from 12 to 14 etc.). It is impossible to carry more than twice Strength+8."
+        }
+      ],
+      "evidence": {
+        "section_id": "carrying-capacity",
+        "text_contains_any": ["Strength+8", "twice Strength"]
+      },
+      "notes": "Coverage 1 CA1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR AbilityTest. Not a table."
+    },
+    {
+      "id": "if:broken-zero-hp",
+      "for_procedure": "Broken",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:hit-points-broken",
+        "name": "Hit Points"
+      },
+      "bool_id": "bool:broken-zero-hp",
+      "then": [
+        {
+          "id": "outcome:hp-begin-toughness-d8",
+          "name": "begin-toughness-plus-d8",
+          "summary": "Begin with Toughness + d8. In worst case 1HP, but never less."
+        },
+        {
+          "id": "outcome:hp-zero-broken-negative-dead",
+          "name": "zero-broken-negative-dead",
+          "summary": "Zero HP: broken Negative HP: dead"
+        }
+      ],
+      "evidence": {
+        "section_id": "hit-points-and-broken",
+        "text_contains_any": ["Toughness + d8", "Negative HP"]
+      },
+      "notes": "Coverage 1 HP1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR HitPoints sheet. BrokenTable d4 is unique-row BK1. Not 3c Broken bodies. Not D2 rest."
+    },
+    {
+      "id": "if:abilities-heading",
+      "for_procedure": "Abilities",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:abilities",
+        "name": "Abilities"
+      },
+      "bool_id": "bool:abilities-heading",
+      "then": [
+        {
+          "id": "outcome:ability-agility-uses",
+          "name": "agility-uses",
+          "summary": "AGILITY: Defend, balance, swim, flee."
+        },
+        {
+          "id": "outcome:ability-presence-uses",
+          "name": "presence-uses",
+          "summary": "PRESENCE: Perceive, aim, charm, wield Powers."
+        },
+        {
+          "id": "outcome:ability-strength-uses",
+          "name": "strength-uses",
+          "summary": "STRENGTH: Crush, lift, strike, grapple."
+        },
+        {
+          "id": "outcome:ability-toughness-uses",
+          "name": "toughness-uses",
+          "summary": "TOUGHNESS: Resist poison/cold/heat, survive falling."
+        },
+        {
+          "id": "outcome:ability-3d6-table",
+          "name": "roll-3d6-use-table",
+          "summary": "Roll 3d6 and using the table on the right to generate each ability score from −3 to +3. The sum is not used in the game once the character is created, only the table value."
+        },
+        {
+          "id": "outcome:ability-4d6-drop-lowest",
+          "name": "optional-4d6-drop-lowest-two",
+          "summary": "Player Characters not created with the optional classes can roll 4d6 and drop the lowest die for two of their abilities. When the character is later improved an ability can never exceed +6 or −3."
+        }
+      ],
+      "evidence": {
+        "section_id": "abilities",
+        "text_contains_any": ["Defend, balance", "drop the lowest"]
+      },
+      "notes": "Coverage 1 AB1–AB2. Uses-list + generation how-to as THEN (book wording). No Compare. No ELSE. Not FOR Agility (would pack on C3). AbilitiesTable unique-row AB3. Not Tests."
+    },
+    {
+      "id": "if:calendar-dawn-misery",
+      "for_procedure": "Calendar",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:calendar-of-nechrubel",
+        "name": "The Calendar of Nechrubel"
+      },
+      "bool_id": "bool:calendar-dawn-misery",
+      "then": [
+        {
+          "id": "outcome:calendar-dawn-die",
+          "name": "dawn-die-activates-misery",
+          "summary": "The Game Master (GM) rolls a die each dawn. A result of 1 activates one Misery. The die used is determined by the GM and the group."
+        },
+        {
+          "id": "outcome:calendar-d66",
+          "name": "d66-which-misery",
+          "summary": "The GM then rolls d66 to determine which Misery occurs. The same Misery will not befall the world twice."
+        },
+        {
+          "id": "outcome:calendar-seventh",
+          "name": "seventh-is-7-7",
+          "summary": "The seventh Misery will always be 7:7, and the world finally dies. The seventh seal is broken for the seventh and final time. The game and your lives end here. Burn the book."
+        }
+      ],
+      "evidence": {
+        "section_id": "calendar-of-nechrubel",
+        "text_contains_any": ["rolls a die each dawn", "will not befall"]
+      },
+      "notes": "Coverage 2 leftover CAL1–CAL2. Dawn how-to as THEN (book wording). No Compare. No ELSE. Not FOR Misery. Do not pack d66 psalm rows or AgonyEndTable durations. AgonyEndTable unique-row T2."
+    },
+    {
+      "id": "if:repair-armor",
+      "for_procedure": "Repair",
+      "combinator": "LEAF",
+      "atom": {
+        "kind": "circumstance",
+        "id": "circumstance:repair-armor",
+        "name": "Repair Armor"
+      },
+      "bool_id": "bool:repair-armor",
+      "then": [
+        {
+          "id": "outcome:repair-not-higher-than-original",
+          "name": "cannot-higher-than-original",
+          "summary": "Armor cannot be repaired to a tier higher than its original."
+        }
+      ],
+      "evidence": {
+        "section_id": "equipment",
+        "text_contains_any": ["cannot be repaired", "higher than its original"]
+      },
+      "notes": "2g B7. How-to as THEN (book footnote). No Compare. No ELSE. Not FOR Armor. Do not pack the two price rows. RepairArmorTable unique-row B5/B6."
     }
   ]
 }

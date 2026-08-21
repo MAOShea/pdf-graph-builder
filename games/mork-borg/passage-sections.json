@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.42",
+  "version": "0.5.46",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -242,7 +242,10 @@
       {
         "page": 27,
         "title": "Abilities",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Abilities"
+        ]
       },
       {
         "page": 43,
@@ -280,7 +283,10 @@
       {
         "page": 29,
         "title": "Broken (0 HP)",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Broken"
+        ]
       },
       {
         "page": 39,
@@ -293,12 +299,18 @@
       {
         "page": 17,
         "title": "Calendar of Nechrubel",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Calendar"
+        ]
       },
       {
         "page": 28,
         "title": "Carrying capacity",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Carrying"
+        ]
       },
       {
         "page": 30,
@@ -392,7 +404,10 @@
       {
         "page": 29,
         "title": "Hit Points",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Broken"
+        ]
       },
       {
         "page": 31,
@@ -494,7 +509,10 @@
       {
         "page": 28,
         "title": "Tests",
-        "entry_kind": "rule_topic"
+        "entry_kind": "rule_topic",
+        "maps_to_seed": [
+          "Test"
+        ]
       },
       {
         "page": 41,
@@ -809,6 +827,32 @@
       "notes": "Title is two PDF lines."
     },
     {
+      "id": "calendar-of-nechrubel",
+      "phase": 2,
+      "title": "The Calendar of Nechrubel",
+      "index_title": "Calendar of Nechrubel",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*The Calendar of Nechrubel\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Create a Player Character\\s*\\(PC\\)\\s*$"
+      },
+      "operator_page_hint": "17-20",
+      "links_to_seed_labels": [
+        "Calendar",
+        "Misery"
+      ],
+      "seed_evidence": false,
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "contains_lookup_tables": [
+        "AgonyEndTable"
+      ],
+      "notes": "Coverage 2 leftover. Dawn Misery how-to If FOR Calendar. AgonyEndTable unique-row T2 (uses_tables deferred). d66 psalms not packed into THEN. Not FOR Misery. Stop before Create a Player Character. seed_evidence=false so the psalm pages do not CONFIRMS_SEED."
+    },
+    {
       "id": "character-creation",
       "phase": 2,
       "title": "Create a character",
@@ -861,7 +905,7 @@
         "WeaponShopTable",
         "BeastsTable"
       ],
-      "notes": "General equipment list before abilities chapter (p.24–26 shop catalogs). RULES index Equipment uses_tables those five; do not put WeaponShopTable on Weapons (p.23 creation d10). RepairArmorTable is two priced rows plus the asterisk in notes (not extra Services rows)."
+      "notes": "General equipment list before abilities chapter (p.24–26 shop catalogs). RULES index Equipment uses_tables those five; do not put WeaponShopTable on Weapons (p.23 creation d10). RepairArmorTable is two priced rows (item / silver). Asterisk footnote is If FOR Repair (if:repair-armor), not notes on both rows. Do not maps_to_seed Equipment → Repair."
     },
     {
       "id": "abilities",
@@ -878,6 +922,7 @@
       },
       "operator_page_hint": "27",
       "links_to_seed_labels": [
+        "Abilities",
         "AbilityScore",
         "Agility",
         "Strength",
@@ -887,7 +932,10 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
-      "notes": "Four abilities and what they are used for."
+      "contains_lookup_tables": [
+        "AbilitiesTable"
+      ],
+      "notes": "Coverage 1. Abilities heading p.27. If FOR Abilities (uses-list + 3d6/4d6 generation). AbilitiesTable unique-row (uses_tables deferred). Not FOR Agility/AbilityTest. Stop before Tests."
     },
     {
       "id": "tests-and-dr",
@@ -917,7 +965,7 @@
       "contains_lookup_tables": [
         "DRTable"
       ],
-      "notes": "Core d20 + mod vs DR procedure and DR reference table."
+      "notes": "Coverage 1. Core d20 ± ability vs DR how-to. Catalog Tests maps_to_seed Test. If FOR Test. DRTable unique-row (uses_tables deferred). Not FOR AbilityTest."
     },
     {
       "id": "carrying-capacity",
@@ -934,18 +982,23 @@
       },
       "operator_page_hint": "28",
       "links_to_seed_labels": [
+        "Carrying",
         "Strength",
         "Agility"
       ],
       "extract_rule_passages": true,
       "passage_granularity": "section",
-      "notes": "Single short rule block on p.28 after DR table."
+      "notes": "Coverage 1. Carrying capacity how-to p.28. If FOR Carrying. Not AbilityTest. Stop before Hit Points."
     },
     {
       "id": "hit-points-and-broken",
       "phase": 1,
       "title": "Hit Points",
       "index_title": "Hit Points",
+      "index_titles": [
+        "Hit Points",
+        "Broken (0 HP)"
+      ],
       "start_anchor": {
         "type": "heading_regex",
         "pattern": "^\\s*Hit Points\\s*$"
@@ -956,6 +1009,7 @@
       },
       "operator_page_hint": "29",
       "links_to_seed_labels": [
+        "Broken",
         "HitPoints",
         "Toughness"
       ],
@@ -964,7 +1018,7 @@
       "contains_lookup_tables": [
         "BrokenTable"
       ],
-      "notes": "HP, broken at 0, Broken (d4) table; index also lists Broken (0 HP) p.29."
+      "notes": "Coverage 1. HP / Broken how-to p.29. Compound index Hit Points + Broken (0 HP) maps_to_seed Broken. If FOR Broken (not FOR HitPoints sheet). BrokenTable unique-row (uses_tables deferred). Not 3c Broken bodies. Stop before Violence."
     },
     {
       "id": "violence-combat",
