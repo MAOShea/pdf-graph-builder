@@ -15,6 +15,10 @@ Operator may open **this repo and AI-DM-Assistant** in one Cursor window. Then *
 - Seeds (`deltas.json`) stay in ADA. After ADA seed changes: ADA reset+bootstrap, then re-ingest here.
 - Coverage/contracts may need new JSON and materializer tweaks. **Stable operator scripts** (`ingest-morkborg.ps1`, `ingest-pdf.ps1`, `check-section-gates.ps1`, `check-coverage.ps1`, `start.ps1`, and similar wrappers) must not be edited unless you ask first.
 
+## Agent sessions
+
+Coverage work in Cursor: **one work unit per chat**. Operator declares **session mode** (`clone` | `design`) at start — agents cannot see the model picker. Full rules: [AI-DM-Assistant AGENTS.md — Agent sessions (coverage work)](../AI-DM-Assistant/AGENTS.md#agent-sessions-coverage-work).
+
 ## PDF lookup tables — user says “parse table XYZ”
 
 When the user asks for a table to be **parsed from the PDF** (e.g. “get `WeaponTable` in”, “parse the traps table from page 4”), treat that as an **end-to-end delivery request**, not a design discussion.

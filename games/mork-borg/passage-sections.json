@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.47",
+  "version": "0.5.48",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -710,7 +710,7 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "section",
-      "notes": "Includes Graven-Tosk mention and the bridge sentence into the Palace title."
+      "notes": "Gothic bridge to Palace section: prose ends 'Rising over Graven-Tosk like rage rising over pain is the' then bold heading Palace of the Shadow King (end_anchor before heading). Place relations: Graven-Tosk PART_OF Sarkash; Shadow King's Palace, the PART_OF Graven-Tosk (rises over; place-relations.json). Not MAPS_TO_SECTION play-time."
     },
     {
       "id": "palace-of-the-shadow-king",
@@ -732,7 +732,7 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "section",
-      "notes": "Index label differs from PDF heading (Shadow King's Palace, the)."
+      "notes": "PDF heading continues Sarkash bridge ('…is the Palace of the Shadow King' — title is bold gothic). Index label: Shadow King's Palace, the."
     },
     {
       "id": "grift",

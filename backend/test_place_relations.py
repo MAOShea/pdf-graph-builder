@@ -45,3 +45,37 @@ def test_preview_needles_hit_p12_wording():
     assert all(ok for _, ok in part["evidence"])
     assert occ["label"] == "Two-Headed Basilisks, the OCCURS_IN Galgenbeck"
     assert all(ok for _, ok in occ["evidence"])
+
+
+def test_sarkash_contract_titles_and_section_grouping():
+    load_place_relations.cache_clear()
+    contract = load_place_relations("mork-borg")
+    sarkash_rows = [
+        row for row in contract["part_of"] if row.get("section_id") == "sarkash"
+    ]
+    assert len(sarkash_rows) == 2
+    assert sarkash_rows[0]["child_title"] == "Graven-Tosk"
+    assert sarkash_rows[0]["parent_title"] == "Sarkash"
+    assert sarkash_rows[1]["child_title"] == "Shadow King's Palace, the"
+    assert sarkash_rows[1]["parent_title"] == "Graven-Tosk"
+    grouped = place_relations_for_section("mork-borg", "sarkash")
+    assert len(grouped["part_of"]) == 2
+    assert grouped["occurs_in_place"] == []
+
+
+def test_preview_needles_hit_sarkash_wording():
+    load_place_relations.cache_clear()
+    span = (
+        "Far in the depths of Sarkash, always where one least expects to find it, "
+        "in a halo of dying trees, is Graven-Tosk. A truly ancient cemetery "
+        "Rising over Graven-Tosk like rage rising over pain is the"
+    )
+    grouped = place_relations_for_section("mork-borg", "sarkash")
+    previews = [
+        place_relation_operator_preview(row, span, kind="part_of")
+        for row in grouped["part_of"]
+    ]
+    assert previews[0]["label"] == "Graven-Tosk PART_OF Sarkash"
+    assert previews[1]["label"] == "Shadow King's Palace, the PART_OF Graven-Tosk"
+    assert all(ok for _, ok in previews[0]["evidence"])
+    assert all(ok for _, ok in previews[1]["evidence"])

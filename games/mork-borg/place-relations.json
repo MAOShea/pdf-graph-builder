@@ -1,11 +1,11 @@
 {
   "id": "mork-borg-place-relations",
   "game": "mork-borg",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "status": "draft",
-  "description": "Tier-5 Place nesting and Faction seats. Seed lock: Place-[:PART_OF]->Place; Faction-[:OCCURS_IN]->Place. Titles must match index_source. First pass: Galgenbeck p.12 only. Not Location. Not packing MAPS_TO_SECTION bodies.",
+  "description": "Tier-5 Place nesting and Faction seats. Seed lock: Place-[:PART_OF]->Place; Faction-[:OCCURS_IN]->Place. Titles must match index_source. Galgenbeck p.12; Sarkash p.12–13 (Graven-Tosk; Palace rises over cemetery). Not Location. Not packing MAPS_TO_SECTION bodies.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
-  "verified_date": "2026-08-21",
+  "verified_date": "2026-08-22",
   "part_of": [
     {
       "child_title": "Galgenbeck",
@@ -13,6 +13,21 @@
       "kind": "place",
       "section_id": "galgenbeck",
       "text_contains_any": ["land of Tveland"]
+    },
+    {
+      "child_title": "Graven-Tosk",
+      "parent_title": "Sarkash",
+      "kind": "place",
+      "section_id": "sarkash",
+      "text_contains_any": ["depths of Sarkash"]
+    },
+    {
+      "child_title": "Shadow King's Palace, the",
+      "parent_title": "Graven-Tosk",
+      "kind": "place",
+      "section_id": "sarkash",
+      "text_contains_any": ["Rising over Graven-Tosk"],
+      "notes": "PDF bridge: palace title is bold gothic continuation of sentence ending Sarkash span; rises over cemetery (PART_OF encodes site link)."
     }
   ],
   "occurs_in_place": [
