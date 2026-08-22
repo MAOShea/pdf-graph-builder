@@ -79,3 +79,11 @@ def test_preview_needles_hit_sarkash_wording():
     assert previews[1]["label"] == "Shadow King's Palace, the PART_OF Graven-Tosk"
     assert all(ok for _, ok in previews[0]["evidence"])
     assert all(ok for _, ok in previews[1]["evidence"])
+
+
+def test_palace_section_has_no_local_place_relations():
+    """PART_OF Graven-Tosk is authored on Sarkash bridge span, not palace section."""
+    load_place_relations.cache_clear()
+    grouped = place_relations_for_section("mork-borg", "palace-of-the-shadow-king")
+    assert grouped["part_of"] == []
+    assert grouped["occurs_in_place"] == []
