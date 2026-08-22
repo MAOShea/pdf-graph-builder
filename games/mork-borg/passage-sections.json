@@ -753,7 +753,8 @@
         "Place"
       ],
       "extract_rule_passages": true,
-      "passage_granularity": "section"
+      "passage_granularity": "section",
+      "notes": "Gothic place title. Place relations: Grift PART_OF Endless Sea, the (peninsula prose; place-relations.json). Basilisks named as external inquisition reaction — not OCCURS_IN Grift. Sigfúm is SupportingCharacter. Not MAPS_TO_SECTION play-time."
     },
     {
       "id": "kergus",

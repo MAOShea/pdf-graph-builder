@@ -87,3 +87,21 @@ def test_palace_section_has_no_local_place_relations():
     grouped = place_relations_for_section("mork-borg", "palace-of-the-shadow-king")
     assert grouped["part_of"] == []
     assert grouped["occurs_in_place"] == []
+
+
+def test_grift_contract_and_preview():
+    load_place_relations.cache_clear()
+    grouped = place_relations_for_section("mork-borg", "grift")
+    assert len(grouped["part_of"]) == 1
+    assert grouped["occurs_in_place"] == []
+    assert grouped["part_of"][0]["child_title"] == "Grift"
+    assert grouped["part_of"][0]["parent_title"] == "Endless Sea, the"
+    span = (
+        "From ages past, Grift grew upon an eastern peninsula of the "
+        "Endless Sea. Cut from the world by the bottomless Mur"
+    )
+    preview = place_relation_operator_preview(
+        grouped["part_of"][0], span, kind="part_of"
+    )
+    assert preview["label"] == "Grift PART_OF Endless Sea, the"
+    assert all(ok for _, ok in preview["evidence"])
