@@ -121,3 +121,13 @@ def test_western_kingdom_section_has_no_local_place_relations():
     grouped = place_relations_for_section("mork-borg", "western-kingdom")
     assert grouped["part_of"] == []
     assert grouped["occurs_in_place"] == []
+
+
+def test_valley_section_has_no_local_place_relations():
+    """Basilisk HE rumor ≠ Faction seat; Realm of the Dead unindexed."""
+    load_place_relations.cache_clear()
+    grouped = place_relations_for_section(
+        "mork-borg", "valley-of-the-unfortunate-undead"
+    )
+    assert grouped["part_of"] == []
+    assert grouped["occurs_in_place"] == []

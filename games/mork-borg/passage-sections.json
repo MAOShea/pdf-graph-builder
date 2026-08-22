@@ -825,7 +825,7 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "section",
-      "notes": "Title is two PDF lines. PDF heading continues Western Kingdom bridge ('…is the Valley of the Unfortunate Undead' — title is bold gothic). Index label: Valley of the Unfortunate Undead."
+      "notes": "Title is two PDF lines. PDF heading continues Western Kingdom bridge ('…is the Valley of the Unfortunate Undead' — title is bold gothic). Index label: Valley of the Unfortunate Undead. Place relations: none this pass — 'Basilisk HE' crypt rumor is not Two-Headed Basilisks Faction OCCURS_IN; Realm of the Dead unindexed; Verhu is SupportingCharacter. Not MAPS_TO_SECTION play-time."
     },
     {
       "id": "calendar-of-nechrubel",
