@@ -2,7 +2,7 @@
   "id": "mork-borg-ingest-manifest",
   "game": "mork-borg",
   "neo4j_database": "morkborg",
-  "version": "0.3.23",
+  "version": "0.3.24",
   "status": "verified",
   "description": "Tier-5 materialization contract — what pdf-graph-builder ingest should create on top of the bootstrapped scaffold. Not read by bootstrap. pdf_extract blocks are pdf-graph-builder extensions for PDF text detection (sequential index+remainder, or aligned_columns via word x-cuts when get_text() stacks a multi-column list).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -22,6 +22,11 @@
     "file": "operational-spines.json",
     "target_path": "games/mork-borg/operational-spines.json",
     "description": "Altitude-D If spines (Briefings 17–19 / D1–D3). Deterministic IngestNode materialization — closed vocabulary only; D3 binds creature via Circumstance-[:APPLIES_TO]."
+  },
+  "place_relations": {
+    "file": "place-relations.json",
+    "target_path": "games/mork-borg/place-relations.json",
+    "description": "Place PART_OF Place and Faction OCCURS_IN Place. Titles match THE_WORLD index. Galgenbeck p.12 first pass."
   },
   "rulebook_index": {
     "file": "passage-sections.json",

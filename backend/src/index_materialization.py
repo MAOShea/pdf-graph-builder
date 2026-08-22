@@ -757,6 +757,7 @@ def materialize_rulebook_catalog(
         "index": {},
         "sections": {},
         "fiction": {},
+        "place_relations": {},
         "entity_passages": {},
     }
     result["index"] = materialize_rulebook_index(graph, file_name, game=game)
@@ -775,6 +776,11 @@ def materialize_rulebook_catalog(
                 "occurs_in_links": 0,
                 "warnings": ["skipped — no index entries materialized"],
             }
+            result["place_relations"] = {
+                "part_of": 0,
+                "occurs_in_place": 0,
+                "warnings": ["skipped — no index entries materialized"],
+            }
         if entity_passages:
             result["entity_passages"] = {
                 "passages_created": 0,
@@ -787,6 +793,11 @@ def materialize_rulebook_catalog(
         )
     if fiction:
         result["fiction"] = materialize_fiction_instances(graph, file_name, game=game)
+        from src.place_relation_materialization import materialize_place_relations
+
+        result["place_relations"] = materialize_place_relations(
+            graph, file_name, game=game
+        )
     if entity_passages:
         result["entity_passages"] = materialize_entity_passages(
             graph, file_name, game=game, pdf_path=pdf_path

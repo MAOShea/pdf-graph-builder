@@ -1,0 +1,26 @@
+{
+  "id": "mork-borg-place-relations",
+  "game": "mork-borg",
+  "version": "0.1.0",
+  "status": "draft",
+  "description": "Tier-5 Place nesting and Faction seats. Seed lock: Place-[:PART_OF]->Place; Faction-[:OCCURS_IN]->Place. Titles must match index_source. First pass: Galgenbeck p.12 only. Not Location. Not packing MAPS_TO_SECTION bodies.",
+  "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
+  "verified_date": "2026-08-21",
+  "part_of": [
+    {
+      "child_title": "Galgenbeck",
+      "parent_title": "Tveland",
+      "kind": "place",
+      "section_id": "galgenbeck",
+      "text_contains_any": ["land of Tveland"]
+    }
+  ],
+  "occurs_in_place": [
+    {
+      "faction_title": "Two-Headed Basilisks, the",
+      "place_title": "Galgenbeck",
+      "section_id": "galgenbeck",
+      "text_contains_any": ["Cathedral of the Two-Headed Basilisks"]
+    }
+  ]
+}

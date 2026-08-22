@@ -71,6 +71,7 @@ Uses LangChain loaders and Neo4j’s `llm-graph-transformer` patterns. Optional 
 | `ingest-manifest.json` | Lookup tables, passage-sections pointer, rulebook index hooks |
 | `passage-sections.json` | Section cuts, index titles, entity-passage bounds, `seed_evidence` |
 | `operational-spines.json` | Altitude / DR / circumstance spines |
+| `place-relations.json` | Place `PART_OF` Place; Faction `OCCURS_IN` Place (Galgenbeck first pass) |
 | Hand-authored overrides | Tables that cannot be PDF-parsed cleanly |
 
 **Ollama’s job is narrow and opt-in.** Product ingest (`.\ingest-morkborg.ps1`) runs **Stage 1 only** by default. Pass `-ScaffoldDiffLlm` / `--scaffold-diff-llm` / form `scaffold_diff_llm=true` to run Stage 2. Given chunk prose and a scaffold map (labels + seed IDs), that pass emits extractions that post-processing turns into evidence edges—chiefly `CONFIRMS_SEED` and flags—not a new ontology. It does **not** replace table parsers, section cutters, or spine/sheet materializers. Play-time confidence is contracts + gates + ADA smokes, not this confirmer.
@@ -112,6 +113,7 @@ flowchart TB
     B --> F[ingest-manifest lookup tables]
     F --> C[index + fiction + entity passages]
     C --> D[operational-spines.json]
+    C --> PR[place-relations.json]
     D --> E[creature sheets]
   end
   subgraph LLM["Stage 2 — Ollama (opt-in -ScaffoldDiffLlm)"]

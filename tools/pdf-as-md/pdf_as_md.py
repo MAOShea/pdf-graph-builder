@@ -293,6 +293,47 @@ def _append_spine_previews(
             )
 
 
+def _append_place_relation_previews(
+    lines: list[str],
+    *,
+    game: str,
+    section_id: str,
+    span_text: str,
+    warnings: list[str],
+) -> None:
+    from src.place_relation_materialization import (
+        place_relation_operator_preview,
+        place_relations_for_section,
+    )
+
+    grouped = place_relations_for_section(game, section_id)
+    rows: list[tuple[str, dict]] = []
+    for row in grouped.get("part_of") or []:
+        rows.append(("part_of", row))
+    for row in grouped.get("occurs_in_place") or []:
+        rows.append(("occurs_in_place", row))
+    if not rows:
+        return
+    for kind, row in rows:
+        preview = place_relation_operator_preview(row, span_text, kind=kind)
+        ev_bits = [
+            f"`{needle}` {'yes' if ok else 'MISSING'}"
+            for needle, ok in preview.get("evidence") or []
+        ]
+        ev_line = " · ".join(ev_bits) if ev_bits else "(no text_contains_any)"
+        lines.append(
+            f"> place `{preview.get('label')}` · contract (not PDF-parsed)"
+        )
+        lines.append(f"> evidence in this span: {ev_line}")
+        lines.append("")
+        for needle, ok in preview.get("evidence") or []:
+            if not ok:
+                warnings.append(
+                    f"section {section_id!r}: place relation "
+                    f"{preview.get('label')} evidence needle missing: {needle!r}"
+                )
+
+
 def _render_table_block(
     block: dict[str, Any], *, omit_title: str | None = None
 ) -> list[str]:
@@ -516,6 +557,13 @@ def _append_section_md(
             span_text=extract.stream[item.content_start : item.content_end],
             warnings=warnings,
         )
+        _append_place_relation_previews(
+            lines,
+            game=extract.game,
+            section_id=str(sid),
+            span_text=extract.stream[item.content_start : item.content_end],
+            warnings=warnings,
+        )
         return
 
     raw_names = section.get("contains_lookup_tables") or []
@@ -583,6 +631,13 @@ def _append_section_md(
             span_text=body,
             warnings=warnings,
         )
+        _append_place_relation_previews(
+            lines,
+            game=extract.game,
+            section_id=str(sid),
+            span_text=body,
+            warnings=warnings,
+        )
         return
 
     pdf_span = extract.stream[item.heading_start : item.content_end]
@@ -600,6 +655,13 @@ def _append_section_md(
     )
     lines.append("")
     _append_spine_previews(
+        lines,
+        game=extract.game,
+        section_id=str(sid),
+        span_text=body,
+        warnings=warnings,
+    )
+    _append_place_relation_previews(
         lines,
         game=extract.game,
         section_id=str(sid),

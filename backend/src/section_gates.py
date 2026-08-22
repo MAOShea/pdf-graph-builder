@@ -322,6 +322,80 @@ def _spine_graph(session: Session, if_id: str) -> dict[str, Any]:
     return dict(row) if row else {"if_id": None, "evidence_sections": [], "proc_label_sets": []}
 
 
+def _append_place_relation_gates(
+    session: Session,
+    report: SectionGatesReport,
+    *,
+    game: str,
+    document: str,
+) -> None:
+    from src.place_relation_materialization import load_place_relations
+
+    load_place_relations.cache_clear()
+    contract = load_place_relations(game)
+    prefix = f"{document}#index:"
+    for row in contract.get("part_of") or []:
+        child = str(row.get("child_title") or "")
+        parent = str(row.get("parent_title") or "")
+        name = f"place-part-of:{child}->{parent}"
+        rec = session.run(
+            """
+            MATCH (ce:IndexEntry {entry_kind: 'place'})-[:DENOTES]->(c)
+            MATCH (pe:IndexEntry {entry_kind: 'place'})-[:DENOTES]->(p)
+            WHERE (ce.source = $document OR ce.id STARTS WITH $prefix)
+              AND (pe.source = $document OR pe.id STARTS WITH $prefix)
+              AND toLower(ce.title) = toLower($child)
+              AND toLower(pe.title) = toLower($parent)
+            OPTIONAL MATCH (c)-[r:PART_OF]->(p)
+            RETURN r IS NOT NULL AS ok
+            """,
+            {
+                "document": document,
+                "prefix": prefix,
+                "child": child,
+                "parent": parent,
+            },
+        ).single()
+        ok = bool(rec and rec.get("ok"))
+        report.checks.append(
+            GateCheck(
+                name=name,
+                ok=ok,
+                detail="PART_OF" if ok else "missing Place PART_OF Place",
+            )
+        )
+    for row in contract.get("occurs_in_place") or []:
+        faction = str(row.get("faction_title") or "")
+        place = str(row.get("place_title") or "")
+        name = f"faction-occurs-in:{faction}->{place}"
+        rec = session.run(
+            """
+            MATCH (fe:IndexEntry {entry_kind: 'faction'})-[:DENOTES]->(f)
+            MATCH (pe:IndexEntry {entry_kind: 'place'})-[:DENOTES]->(p)
+            WHERE (fe.source = $document OR fe.id STARTS WITH $prefix)
+              AND (pe.source = $document OR pe.id STARTS WITH $prefix)
+              AND toLower(fe.title) = toLower($faction)
+              AND toLower(pe.title) = toLower($place)
+            OPTIONAL MATCH (f)-[r:OCCURS_IN]->(p)
+            RETURN r IS NOT NULL AS ok
+            """,
+            {
+                "document": document,
+                "prefix": prefix,
+                "faction": faction,
+                "place": place,
+            },
+        ).single()
+        ok = bool(rec and rec.get("ok"))
+        report.checks.append(
+            GateCheck(
+                name=name,
+                ok=ok,
+                detail="OCCURS_IN Place" if ok else "missing Faction OCCURS_IN Place",
+            )
+        )
+
+
 def run_section_gates(
     session: Session,
     *,
@@ -364,6 +438,10 @@ def run_section_gates(
                 detail="no leftover passage-section ids",
             )
         )
+
+    _append_place_relation_gates(
+        session, report, game=game, document=document
+    )
 
     for section in sections:
         sid = str(section["id"])
