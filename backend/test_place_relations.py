@@ -113,3 +113,11 @@ def test_kergus_section_has_no_local_place_relations():
     grouped = place_relations_for_section("mork-borg", "kergus")
     assert grouped["part_of"] == []
     assert grouped["occurs_in_place"] == []
+
+
+def test_western_kingdom_section_has_no_local_place_relations():
+    """Wästland is alias prose, not PART_OF; Schleswig unindexed; Fathmu not Faction."""
+    load_place_relations.cache_clear()
+    grouped = place_relations_for_section("mork-borg", "western-kingdom")
+    assert grouped["part_of"] == []
+    assert grouped["occurs_in_place"] == []

@@ -803,7 +803,7 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "section",
-      "notes": "Heading on p.15; body continues onto p.16. Resolved on the concatenated page stream — no page_range needed."
+      "notes": "Heading on p.15; body continues onto p.16. Gothic bridge to Valley section: prose ends 'A place few wish to speak of is the' then bold heading Valley of the Unfortunate Undead (end_anchor before heading). Place relations: none this pass — Wästland is alias prose (separate IndexEntry), not PART_OF; Schleswig/Lake Onda unindexed; Fathmu IX is SupportingCharacter; bridge does not nest Valley under Western Kingdom. Not MAPS_TO_SECTION play-time."
     },
     {
       "id": "valley-of-the-unfortunate-undead",
@@ -825,7 +825,7 @@
       ],
       "extract_rule_passages": true,
       "passage_granularity": "section",
-      "notes": "Title is two PDF lines."
+      "notes": "Title is two PDF lines. PDF heading continues Western Kingdom bridge ('…is the Valley of the Unfortunate Undead' — title is bold gothic). Index label: Valley of the Unfortunate Undead."
     },
     {
       "id": "calendar-of-nechrubel",
