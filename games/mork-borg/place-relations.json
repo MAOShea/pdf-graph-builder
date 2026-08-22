@@ -3,7 +3,7 @@
   "game": "mork-borg",
   "version": "0.2.0",
   "status": "draft",
-  "description": "Tier-5 Place nesting and Faction seats. Seed lock: Place-[:PART_OF]->Place; Faction-[:OCCURS_IN]->Place. Titles must match index_source. Galgenbeck p.12; Sarkash p.12–13 (Graven-Tosk; Palace rises over cemetery); Grift p.14 (Endless Sea). Not Location. Not packing MAPS_TO_SECTION bodies.",
+  "description": "Tier-5 Place nesting and Faction seats. Seed lock: Place-[:PART_OF]->Place; Faction-[:OCCURS_IN]->Place. Titles must match index_source. Galgenbeck p.12; Sarkash p.12–13 (Graven-Tosk; Palace rises over cemetery); Grift p.14 (Endless Sea); Kergüs p.15 no rows (Alliáns unindexed). Not Location. Not packing MAPS_TO_SECTION bodies.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-22",
   "part_of": [

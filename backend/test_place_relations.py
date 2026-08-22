@@ -105,3 +105,11 @@ def test_grift_contract_and_preview():
     )
     assert preview["label"] == "Grift PART_OF Endless Sea, the"
     assert all(ok for _, ok in preview["evidence"])
+
+
+def test_kergus_section_has_no_local_place_relations():
+    """Alliáns unindexed; Anthelia is SupportingCharacter — no PART_OF / OCCURS_IN."""
+    load_place_relations.cache_clear()
+    grouped = place_relations_for_section("mork-borg", "kergus")
+    assert grouped["part_of"] == []
+    assert grouped["occurs_in_place"] == []

@@ -781,7 +781,7 @@
         "pattern": "^\\s*Anthelia[''\u2019]s\\s+Ambivalence\\s*$",
         "notes": "Smaller non-gothic subhead inside Kergüs (not a sibling place block)."
       },
-      "notes": "Two passages: Kergüs body, then Anthelia's Ambivalence subsection."
+      "notes": "Two passages: Kergüs body, then Anthelia's Ambivalence subsection. Place relations: none this pass — Alliáns not in p.75 index (do not invent Place); Anthelia is SupportingCharacter not Faction OCCURS_IN. Not MAPS_TO_SECTION play-time."
     },
     {
       "id": "western-kingdom",
