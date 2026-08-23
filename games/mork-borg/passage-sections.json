@@ -1,7 +1,7 @@
 {
   "id": "mork-borg-passage-sections",
   "game": "mork-borg",
-  "version": "0.5.48",
+  "version": "0.5.49",
   "status": "draft",
   "description": "Rulebook section anchors, p.75 index catalog, and entity-passage end rules. Boundaries are operator-maintained contract data (not hardcoded in Python): sections[].start_anchor/end_anchor for RULES mechanics and THE WORLD place/lore blocks; entity_passage.stop_before for CREATURES prose cuts between bestiary blocks. Optional sections[].content_source points at hand-authored files when PDF text is not usable (e.g. two-column name grid). text_filters strips running PDF headers/footers from the shared extract stream. passage_granularity subheading_regex + passage_split splits Roman/subsection titles inside a parent span. sections[].index_titles lists all RULES IndexEntry titles that MAPS_TO_SECTION the same Chunk (compound sections). sections[].seed_evidence=false blocks Chunk→SeedNode CONFIRMS_SEED/DOCUMENTED_BY (Briefing 21).",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
@@ -25,6 +25,10 @@
       "\\s*M[ÖO]RK\\s+BORG\\s+BARE\\s+BONES\\s+EDITION(?:\\s+\\d+)?\\s*"
     ],
     "drop_edge_page_number": true
+  },
+  "content_remainder": {
+    "ignore_pages": [75, 76],
+    "notes": "Excluded from content-remainder coverage math. p.75 three-column RULES/WORLD/CREATURES index (index_source); p.76 rules reference sheet (abilities/tests cheat panel) — not prose sections."
   },
   "index_source": {
     "page": 75,
@@ -627,6 +631,29 @@
       "notes": "d10 Occult Treasures. Table shape comes from default auto-detect (ingest-manifest OccultTreasuresTable pdf_extract) — no contains_lookup_tables / content_source override needed. seed_evidence=false: do not CONFIRMS_SEED from this front-matter chunk (Briefing 21)."
     },
     {
+      "id": "traps-and-weather",
+      "phase": 2,
+      "title": "Traps and Devilry",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Traps and Devilry"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Colophon\\s*$"
+      },
+      "operator_page_hint": "4-5",
+      "links_to_seed_labels": [],
+      "seed_evidence": false,
+      "extract_rule_passages": false,
+      "contains_lookup_tables": [
+        "TrapsTable",
+        "WeatherTable",
+        "CorpsePlunderTable"
+      ],
+      "notes": "Environment circumstance tables: Traps and Devilry (d12), weather (d12), Corpse plundering (d66) cont. on p.5. Same page block as ingest-manifest TrapsTable/WeatherTable/CorpsePlunderTable. seed_evidence=false (front-matter; Briefing 21). Stop before Colophon."
+    },
+    {
       "id": "front-matter-colophon-credits",
       "phase": 2,
       "title": "Colophon and credits",
@@ -640,6 +667,27 @@
       "seed_evidence": false,
       "extract_rule_passages": false,
       "notes": "Whole pages 6–7 (Colophon, credits, 'Music that helped', etc.) — not rules/lore. page_range bounds; end_anchor unused. seed_evidence=false (Briefing 21)."
+    },
+    {
+      "id": "wind-from-the-west",
+      "phase": 2,
+      "title": "The Wind from the west",
+      "column": "THE_WORLD",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*The Wind from the west\\."
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*What Was Written\\s*$"
+      },
+      "operator_page_hint": "9",
+      "links_to_seed_labels": [
+        "WorldLore"
+      ],
+      "extract_rule_passages": true,
+      "passage_granularity": "paragraph",
+      "notes": "Bare Bones intro prose (p.9) after colophon / blank p.8, before What Was Written. THE_WORLD WorldLore container — not a Place; do not invent IndexEntry. Place sections stay their own spans; this does not reparent Galgenbeck/etc. intros."
     },
     {
       "id": "what-was-written",
@@ -1598,6 +1646,27 @@
       "extract_rule_passages": true,
       "passage_granularity": "paragraph",
       "notes": "Coverage 3n/3o. Sample rooms d4×d6 pp.73–74 + nested motifs / shelves / altar. Stop before THE WORLD. Not on p.75 RULES. Not used_by Place. SR1 cell 2,5 Freezing draft. SR2 motifs d6=3 Hypnotic. SH1 shelves 3-4 rotting food. SA1 altar 3-4 fresh blood."
+    },
+    {
+      "id": "creatures-bestiary",
+      "phase": 3,
+      "title": "Creatures",
+      "column": "CREATURES",
+      "start_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Creatures\\s*$"
+      },
+      "end_anchor": {
+        "type": "heading_regex",
+        "pattern": "^\\s*Outcasts\\s*\\(followers\\)\\s*$"
+      },
+      "operator_page_hint": "58-62",
+      "links_to_seed_labels": [
+        "Monster"
+      ],
+      "seed_evidence": false,
+      "extract_rule_passages": false,
+      "notes": "Bestiary container for CREATURES index rows (Goblin … Wyvern). Per-creature RulePassages + sheets stay entity_passage / creature_sheet materializers. Nested berserker-wields table section sits inside this span. seed_evidence=false — do not CONFIRMS_SEED from the whole bestiary Chunk. Not MAPS_TO_SECTION play-time."
     },
     {
       "id": "berserker-wields",
