@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-spines",
   "game": "mork-borg",
-  "version": "0.4.12",
+  "version": "0.5.0",
   "status": "draft",
-  "description": "Altitude-D adjudicable If spines: D1 Violence DR12, D2 Crit/fumble/rest/infection, D3 creature attack/defence DR overrides via Circumstance-[:APPLIES_TO]->creature instance (opaque If.id — no creature name in id). D3 overrides SUPERSEDES matching D1 defaults (Briefing 22). Slice 2c Morale procedure FOR MoraleCheck (Briefing 25); Compare COMPARED_TO sheet Morale. Slice 2d More HP FOR Advancement COMPARED_TO HitPoints; Ability changes FOR Advancement COMPARED_TO AbilityScore (low-band SUPERSEDES default). Slice 2e Powers FOR Power: daily uses formula (no Compare) + scroll Presence DR12. Slice 2f K1 Create a Player Character FOR CharacterCreation (numbered list THEN; optional class stays off this If). Slice 3b Omens FOR Omen (start d2 without classes / regain when depleted / five spends as THEN). Slice 3u Outcasts (followers) FOR Outcast (no silver / morale check + highest Presence / consider values as THEN). Coverage 1 Tests FOR Test (d20 ± ability ≥ DR); Carrying FOR Carrying (Strength+8 / +2 DR / twice cap); Broken FOR Broken (Toughness+d8 / 0 HP / negative dead); Abilities FOR Abilities (uses-list + 3d6 generation); Calendar FOR Calendar (dawn Misery / d66 / 7:7). Slice 2g Repair FOR Repair (cannot-higher-than-original footnote; prices stay RepairArmorTable). Closed vocabulary only.",
+  "description": "Altitude-D: If spines (branched) + procedure_options (Rest menu→effect, no BoolExpression). D1 Violence; D2 Crit/fumble/infection If; Rest catch-breath/sleep/starve as ProcedureOption; D3 creature DR; Morale/Advancement/Power/Creation/Omens/Outcast/Tests/… If how-tos. Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-21",
   "creature_dr_overrides": {
@@ -173,27 +173,6 @@
       "notes": "Defence fumble (natural 1). Attack fumble (weapon breaks/lost) deferred."
     },
     {
-      "id": "if:rest-catch-breath",
-      "for_procedure": "Downtime",
-      "combinator": "LEAF",
-      "atom": {
-        "kind": "circumstance",
-        "id": "circumstance:catch-breath-and-drink",
-        "name": "catch breath and drink"
-      },
-      "bool_id": "bool:rest-catch-breath",
-      "then": {
-        "id": "outcome:rest-restore-d4-hp",
-        "name": "restore-d4-hp",
-        "summary": "Catch breath and drink: restore d4 HP."
-      },
-      "evidence": {
-        "section_id": "rest",
-        "text_contains_any": ["Catch your breath", "Restore d4"]
-      },
-      "notes": "FOR Downtime (no Rest SeedNode). Circumstance situating atom."
-    },
-    {
       "id": "if:infection-blocks-rest",
       "for_procedure": "Downtime",
       "combinator": "AND",
@@ -219,7 +198,7 @@
         "section_id": "rest",
         "text_contains_any": ["infected character", "does not benefit"]
       },
-      "notes": "AND of Circumstance Infected + resting (not status Condition). Book: infected does not benefit from resting; d6 HP lost daily."
+      "notes": "AND of Circumstance Infected + resting (not status Condition). Book: infected does not benefit from resting; d6 HP lost daily. Remains an If — real status gate. Rest menu lines are procedure_options (not If)."
     },
     {
       "id": "if:morale-trigger",
@@ -783,6 +762,73 @@
         "text_contains_any": ["cannot be repaired", "higher than its original"]
       },
       "notes": "2g B7. How-to as THEN (book footnote). No Compare. No ELSE. Not FOR Armor. Do not pack the two price rows. RepairArmorTable unique-row B5/B6."
+    }
+  ],
+  "procedure_options": [
+    {
+      "id": "opt:rest-catch-breath",
+      "for_procedure": "Downtime",
+      "name": "catch breath and drink",
+      "select_tokens": [
+        "catch my breath",
+        "catch breath",
+        "catching breath",
+        "have a drink"
+      ],
+      "effect": {
+        "id": "outcome:rest-restore-d4-hp",
+        "name": "restore-d4-hp",
+        "summary": "Catch your breath, have a drink. Restore d4 HP."
+      },
+      "evidence": {
+        "section_id": "rest",
+        "text_contains_any": ["Catch your breath", "Restore d4"]
+      },
+      "notes": "Rest menu bullet (not LookupTable; not If). Question names the option at face value."
+    },
+    {
+      "id": "opt:rest-full-night-sleep",
+      "for_procedure": "Downtime",
+      "name": "full night's sleep",
+      "select_tokens": [
+        "full night",
+        "night's sleep",
+        "nights sleep",
+        "night sleep",
+        "sleep restores"
+      ],
+      "effect": {
+        "id": "outcome:rest-restore-d6-hp",
+        "name": "restore-d6-hp",
+        "summary": "A full night's sleep restores d6 HP."
+      },
+      "evidence": {
+        "section_id": "rest",
+        "text_contains_any": ["full night", "restores d6"]
+      },
+      "notes": "Rest menu bullet. Not infection (If). Not catch-breath."
+    },
+    {
+      "id": "opt:rest-without-food-or-drink",
+      "for_procedure": "Downtime",
+      "name": "without food or drink",
+      "select_tokens": [
+        "without food",
+        "no food",
+        "starving",
+        "starve",
+        "without drink"
+      ],
+      "effect": {
+        "id": "outcome:rest-starve-no-restore",
+        "name": "starve-no-restore",
+        "summary": "Without food or drink no HP is restored when resting and after two days a starving PC loses d4 HP per day."
+      },
+      "evidence": {
+        "section_id": "rest",
+        "text_contains_any": ["Without food or drink", "starving"]
+      },
+      "notes": "Rest menu bullet (constraint line). Not a die lookup."
     }
   ]
 }

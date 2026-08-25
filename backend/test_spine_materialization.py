@@ -12,16 +12,18 @@ def test_load_d1_and_d2_spines():
     contract = load_operational_spines("mork-borg")
     spines = contract.get("spines") or []
     by_id = {s["id"]: s for s in spines}
+    options = contract.get("procedure_options") or []
+    opt_by_id = {o["id"]: o for o in options}
 
-    assert contract.get("version") == "0.4.7"
-    assert len(spines) == 17
+    assert contract.get("version") == "0.5.0"
+    assert len(spines) == 23
+    assert len(options) == 3
     assert {
         "if:melee-hit-default",
         "if:ranged-hit-default",
         "if:defence-default",
         "if:crit-attack",
         "if:fumble-defence",
-        "if:rest-catch-breath",
         "if:infection-blocks-rest",
         "if:morale-trigger",
         "if:morale-demoralized",
@@ -34,6 +36,12 @@ def test_load_d1_and_d2_spines():
         "if:create-pc-bare-bones",
         "if:omen-optional-rule",
     } <= set(by_id)
+    assert "if:rest-catch-breath" not in by_id
+    assert {
+        "opt:rest-catch-breath",
+        "opt:rest-full-night-sleep",
+        "opt:rest-without-food-or-drink",
+    } <= set(opt_by_id)
 
     for sid in (
         "if:melee-hit-default",
@@ -59,10 +67,10 @@ def test_load_d1_and_d2_spines():
     assert fumble["for_procedure"] == "DefenseRoll"
     assert int(fumble["atom"]["threshold"]) == 1
 
-    rest = by_id["if:rest-catch-breath"]
-    assert rest["for_procedure"] == "Downtime"
-    assert rest["atom"]["kind"] == "circumstance"
-    assert rest["evidence"]["section_id"] == "rest"
+    catch = opt_by_id["opt:rest-catch-breath"]
+    assert catch["for_procedure"] == "Downtime"
+    assert "d4" in (catch.get("effect") or {}).get("summary", "")
+    assert catch["evidence"]["section_id"] == "rest"
 
     infection = by_id["if:infection-blocks-rest"]
     assert infection["combinator"] == "AND"

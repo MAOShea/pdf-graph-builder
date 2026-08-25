@@ -754,21 +754,119 @@ def _link_declared_supersedes(
     stats["declared_supersedes_links"] = linked
 
 
+def _retire_legacy_rest_if(graph, stats: dict[str, Any]) -> None:
+    """Drop retired catch-breath If (moved to ProcedureOption 2026-08-25)."""
+    rows = execute_graph_query(
+        graph,
+        """
+        MATCH (i:IngestNode:If {id: 'if:rest-catch-breath'})
+        OPTIONAL MATCH (i)-[:`IF`]->(b:BoolExpression)
+        DETACH DELETE i, b
+        RETURN 1 AS n
+        """,
+        {},
+    )
+    n = len(rows or [])
+    if n:
+        stats["retired_legacy_ifs"] = n
+        logger.info("spine_materialization: retired if:rest-catch-breath")
+
+
+def _merge_procedure_option(
+    graph, file_name: str, opt: dict[str, Any], stats: dict[str, Any]
+) -> None:
+    """MERGE ProcedureOption-[:FOR]->proc + PRODUCES Outcome + DOCUMENTED_BY."""
+    opt_id = opt.get("id")
+    proc = opt.get("for_procedure")
+    name = opt.get("name") or opt_id
+    effect = opt.get("effect") or opt.get("produces")
+    if not opt_id or not proc or not effect:
+        stats["warnings"].append(f"procedure_option missing id/for/effect: {opt_id!r}")
+        return
+    if not _seed_exists(graph, "ProcedureOption"):
+        stats["warnings"].append("SeedNode:ProcedureOption missing — reset/bootstrap ADA seeds")
+        return
+    if not _seed_exists(graph, proc):
+        stats["warnings"].append(f"procedure seed missing for option: {proc}")
+        return
+    outcome_id = _merge_outcome(graph, effect)
+    tokens = [str(t) for t in (opt.get("select_tokens") or []) if t]
+
+    execute_graph_query(
+        graph,
+        """
+        MERGE (o:IngestNode:ProcedureOption {id: $id})
+        SET o.name = $name,
+            o.tier = 5,
+            o.select_tokens = $tokens
+        WITH o
+        MATCH (seed:SeedNode) WHERE 'ProcedureOption' IN labels(seed)
+        MERGE (o)-[:INSTANCE_OF]->(seed)
+        WITH o
+        MATCH (proc:SeedNode) WHERE $proc IN labels(proc)
+        MERGE (o)-[:FOR]->(proc)
+        WITH o
+        MATCH (out:IngestNode:Outcome {id: $outcome_id})
+        MERGE (o)-[:PRODUCES]->(out)
+        """,
+        {
+            "id": opt_id,
+            "name": name,
+            "tokens": tokens,
+            "proc": proc,
+            "outcome_id": outcome_id,
+        },
+    )
+
+    ev = opt.get("evidence") or {}
+    passage_id = _find_evidence_passage(
+        graph,
+        file_name,
+        section_id=ev.get("section_id") or "",
+        text_contains_any=list(ev.get("text_contains_any") or []),
+    )
+    if passage_id:
+        execute_graph_query(
+            graph,
+            """
+            MATCH (o:IngestNode:ProcedureOption {id: $id})-[r:DOCUMENTED_BY]->(:RulePassage)
+            DELETE r
+            """,
+            {"id": opt_id},
+        )
+        execute_graph_query(
+            graph,
+            """
+            MATCH (o:IngestNode:ProcedureOption {id: $id})
+            MATCH (p:RulePassage {id: $passage_id})
+            MERGE (o)-[:DOCUMENTED_BY]->(p)
+            """,
+            {"id": opt_id, "passage_id": passage_id},
+        )
+        stats["evidence_links"] = stats.get("evidence_links", 0) + 1
+    else:
+        stats["warnings"].append(f"no evidence RulePassage for {opt_id}")
+
+    stats["procedure_options_created"] = stats.get("procedure_options_created", 0) + 1
+
+
 def materialize_operational_spines(
     graph,
     file_name: str,
     *,
     game: str = DEFAULT_GAME,
 ) -> dict[str, Any]:
-    """MERGE altitude-D If spines for the game contract (D1–D3)."""
+    """MERGE altitude-D If spines + ProcedureOption menu effects."""
     stats: dict[str, Any] = {
         "spines_expected": 0,
         "spines_created": 0,
+        "procedure_options_created": 0,
         "evidence_links": 0,
         "d3_creatures_scanned": 0,
         "d3_overrides_emitted": 0,
         "d3_supersedes_links": 0,
         "declared_supersedes_links": 0,
+        "retired_legacy_ifs": 0,
         "warnings": [],
     }
 
@@ -783,9 +881,10 @@ def materialize_operational_spines(
     load_operational_spines.cache_clear()
     contract = load_operational_spines(game)
     spines = contract.get("spines") or []
+    options = contract.get("procedure_options") or []
     stats["spines_expected"] = len(spines)
-    if not spines:
-        stats["warnings"].append("no spines in operational-spines.json")
+    if not spines and not options:
+        stats["warnings"].append("no spines/options in operational-spines.json")
         return stats
 
     for spine in spines:
@@ -793,6 +892,19 @@ def materialize_operational_spines(
             _merge_spine(graph, file_name, spine, stats)
         except Exception as exc:
             msg = f"spine {spine.get('id')!r} failed: {exc}"
+            stats["warnings"].append(msg)
+            logger.exception("spine_materialization: %s", msg)
+
+    try:
+        _retire_legacy_rest_if(graph, stats)
+    except Exception as exc:
+        stats["warnings"].append(f"retire legacy rest If failed: {exc}")
+
+    for opt in options:
+        try:
+            _merge_procedure_option(graph, file_name, opt, stats)
+        except Exception as exc:
+            msg = f"procedure_option {opt.get('id')!r} failed: {exc}"
             stats["warnings"].append(msg)
             logger.exception("spine_materialization: %s", msg)
 
@@ -811,9 +923,10 @@ def materialize_operational_spines(
         logger.exception("spine_materialization: %s", msg)
 
     logger.info(
-        "spine_materialization: created=%s/%s (+d3=%s) evidence=%s warnings=%s",
+        "spine_materialization: created=%s/%s options=%s (+d3=%s) evidence=%s warnings=%s",
         stats["spines_created"],
         stats["spines_expected"],
+        stats["procedure_options_created"],
         stats["d3_overrides_emitted"],
         stats["evidence_links"],
         len(stats["warnings"]),
