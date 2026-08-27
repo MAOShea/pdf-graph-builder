@@ -9,7 +9,7 @@ Parsing is **not** owned here. It lives in:
 | `backend/src/document_extract.py` | Normalized PDF stream, contract sections, `resolve_tables_in_span` (PDF + hand-authored) |
 | `backend/src/section_chunking.py` | Section materialization (honors `content_source`) |
 | `backend/src/table_pipeline.py` | Lookup-table ingest (uses `resolve_tables_in_span`) |
-| `backend/src/spine_materialization.py` | Operational If contract (`operational-spines.json`); pdf-as-md renders THEN/ELSE + evidence needles vs the span |
+| `backend/src/operational_rule_materialization.py` | Operational rule contract (`operational-rules.json`); pdf-as-md renders THEN/ELSE + evidence needles vs the span |
 
 This tool only renders that model to `.as.md` (no Neo4j).
 

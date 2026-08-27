@@ -1,8 +1,8 @@
-"""Contract-driven ingest gates for passage sections, index hops, and spines.
+"""Contract-driven ingest gates for passage sections, index hops, and operational rules.
 
 This is ingest acceptance (did ``/extract`` write the contracted graph shape?),
 not ADA chat smokes. Drive ids and index titles from
-``passage-sections.json`` / ``operational-spines.json``. Fail closed.
+``passage-sections.json`` / ``operational-rules.json``. Fail closed.
 """
 from __future__ import annotations
 
@@ -18,12 +18,12 @@ from src.index_materialization import (
     uses_table_names,
 )
 from src.ingest_manifest import load_passage_sections
-from src.spine_materialization import load_operational_spines
+from src.operational_rule_materialization import load_operational_rules
 
 
-def _load_spines(game: str) -> dict[str, Any]:
-    load_operational_spines.cache_clear()
-    return load_operational_spines(game)
+def _load_operational_rules(game: str) -> dict[str, Any]:
+    load_operational_rules.cache_clear()
+    return load_operational_rules(game)
 
 
 def _load_sections(game: str) -> dict[str, Any]:
@@ -45,7 +45,7 @@ class SectionGatesReport:
     phase: int
     column: str
     contract_version: str
-    spines_version: str
+    operational_rules_version: str
     checks: list[GateCheck] = field(default_factory=list)
 
     @property
@@ -172,7 +172,7 @@ def gated_sections(
     return out
 
 
-def spine_procedures(spine: dict[str, Any]) -> list[str]:
+def operational_rule_procedures(spine: dict[str, Any]) -> list[str]:
     multi = spine.get("for_procedures")
     if isinstance(multi, list) and multi:
         return [str(p) for p in multi if str(p).strip()]
@@ -307,7 +307,7 @@ def _table_uses_map(
     return [str(x) for x in (row.get("tables") or []) if x]
 
 
-def _spine_graph(session: Session, if_id: str) -> dict[str, Any]:
+def _operational_rule_graph(session: Session, if_id: str) -> dict[str, Any]:
     row = session.run(
         """
         OPTIONAL MATCH (i:IngestNode:If {id: $if_id})
@@ -405,7 +405,7 @@ def run_section_gates(
     column: str = "RULES",
 ) -> SectionGatesReport:
     contract = _load_sections(game)
-    spines_contract = _load_spines(game)
+    rules_contract = _load_operational_rules(game)
     sections = gated_sections(contract, phase=phase, column=column)
     known_ids = {str(s["id"]) for s in (contract.get("sections") or []) if s.get("id")}
 
@@ -415,7 +415,7 @@ def run_section_gates(
         phase=phase,
         column=column,
         contract_version=str(contract.get("version") or ""),
-        spines_version=str(spines_contract.get("version") or ""),
+        operational_rules_version=str(rules_contract.get("version") or ""),
     )
 
     leftovers = _orphan_section_ids(session, document, known_ids)
@@ -646,17 +646,17 @@ def run_section_gates(
                             )
                         )
 
-    for spine in spines_contract.get("spines") or []:
+    for spine in rules_contract.get("operational_rules") or []:
         if_id = str(spine.get("id") or "")
         ev = spine.get("evidence") or {}
         expected_sid = ev.get("section_id")
         if not if_id or not expected_sid:
             continue
-        graph = _spine_graph(session, if_id)
+        graph = _operational_rule_graph(session, if_id)
         if not graph.get("if_id"):
             report.checks.append(
                 GateCheck(
-                    name=f"spine:{if_id}",
+                    name=f"operational_rule:{if_id}",
                     ok=False,
                     detail="If node missing",
                 )
@@ -667,7 +667,7 @@ def run_section_gates(
             actual = ",".join(str(s) for s in evidence_sids) or "(none)"
             report.checks.append(
                 GateCheck(
-                    name=f"spine:{if_id}",
+                    name=f"operational_rule:{if_id}",
                     ok=False,
                     detail=(
                         f"DOCUMENTED_BY section_id={actual}, "
@@ -682,13 +682,13 @@ def run_section_gates(
         for labset in label_sets:
             if labset:
                 flat_labels.update(labset)
-        for proc in spine_procedures(spine):
+        for proc in operational_rule_procedures(spine):
             if proc not in flat_labels:
                 missing_procs.append(proc)
         if missing_procs:
             report.checks.append(
                 GateCheck(
-                    name=f"spine:{if_id}",
+                    name=f"operational_rule:{if_id}",
                     ok=False,
                     detail="FOR missing " + ", ".join(missing_procs),
                 )
@@ -696,7 +696,7 @@ def run_section_gates(
         else:
             report.checks.append(
                 GateCheck(
-                    name=f"spine:{if_id}",
+                    name=f"operational_rule:{if_id}",
                     ok=True,
                     detail=f"DOCUMENTED_BY {expected_sid}",
                 )
@@ -712,7 +712,7 @@ def format_report_text(report: SectionGatesReport, *, verbose: bool = False) -> 
         f"game={report.game} document={report.document} "
         f"phase<={report.phase} column={report.column}",
         f"passage-sections {report.contract_version}, "
-        f"operational-spines {report.spines_version}",
+        f"operational-rules {report.operational_rules_version}",
         "",
     ]
     failed = [c for c in report.checks if not c.ok]

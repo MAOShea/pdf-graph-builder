@@ -6,7 +6,7 @@ Tier-5 materialization contracts for this game. **This folder is the only copy.*
 |---|---|---|
 | [`passage-sections.json`](./passage-sections.json) | **This repo** | Section anchors, `text_filters`, p.75 index, entity-passage end rules |
 | [`ingest-manifest.json`](./ingest-manifest.json) | **This repo** | Lookup tables, `pdf_extract`, bundles, pointers |
-| [`operational-spines.json`](./operational-spines.json) | **This repo** | Altitude-D If spines |
+| [`operational-rules.json`](./operational-rules.json) | **This repo** | Altitude-D If operational rules |
 | [`place-relations.json`](./place-relations.json) | **This repo** | Place PART_OF Place; Faction OCCURS_IN Place |
 | [`hand-authored-overrides/`](./hand-authored-overrides/) | **This repo** | Table JSON when PDF parse is not viable — [README](./hand-authored-overrides/README.md) |
 

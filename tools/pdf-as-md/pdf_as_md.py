@@ -187,20 +187,20 @@ def _replace_pdf_bullet_runs(
 ) -> str:
     """In-place: PDF dagger/BEL lists become a tagged markdown list (table-grid analogue).
 
-    Render only. Does not parse bullets into Neo4j. Needs a spine citing the section.
+    Render only. Does not parse bullets into Neo4j. Needs an operational rule citing the section.
     """
     if not text or not section_id:
         return text
-    from src.spine_materialization import spine_operator_preview, spines_for_section
+    from src.operational_rule_materialization import operational_rule_operator_preview, operational_rules_for_section
 
-    spines = spines_for_section(game, section_id)
+    spines = operational_rules_for_section(game, section_id)
     if not spines:
         return text
     lines = text.splitlines()
     runs = _collect_pdf_bullet_runs(lines)
     if not runs:
         return text
-    previews = [spine_operator_preview(s, text) for s in spines]
+    previews = [operational_rule_operator_preview(s, text) for s in spines]
     out: list[str] = []
     cursor = 0
     for start, end, items in runs:
@@ -223,13 +223,13 @@ def _replace_pdf_bullet_runs(
             else:
                 rendered.append(f"- {it}")
                 warnings.append(
-                    f"section {section_id!r}: spine {preview.get('if_id')} "
+                    f"section {section_id!r}: operational rule {preview.get('if_id')} "
                     f"list item not in THEN: {it!r}"
                 )
         if_id = preview.get("if_id") or "?"
         procs = ", ".join(str(p) for p in (preview.get("procedures") or []) if p) or "?"
         out.append(
-            f"> spine `{if_id}` FOR {procs} · {matched}/{len(items)} list items"
+            f"> operational rule `{if_id}` FOR {procs} · {matched}/{len(items)} list items"
         )
         out.append(">")
         out.extend(f"> {row}" for row in rendered)
@@ -241,7 +241,7 @@ def _replace_pdf_bullet_runs(
     return body
 
 
-def _render_spine_preview_md(preview: dict[str, Any]) -> list[str]:
+def _render_operational_rule_preview_md(preview: dict[str, Any]) -> list[str]:
     """Operator panel: contracted If (not PDF-parsed). Same role as table markdown."""
     if_id = preview.get("if_id") or "?"
     procs = ", ".join(str(p) for p in (preview.get("procedures") or []) if p) or "?"
@@ -250,7 +250,7 @@ def _render_spine_preview_md(preview: dict[str, Any]) -> list[str]:
         ev_bits.append(f"`{needle}` {'yes' if ok else 'MISSING'}")
     ev_line = " · ".join(ev_bits) if ev_bits else "(no text_contains_any)"
     lines = [
-        f"> spine `{if_id}` FOR {procs} · contract (not PDF-parsed)",
+        f"> operational rule `{if_id}` FOR {procs} · contract (not PDF-parsed)",
         f"> evidence in this span: {ev_line}",
     ]
     then = [t for t in (preview.get("then") or []) if t]
@@ -269,7 +269,7 @@ def _render_spine_preview_md(preview: dict[str, Any]) -> list[str]:
     return lines
 
 
-def _append_spine_previews(
+def _append_operational_rule_previews(
     lines: list[str],
     *,
     game: str,
@@ -277,18 +277,18 @@ def _append_spine_previews(
     span_text: str,
     warnings: list[str],
 ) -> None:
-    from src.spine_materialization import spine_operator_preview, spines_for_section
+    from src.operational_rule_materialization import operational_rule_operator_preview, operational_rules_for_section
 
-    spines = spines_for_section(game, section_id)
+    spines = operational_rules_for_section(game, section_id)
     if not spines:
         return
     for spine in spines:
-        preview = spine_operator_preview(spine, span_text)
-        lines.extend(_render_spine_preview_md(preview))
+        preview = operational_rule_operator_preview(spine, span_text)
+        lines.extend(_render_operational_rule_preview_md(preview))
         missing = [n for n, ok in preview.get("evidence") or [] if not ok]
         for needle in missing:
             warnings.append(
-                f"section {section_id!r}: spine {preview.get('if_id')} "
+                f"section {section_id!r}: operational rule {preview.get('if_id')} "
                 f"evidence needle missing: {needle!r}"
             )
 
@@ -550,7 +550,7 @@ def _append_section_md(
             assert rendered is not None
             lines.append(rendered.rstrip())
             lines.append("")
-        _append_spine_previews(
+        _append_operational_rule_previews(
             lines,
             game=extract.game,
             section_id=str(sid),
@@ -624,7 +624,7 @@ def _append_section_md(
                 ).rstrip()
             )
             lines.append("")
-        _append_spine_previews(
+        _append_operational_rule_previews(
             lines,
             game=extract.game,
             section_id=str(sid),
@@ -654,7 +654,7 @@ def _append_section_md(
         ).rstrip()
     )
     lines.append("")
-    _append_spine_previews(
+    _append_operational_rule_previews(
         lines,
         game=extract.game,
         section_id=str(sid),
@@ -730,7 +730,7 @@ def render_markdown(
         "",
         "> Sink only: parse/resolve via ``backend/src/document_extract.py`` "
         "(same path as ingest ``section_chunking`` + ``resolve_tables_in_span`` / "
-        "lookup-table pipeline). Spines citing the section render as a contract "
+        "lookup-table pipeline). Operational rules citing the section render as a contract "
         "THEN/ELSE panel (not PDF-parsed). **Not** written to Neo4j.",
         "",
         f"- PDF path: `{extract.pdf_path}`",

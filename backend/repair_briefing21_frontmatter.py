@@ -113,7 +113,7 @@ def repair(graph: Neo4jGraph, *, game: str) -> dict[str, int]:
           'if:d3-2393b8d674143b52'
         ]
            OR i.id STARTS WITH 'if:d3-'
-        RETURN count(i) AS spines
+        RETURN count(i) AS operational_rules
         """
     )
 
@@ -122,7 +122,7 @@ def repair(graph: Neo4jGraph, *, game: str) -> dict[str, int]:
         "deleted_edges": del_n,
         "bad_edges_after": bad,
         "violence_evidence": int(violence[0]["violence_evidence"]) if violence else 0,
-        "spines": int(spines[0]["spines"]) if spines else 0,
+        "operational_rules": int(spines[0]["operational_rules"]) if spines else 0,
     }
     logger.info("result: %s", out)
     return out
@@ -145,7 +145,7 @@ def main() -> int:
     ok = (
         out["bad_edges_after"] == 0
         and out["violence_evidence"] >= 1
-        and out["spines"] >= 4
+        and out["operational_rules"] >= 4
     )
     return 0 if ok else 1
 

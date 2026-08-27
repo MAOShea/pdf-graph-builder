@@ -18,9 +18,9 @@
     "index_page": 75,
     "description": "Heading-anchor section contracts for chunking and RulePassage extraction. PDF index p.75 has three columns (THE WORLD, CREATURES, RULES); all catalogued in passage-sections.json index_source. sections[] is authored from RULES for mechanics phases. See pdf-graph-builder-briefing-6.md."
   },
-  "operational_spines": {
-    "file": "operational-spines.json",
-    "target_path": "games/mork-borg/operational-spines.json",
+  "operational_rules": {
+    "file": "operational-rules.json",
+    "target_path": "games/mork-borg/operational-rules.json",
     "description": "Altitude-D If spines (Briefings 17–19 / D1–D3). Deterministic IngestNode materialization — closed vocabulary only; D3 binds creature via Circumstance-[:APPLIES_TO]."
   },
   "place_relations": {

@@ -23,9 +23,9 @@ if str(_BACKEND) not in sys.path:
 from src.creature_sheet_materialization import materialize_creature_sheets
 from src.index_materialization import materialize_rulebook_catalog
 from src.section_chunking import materialize_passage_sections
-from src.spine_materialization import (
+from src.operational_rule_materialization import (
     ensure_document,
-    materialize_operational_spines,
+    materialize_operational_rules,
 )
 
 load_dotenv()
@@ -69,7 +69,7 @@ def main() -> int:
             entity_passages=True,
             section_phase=args.section_phase,
         )
-        out["spines"] = materialize_operational_spines(
+        out["operational_rules"] = materialize_operational_rules(
             graph, args.document, game=args.game
         )
 

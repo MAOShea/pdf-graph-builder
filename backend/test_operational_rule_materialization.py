@@ -1,16 +1,16 @@
 """Unit tests for altitude-D spine contract loading (Briefings 17–19)."""
 
-from src.spine_materialization import (
+from src.operational_rule_materialization import (
     extract_creature_combat_dr,
-    load_operational_spines,
+    load_operational_rules,
     _opaque_id,
 )
 
 
-def test_load_d1_and_d2_spines():
-    load_operational_spines.cache_clear()
-    contract = load_operational_spines("mork-borg")
-    spines = contract.get("spines") or []
+def test_load_d1_and_d2_operational_rules():
+    load_operational_rules.cache_clear()
+    contract = load_operational_rules("mork-borg")
+    spines = contract.get("operational_rules") or []
     by_id = {s["id"]: s for s in spines}
     options = contract.get("procedure_options") or []
     opt_by_id = {o["id"]: o for o in options}
@@ -146,8 +146,8 @@ def test_load_d1_and_d2_spines():
 
 
 def test_extract_creature_combat_dr_rules():
-    load_operational_spines.cache_clear()
-    rules = (load_operational_spines("mork-borg").get("creature_dr_overrides") or {})[
+    load_operational_rules.cache_clear()
+    rules = (load_operational_rules("mork-borg").get("creature_dr_overrides") or {})[
         "extract_rules"
     ]
 
@@ -212,35 +212,35 @@ def test_opaque_if_id_has_no_creature_name():
 
 
 def test_proc_default_if_map():
-    from src.spine_materialization import _PROC_DEFAULT_IF
+    from src.operational_rule_materialization import _PROC_DEFAULT_IF
 
     assert _PROC_DEFAULT_IF["MeleeAttack"] == "if:melee-hit-default"
     assert _PROC_DEFAULT_IF["RangedAttack"] == "if:ranged-hit-default"
     assert _PROC_DEFAULT_IF["DefenseRoll"] == "if:defence-default"
 
 
-def test_spines_for_section_omens_preview():
-    from src.spine_materialization import (
-        load_operational_spines,
-        spine_operator_preview,
-        spines_for_section,
+def test_operational_rules_for_section_omens_preview():
+    from src.operational_rule_materialization import (
+        load_operational_rules,
+        operational_rule_operator_preview,
+        operational_rules_for_section,
     )
 
-    load_operational_spines.cache_clear()
-    citing = spines_for_section("mork-borg", "optional-rules-omens")
+    load_operational_rules.cache_clear()
+    citing = operational_rules_for_section("mork-borg", "optional-rules-omens")
     assert [s["id"] for s in citing] == ["if:omen-optional-rule"]
     span = (
         "Every class gains a number of Omens. If you play without "
         "classes every character begins with d2 Omens. Use Omens to:"
     )
-    preview = spine_operator_preview(citing[0], span)
+    preview = operational_rule_operator_preview(citing[0], span)
     assert preview["procedures"] == ["Omen"]
     assert preview["evidence"] == [
         ("Use Omens to", True),
         ("begins with d2", True),
     ]
     assert any("maximum damage" in row for row in preview["then"])
-    miss = spine_operator_preview(citing[0], "no omen text here")
+    miss = operational_rule_operator_preview(citing[0], "no omen text here")
     assert miss["evidence"] == [
         ("Use Omens to", False),
         ("begins with d2", False),

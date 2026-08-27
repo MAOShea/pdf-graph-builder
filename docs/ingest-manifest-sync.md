@@ -6,7 +6,7 @@ Contracts in this repo are the only copy. Do not copy them into AI-DM-Assistant 
 |---|---|---|
 | `games/<game>/passage-sections.json` | **this repo** | section / entity materializers |
 | `games/<game>/ingest-manifest.json` | **this repo** | ingest / table pipeline |
-| `games/<game>/operational-spines.json` | **this repo** | spine materializer |
+| `games/<game>/operational-rules.json` | **this repo** | operational-rule materializer |
 | `games/<game>/hand-authored-overrides/*` | **this repo** | table materialization |
 | ADA `corpus/games/<game>/deltas.json` | **AI-DM-Assistant** | ADA bootstrap (not this repo) |
 

@@ -1,7 +1,7 @@
-"""Altitude-D operational If-spine materialization (Briefings 17–19 / D1–D3).
+"""Altitude-D operational-rule materialization (Briefings 17–19 / D1–D3).
 
-Deterministic MERGE of closed-vocabulary spines from
-``games/<game>/operational-spines.json``. Does not invent predicates.
+Deterministic MERGE of closed-vocabulary operational rules from
+``games/<game>/operational-rules.json``. Does not invent predicates.
 
 D3 creature DR overrides: opaque ``If.id``; creature is a graph parameter via
 ``Circumstance-[:APPLIES_TO]->`` fiction creature instance (not an id substring).
@@ -69,13 +69,13 @@ _PROC_DEFAULT_IF: dict[str, str] = {
 
 
 @lru_cache(maxsize=4)
-def load_operational_spines(game: str = DEFAULT_GAME) -> dict[str, Any]:
+def load_operational_rules(game: str = DEFAULT_GAME) -> dict[str, Any]:
     manifest = load_ingest_manifest(game)
-    rel = (manifest.get("operational_spines") or {}).get("file", "operational-spines.json")
+    rel = (manifest.get("operational_rules") or {}).get("file", "operational-rules.json")
     path = _project_root() / "games" / game / rel
     if not path.is_file():
-        logger.warning("operational spines contract not found: %s", path)
-        return {"spines": []}
+        logger.warning("operational rules contract not found: %s", path)
+        return {"operational_rules": []}
     with path.open(encoding="utf-8") as f:
         return json.load(f)
 
@@ -196,21 +196,21 @@ def _outcome_line(outcome: dict[str, Any]) -> str:
     ).strip()
 
 
-def spines_for_section(game: str, section_id: str) -> list[dict[str, Any]]:
-    """Spines whose evidence.section_id cites this passage-section."""
-    contract = load_operational_spines(game)
+def operational_rules_for_section(game: str, section_id: str) -> list[dict[str, Any]]:
+    """Operational rules whose evidence.section_id cites this passage-section."""
+    contract = load_operational_rules(game)
     sid = (section_id or "").strip()
     if not sid:
         return []
     out: list[dict[str, Any]] = []
-    for spine in contract.get("spines") or []:
+    for spine in contract.get("operational_rules") or []:
         ev = spine.get("evidence") or {}
         if ev.get("section_id") == sid:
             out.append(spine)
     return out
 
 
-def spine_operator_preview(
+def operational_rule_operator_preview(
     spine: dict[str, Any], span_text: str
 ) -> dict[str, Any]:
     """Contract preview for pdf-as-md: THEN/ELSE + evidence needles vs span text.
@@ -520,13 +520,13 @@ def materialize_creature_dr_overrides(
                 "evidence": {"passage_id": passage_id},
                 "notes": f"D3 override via {rule_id}",
             }
-            _merge_spine(graph, file_name, spine, stats)
+            _merge_operational_rule(graph, file_name, spine, stats)
             emitted += 1
 
     stats["d3_overrides_emitted"] = emitted
     link_creature_dr_supersedes(graph, stats)
     logger.info(
-        "spine_materialization D3: scanned=%s emitted=%s supersedes=%s",
+        "operational_rule_materialization D3: scanned=%s emitted=%s supersedes=%s",
         stats["d3_creatures_scanned"],
         emitted,
         stats.get("d3_supersedes_links", 0),
@@ -536,7 +536,7 @@ def materialize_creature_dr_overrides(
 def link_creature_dr_supersedes(graph, stats: dict[str, Any] | None = None) -> dict[str, Any]:
     """Briefing 22: each D3 Violence override SUPERSEDES the matching D1 default If.
 
-    Safe live fill — does not recreate spines. Matches FOR procedure → default id.
+    Safe live fill — does not recreate operational rules. Matches FOR procedure → default id.
     """
     stats = stats if stats is not None else {"warnings": [], "d3_supersedes_links": 0}
     if "d3_supersedes_links" not in stats:
@@ -584,11 +584,11 @@ def link_creature_dr_supersedes(graph, stats: dict[str, Any] | None = None) -> d
             )
 
     stats["d3_supersedes_links"] = linked
-    logger.info("spine_materialization D3 SUPERSEDES: linked=%s", linked)
+    logger.info("operational_rule_materialization D3 SUPERSEDES: linked=%s", linked)
     return stats
 
 
-def _merge_spine(graph, file_name: str, spine: dict[str, Any], stats: dict[str, Any]) -> None:
+def _merge_operational_rule(graph, file_name: str, spine: dict[str, Any], stats: dict[str, Any]) -> None:
     procedures = _normalize_procedures(spine)
     if_id = spine["id"]
     bool_id = spine.get("bool_id") or f"bool:{if_id}"
@@ -712,7 +712,7 @@ def _merge_spine(graph, file_name: str, spine: dict[str, Any], stats: dict[str, 
             {"if_id": if_id, "else_id": else_id},
         )
 
-    stats["spines_created"] += 1
+    stats["operational_rules_created"] += 1
     _link_evidence(graph, file_name, if_id, spine, stats)
 
 
@@ -726,11 +726,11 @@ def _normalize_supersedes(spine: dict[str, Any]) -> list[str]:
 
 
 def _link_declared_supersedes(
-    graph, spines: list[dict[str, Any]], stats: dict[str, Any]
+    graph, rules: list[dict[str, Any]], stats: dict[str, Any]
 ) -> None:
     """Contract ``supersedes`` → ``If-[:SUPERSEDES]->If`` (situation-gated overrides)."""
     linked = 0
-    for spine in spines:
+    for spine in rules:
         if_id = spine.get("id")
         if not if_id:
             continue
@@ -769,7 +769,7 @@ def _retire_legacy_rest_if(graph, stats: dict[str, Any]) -> None:
     n = len(rows or [])
     if n:
         stats["retired_legacy_ifs"] = n
-        logger.info("spine_materialization: retired if:rest-catch-breath")
+        logger.info("operational_rule_materialization: retired if:rest-catch-breath")
 
 
 def _merge_procedure_option(
@@ -850,16 +850,16 @@ def _merge_procedure_option(
     stats["procedure_options_created"] = stats.get("procedure_options_created", 0) + 1
 
 
-def materialize_operational_spines(
+def materialize_operational_rules(
     graph,
     file_name: str,
     *,
     game: str = DEFAULT_GAME,
 ) -> dict[str, Any]:
-    """MERGE altitude-D If spines + ProcedureOption menu effects."""
+    """MERGE altitude-D If operational rules + ProcedureOption menu effects."""
     stats: dict[str, Any] = {
-        "spines_expected": 0,
-        "spines_created": 0,
+        "operational_rules_expected": 0,
+        "operational_rules_created": 0,
         "procedure_options_created": 0,
         "evidence_links": 0,
         "d3_creatures_scanned": 0,
@@ -875,25 +875,25 @@ def materialize_operational_spines(
             stats["warnings"].append(
                 f"D0.4 incomplete: SeedNode:{label} missing — stop; do not invent types"
             )
-            logger.error("spine_materialization: %s", stats["warnings"][-1])
+            logger.error("operational_rule_materialization: %s", stats["warnings"][-1])
             return stats
 
-    load_operational_spines.cache_clear()
-    contract = load_operational_spines(game)
-    spines = contract.get("spines") or []
+    load_operational_rules.cache_clear()
+    contract = load_operational_rules(game)
+    rules = contract.get("operational_rules") or []
     options = contract.get("procedure_options") or []
-    stats["spines_expected"] = len(spines)
-    if not spines and not options:
-        stats["warnings"].append("no spines/options in operational-spines.json")
+    stats["operational_rules_expected"] = len(rules)
+    if not rules and not options:
+        stats["warnings"].append("no operational_rules/options in operational-rules.json")
         return stats
 
-    for spine in spines:
+    for spine in rules:
         try:
-            _merge_spine(graph, file_name, spine, stats)
+            _merge_operational_rule(graph, file_name, spine, stats)
         except Exception as exc:
             msg = f"spine {spine.get('id')!r} failed: {exc}"
             stats["warnings"].append(msg)
-            logger.exception("spine_materialization: %s", msg)
+            logger.exception("operational_rule_materialization: %s", msg)
 
     try:
         _retire_legacy_rest_if(graph, stats)
@@ -906,26 +906,26 @@ def materialize_operational_spines(
         except Exception as exc:
             msg = f"procedure_option {opt.get('id')!r} failed: {exc}"
             stats["warnings"].append(msg)
-            logger.exception("spine_materialization: %s", msg)
+            logger.exception("operational_rule_materialization: %s", msg)
 
     try:
-        _link_declared_supersedes(graph, spines, stats)
+        _link_declared_supersedes(graph, rules, stats)
     except Exception as exc:
         msg = f"declared SUPERSEDES failed: {exc}"
         stats["warnings"].append(msg)
-        logger.exception("spine_materialization: %s", msg)
+        logger.exception("operational_rule_materialization: %s", msg)
 
     try:
         materialize_creature_dr_overrides(graph, file_name, contract, stats)
     except Exception as exc:
         msg = f"D3 creature DR overrides failed: {exc}"
         stats["warnings"].append(msg)
-        logger.exception("spine_materialization: %s", msg)
+        logger.exception("operational_rule_materialization: %s", msg)
 
     logger.info(
-        "spine_materialization: created=%s/%s options=%s (+d3=%s) evidence=%s warnings=%s",
-        stats["spines_created"],
-        stats["spines_expected"],
+        "operational_rule_materialization: created=%s/%s options=%s (+d3=%s) evidence=%s warnings=%s",
+        stats["operational_rules_created"],
+        stats["operational_rules_expected"],
         stats["procedure_options_created"],
         stats["d3_overrides_emitted"],
         stats["evidence_links"],

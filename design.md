@@ -70,7 +70,7 @@ Uses LangChain loaders and Neo4j’s `llm-graph-transformer` patterns. Optional 
 |---|---|
 | `ingest-manifest.json` | Lookup tables, passage-sections pointer, rulebook index hooks |
 | `passage-sections.json` | Section cuts, index titles, entity-passage bounds, `seed_evidence` |
-| `operational-spines.json` | Altitude / DR / circumstance spines |
+| `operational-rules.json` | Altitude / DR / circumstance operational rules |
 | `place-relations.json` | Place `PART_OF` Place; Faction `OCCURS_IN` Place (Galgenbeck first pass) |
 | Hand-authored overrides | Tables that cannot be PDF-parsed cleanly |
 
@@ -112,7 +112,7 @@ flowchart TB
     A[passage-sections.json] --> B[Section chunks / RulePassage]
     B --> F[ingest-manifest lookup tables]
     F --> C[index + fiction + entity passages]
-    C --> D[operational-spines.json]
+    C --> D[operational-rules.json]
     C --> PR[place-relations.json]
     D --> E[creature sheets]
   end
