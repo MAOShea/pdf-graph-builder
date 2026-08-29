@@ -2,7 +2,13 @@
 
 Parse bestiary lines from CREATURES entity RulePassages and MERGE closed
 ``HAS_HIT_POINTS`` / ``HAS_MORALE`` / ``HAS_ARMOR`` / ``HAS_ATTACK`` edges onto
-creature instances. Opaque sheet-node ids — no creature name in id.
+creature **IngestNode** instances only (Ingest→Ingest). Opaque sheet-node ids —
+no creature name in id.
+
+Do **not** set slot ``name`` to the seed concept label (``HitPoints``, ``Morale``):
+ADA bootstrap once matched bare ``{name:}`` and fans scaffold ``HAS_*`` onto every
+such ingest slot (DESIGN §6.3.3 H anomaly). Armor/attack keep display names from
+the book (they do not collide with seed concept names).
 """
 from __future__ import annotations
 
@@ -213,6 +219,31 @@ def _clear_sheet_edges(graph, creature_id: str) -> None:
     )
 
 
+def _clear_seed_to_ingest_sheet_anomalies(graph) -> int:
+    """Delete SeedNode-[:HAS_*]->IngestNode; strip slot names that collide with seeds."""
+    rows = execute_graph_query(
+        graph,
+        """
+        MATCH (:SeedNode)-[r:HAS_HIT_POINTS|HAS_MORALE|HAS_ARMOR|HAS_ATTACK]->(:IngestNode)
+        WITH collect(r) AS rels
+        FOREACH (x IN rels | DELETE x)
+        RETURN size(rels) AS n
+        """,
+    )
+    execute_graph_query(
+        graph,
+        """
+        MATCH (n:IngestNode)
+        WHERE (n:HitPoints OR n:Morale)
+          AND coalesce(n.name, '') IN ['HitPoints', 'Morale']
+        REMOVE n.name
+        """,
+    )
+    if not rows:
+        return 0
+    return int(rows[0].get("n") or 0)
+
+
 def _merge_sheet_node(
     graph,
     *,
@@ -270,6 +301,7 @@ def materialize_creature_sheets(
         "creatures_scanned": 0,
         "creatures_with_sheet": 0,
         "slots_created": 0,
+        "anomaly_edges_cleared": 0,
         "warnings": [],
     }
 
@@ -280,6 +312,14 @@ def materialize_creature_sheets(
             )
             logger.error("creature_sheets: %s", stats["warnings"][-1])
             return stats
+
+    cleared = _clear_seed_to_ingest_sheet_anomalies(graph)
+    stats["anomaly_edges_cleared"] = cleared
+    if cleared:
+        logger.warning(
+            "creature_sheets: cleared %s SeedNode-[:HAS_*]->IngestNode anomal(y/ies)",
+            cleared,
+        )
 
     rows = _list_creatures_with_passages(graph, file_name)
     stats["creatures_scanned"] = len(rows)
@@ -305,7 +345,7 @@ def materialize_creature_sheets(
             graph,
             labels="HitPoints",
             node_id=hp_id,
-            props={"name": "HitPoints", "value": parsed["hp"]},
+            props={"value": parsed["hp"]},
             seed_label="HitPoints",
             passage_id=passage_id,
         )
@@ -319,7 +359,6 @@ def materialize_creature_sheets(
             labels="Morale",
             node_id=mor_id,
             props={
-                "name": "Morale",
                 "value": mor.get("value"),
                 "none": bool(mor.get("none")),
             },
