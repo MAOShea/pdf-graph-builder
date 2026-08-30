@@ -11,6 +11,7 @@ from src.ingest_manifest import (
     load_ingest_manifest,
     spec_by_name,
 )
+from src.typed_instance import apply_row_typing
 
 _MAX_LABEL_LEN = 500
 
@@ -270,6 +271,14 @@ def materialize_lookup_table(
                 },
             )
 
+        row_typing = spec.get("row_typing")
+        if row_typing and not isinstance(row_typing, dict):
+            logging.warning(
+                "table materialization: %s row_typing must be an object — ignored",
+                table_name,
+            )
+            row_typing = None
+
         for row in table.get("rows") or []:
             cells = _row_cells(list(row), columns)
             row_key = _row_index_key(cells, col_defs)
@@ -290,6 +299,17 @@ def materialize_lookup_table(
                     "cells_json": json.dumps(cells),
                 },
             )
+            if row_typing:
+                apply_row_typing(
+                    graph,
+                    file_name=file_name,
+                    cells=cells,
+                    row_id=row_id,
+                    row_typing=row_typing,
+                    scaffold_seed_ok=lambda lbl: _seed_label_exists(
+                        scaffold_map, lbl, graph
+                    ),
+                )
 
         applies_to = spec.get("applies_to")
         if applies_to and _seed_label_exists(scaffold_map, applies_to, graph):

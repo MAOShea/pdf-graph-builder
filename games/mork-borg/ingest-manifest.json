@@ -493,6 +493,20 @@
           }
         }
       ],
+      "row_typing": {
+        "instance_of": "Weapon",
+        "entity_kind": "weapon",
+        "name": {
+          "column": "result",
+          "strategy": "text_before_die"
+        },
+        "props": {
+          "damage": {
+            "column": "result",
+            "strategy": "first_die"
+          }
+        }
+      },
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -559,6 +573,20 @@
           }
         }
       ],
+      "row_typing": {
+        "instance_of": "ArmorGear",
+        "entity_kind": "armor-gear",
+        "name": {
+          "column": "result",
+          "strategy": "text_before_paren"
+        },
+        "props": {
+          "armor_tier": {
+            "column": "result",
+            "strategy": "tier_in_text"
+          }
+        }
+      },
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -814,6 +842,26 @@
           }
         }
       ],
+      "row_typing": {
+        "instance_of": "Weapon",
+        "entity_kind": "weapon",
+        "name": {
+          "column": "item",
+          "strategy": "plain"
+        },
+        "props": {
+          "damage": {
+            "column": "damage",
+            "strategy": "first_die"
+          }
+        },
+        "skip_when": [
+          {
+            "column": "damage",
+            "empty": true
+          }
+        ]
+      },
       "pdf_extract": {
         "status": "verified",
         "mode": "aligned_columns",
@@ -830,7 +878,7 @@
         "max_rows": 19,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Shop list on p.26: damage die / item / silver. Distinct from p.23 WeaponTable (creation d10). Ammo rows have empty damage (name column indented). Stop before Beasts."
+      "note": "Slice 2g. Shop list on p.26: damage die / item / silver. Distinct from p.23 WeaponTable (creation d10). Ammo rows have empty damage (name column indented). Stop before Beasts. row_typing merges Weapon identity with WeaponTable by normalized name."
     },
     {
       "name": "BeastsTable",

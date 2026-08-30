@@ -15,6 +15,18 @@ Operator may open **this repo and AI-DM-Assistant** in one Cursor window. Then *
 - Seeds (`deltas.json`) stay in ADA. After ADA seed changes: ADA reset+bootstrap, then re-ingest here.
 - Coverage/contracts may need new JSON and materializer tweaks. **Stable operator scripts** (`ingest-morkborg.ps1`, `ingest-pdf.ps1`, `check-section-gates.ps1`, `check-coverage.ps1`, `start.ps1`, and similar wrappers) must not be edited unless you ask first.
 
+## Ingest is the harness — rematerialize, don’t bypass
+
+Ingest runs are short (~tens of seconds). The product path is **contract/parser fix → re-ingest → gates/smokes**, not graph surgery.
+
+| Do | Do not |
+| --- | --- |
+| Fix the owning manifest / `pdf_extract` / materializer, then rematerialize (`.\ingest-tables.ps1`, full `.\ingest-morkborg.ps1`, or the relevant materialize CLI for that slice) | One-off Cypher to `DETACH DELETE` orphans or rename bad nodes “for now” |
+| Treat a bad display name / stale instance as **stale Tier-5** — next ingest overwrites when the write path is correct | Hyper-specific cleanup scripts, `_tmp_*.py`, or ADA-side patches that exist only to avoid running ingest |
+| Prefer the unified ingest/table pipeline over inventing a parallel repair path | Advise delaying ingest while inventing manual Neo4j cleanup |
+
+Generic materializer/config improvements are fine. **Glitch-shaped bypasses are not.** Same stance as ADA [AGENTS.md Critical Behavioral Rules](../AI-DM-Assistant/AGENTS.md#critical-behavioral-rules-non-negotiable).
+
 ## Agent sessions
 
 Coverage work in Cursor: **one work unit per chat**. Operator declares **session mode** (`clone` | `design`) at start — agents cannot see the model picker. Full rules: [AI-DM-Assistant AGENTS.md — Agent sessions (coverage work)](../AI-DM-Assistant/AGENTS.md#agent-sessions-coverage-work).

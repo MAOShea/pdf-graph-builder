@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import logging
 import re
-import unicodedata
 from typing import Any
 
 from src.ingest_manifest import load_ingest_manifest, load_passage_sections
 from src.shared.common_fn import execute_graph_query
+from src.typed_instance import (
+    attach_typed_instance,
+    entity_id as typed_entity_id,
+    slug_title,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,17 +20,6 @@ _FICTION_ENTRY_KINDS = frozenset(
     {"place", "supporting_character", "faction", "world_lore", "creature"}
 )
 _WORLD_COLUMNS = frozenset({"THE_WORLD"})
-
-
-def slug_title(title: str) -> str:
-    """Lowercase slug for stable ids — strip punctuation, hyphenate."""
-    text = unicodedata.normalize("NFKD", title)
-    text = text.encode("ascii", "ignore").decode("ascii")
-    text = text.lower().strip()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[\s_]+", "-", text)
-    text = re.sub(r"-+", "-", text).strip("-")
-    return text or "untitled"
 
 
 def normalize_index_title(title: str) -> str:
@@ -62,7 +55,7 @@ def _entry_id(file_name: str, column: str, title: str) -> str:
 
 
 def _entity_id(file_name: str, entry_kind: str, title: str) -> str:
-    return f"{file_name}#entity:{entry_kind}:{slug_title(title)}"
+    return typed_entity_id(file_name, entry_kind, title)
 
 
 def _index_id(file_name: str) -> str:
@@ -672,38 +665,20 @@ def materialize_fiction_instances(
         title = row["title"]
         entity_id = _entity_id(file_name, entry_kind, title)
 
-        props: dict[str, Any] = {
-            "id": entity_id,
-            "name": title,
-            "tier": 5,
-            "source": file_name,
-            "entry_kind": entry_kind,
-        }
+        extra: dict[str, Any] = {"entry_kind": entry_kind}
         if row.get("page") is not None:
-            props["page"] = row["page"]
+            extra["page"] = row["page"]
 
-        execute_graph_query(
+        attach_typed_instance(
             graph,
-            """
-            MERGE (entity:IngestNode {id: $entity_id})
-            SET entity += $props
-            WITH entity
-            MATCH (e:IndexEntry {id: $entry_id})
-            MERGE (e)-[:DENOTES]->(entity)
-            WITH entity
-            MATCH (seed:SeedNode)
-            WHERE $seed_label IN labels(seed)
-            WITH entity, seed
-            LIMIT 1
-            MERGE (entity)-[:INSTANCE_OF]->(seed)
-            """,
-            {
-                "entity_id": entity_id,
-                "props": props,
-                "entry_id": row["entry_id"],
-                "seed_label": seed_label,
-            },
+            file_name=file_name,
+            entity_kind=entry_kind,
+            display_name=title,
+            seed_label=seed_label,
+            denotes_from_id=row["entry_id"],
+            extra_props=extra,
         )
+        # entity_id above matches attach_typed_instance / entity_id() for OCCURS_IN
         stats["entities_created"] += 1
         stats["by_entry_kind"][entry_kind] = stats["by_entry_kind"].get(entry_kind, 0) + 1
         stats["denotes_links"] += 1
