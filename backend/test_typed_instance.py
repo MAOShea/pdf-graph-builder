@@ -44,6 +44,39 @@ class TestRowTypingStrategies(unittest.TestCase):
         self.assertFalse(skip_row(weapon, typing))
         self.assertEqual(resolve_field(weapon, typing["name"]), "Femur")
 
+    def test_match_when_selective_faces(self):
+        typing = {
+            "match_when": [{"column": "d12", "in": [3, 4]}],
+            "name": {"column": "result", "strategy": "text_before_paren"},
+        }
+        dog = {
+            "d12": 3,
+            "result": "small but vicious dog (d6+2 HP, bite d4, only obeys you)",
+        }
+        elixir = {
+            "d12": 1,
+            "result": "1 life elixir d4 doses (heals d6 HP and removes infection)",
+        }
+        self.assertFalse(skip_row(dog, typing))
+        self.assertTrue(skip_row(elixir, typing))
+        self.assertEqual(resolve_field(dog, typing["name"]), "small but vicious dog")
+
+    def test_paren_hp_attack_parse(self):
+        from src.creature_sheet_materialization import parse_paren_hp_attack
+
+        dog = parse_paren_hp_attack(
+            "small but vicious dog (d6+2 HP, bite d4, only obeys you)"
+        )
+        self.assertEqual(dog["hp"], "d6+2")
+        self.assertEqual(dog["attacks"][0]["name"], "bite")
+        self.assertEqual(dog["attacks"][0]["damage"], "d4")
+        monkeys = parse_paren_hp_attack(
+            "d4 monkeys that ignore but love you (d4+2 HP, punch/bite d4)"
+        )
+        self.assertEqual(monkeys["hp"], "d4+2")
+        self.assertEqual(monkeys["attacks"][0]["name"], "punch/bite")
+        self.assertEqual(monkeys["attacks"][0]["damage"], "d4")
+
     def test_armor_before_paren_and_tier(self):
         cells = {
             "result": "light (fur, padded cloth, leather etc, −d2 damage, tier 1) 20s"

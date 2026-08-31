@@ -191,8 +191,51 @@ def resolve_field(cells: dict[str, Any], field_cfg: dict[str, Any] | None) -> An
     return fn(cells, column, field_cfg)
 
 
+def _cell_matches_rule(cells: dict[str, Any], rule: dict[str, Any]) -> bool:
+    """One ``match_when`` / include rule against a row's cells."""
+    column = str(rule.get("column") or "").strip()
+    if not column:
+        return False
+    raw = cells.get(column)
+    text = "" if raw is None else str(raw).strip()
+
+    if "in" in rule:
+        allowed = rule.get("in") or []
+        if not isinstance(allowed, list):
+            return False
+        # Face indices may be int in JSON or string from PDF parse.
+        norm_allowed = {str(x).strip() for x in allowed}
+        if text in norm_allowed:
+            return True
+        try:
+            if str(int(float(text))) in {str(int(float(str(x)))) for x in allowed}:
+                return True
+        except (TypeError, ValueError):
+            pass
+        return False
+
+    contains = rule.get("contains")
+    if contains is not None:
+        return str(contains).lower() in text.lower()
+
+    pattern = rule.get("regex")
+    if pattern is not None:
+        try:
+            return re.search(str(pattern), text, re.IGNORECASE) is not None
+        except re.error:
+            logger.warning("typed_instance: bad match_when regex %r", pattern)
+            return False
+
+    return False
+
+
 def skip_row(cells: dict[str, Any], row_typing: dict[str, Any]) -> bool:
-    """True when ``skip_when`` rules say this row is not a typed instance."""
+    """True when this row should not become a typed instance.
+
+    - ``skip_when``: any matching rule → skip (e.g. empty damage = ammo).
+    - ``match_when``: if present, skip unless **any** rule matches (selective
+      faces on a heterogeneous table — DESIGN §4.7 starting d12 beasts).
+    """
     for rule in row_typing.get("skip_when") or []:
         if not isinstance(rule, dict):
             continue
@@ -202,6 +245,14 @@ def skip_row(cells: dict[str, Any], row_typing: dict[str, Any]) -> bool:
         raw = cells.get(column)
         empty = raw is None or (isinstance(raw, str) and not raw.strip())
         if rule.get("empty") and empty:
+            return True
+
+    match_when = row_typing.get("match_when")
+    if match_when:
+        rules = [r for r in match_when if isinstance(r, dict)]
+        if not rules:
+            return True
+        if not any(_cell_matches_rule(cells, r) for r in rules):
             return True
     return False
 
@@ -262,7 +313,7 @@ def apply_row_typing(
         if val is not None:
             extra[str(prop_name)] = val
 
-    return attach_typed_instance(
+    entity_id = attach_typed_instance(
         graph,
         file_name=file_name,
         entity_kind=entity_kind,
@@ -271,3 +322,44 @@ def apply_row_typing(
         denotes_from_id=row_id,
         extra_props=extra or None,
     )
+    sheet_from = row_typing.get("sheet_from")
+    if entity_id and isinstance(sheet_from, dict):
+        _apply_sheet_from(
+            graph, entity_id=entity_id, cells=cells, sheet_from=sheet_from
+        )
+    return entity_id
+
+
+def _apply_sheet_from(
+    graph,
+    *,
+    entity_id: str,
+    cells: dict[str, Any],
+    sheet_from: dict[str, Any],
+) -> None:
+    """Optional compact sheet parse from a cell (starting beasts — DESIGN §4.7)."""
+    from src.creature_sheet_materialization import (
+        attach_combatant_sheet_slots,
+        parse_paren_hp_attack,
+    )
+
+    column = str(sheet_from.get("column") or "").strip()
+    strategy = str(sheet_from.get("strategy") or "").strip()
+    if not column or not strategy:
+        return
+    text = _cell(cells, column)
+    if not text:
+        return
+    parsed = None
+    if strategy == "paren_hp_attack":
+        parsed = parse_paren_hp_attack(text)
+    else:
+        logger.warning("typed_instance: unknown sheet_from strategy %r", strategy)
+        return
+    if not parsed:
+        return
+    n = attach_combatant_sheet_slots(graph, entity_id, parsed)
+    if n:
+        logger.debug(
+            "typed_instance: attached %s sheet slot(s) on %s", n, entity_id
+        )

@@ -411,3 +411,90 @@ def materialize_creature_sheets(
         len(stats["warnings"]),
     )
     return stats
+
+
+# --- Compact sheet lines on typed faces (starting beasts, etc.) -------------
+
+_PAREN_HP_ATTACK = re.compile(
+    r"\("
+    r"(?P<hp>(?:\d+)?d\d+(?:\s*\+\s*\d+)?)\s*HP\s*,\s*"
+    r"(?P<atk_name>.+?)\s+(?P<atk_dmg>(?:\d+)?d\d+)"
+    r"(?:,|\))",
+    re.IGNORECASE,
+)
+
+
+def parse_paren_hp_attack(text: str) -> dict[str, Any] | None:
+    """Parse ``(d6+2 HP, bite d4, …)`` / ``(d4+2 HP, punch/bite d4)`` sheet tails."""
+    if not text:
+        return None
+    m = _PAREN_HP_ATTACK.search(text)
+    if not m:
+        return None
+    hp = _clean_die(m.group("hp"))
+    atk_name = m.group("atk_name").strip()
+    atk_dmg = _clean_die(m.group("atk_dmg"))
+    if not hp or not atk_name or not atk_dmg:
+        return None
+    return {
+        "hp": hp,
+        "attacks": [{"name": atk_name, "damage": atk_dmg}],
+    }
+
+
+def attach_combatant_sheet_slots(
+    graph,
+    entity_id: str,
+    parsed: dict[str, Any],
+    *,
+    passage_id: str | None = None,
+) -> int:
+    """MERGE Ingest→Ingest HAS_HIT_POINTS / HAS_ATTACK for a typed combatant.
+
+    Same opaque-id + seed INSTANCE_OF hygiene as CREATURES D4 sheets. Returns
+    slot count created.
+    """
+    if not entity_id or not parsed:
+        return 0
+    for label in ("HitPoints", "AttackProfile"):
+        if not _seed_exists(graph, label):
+            logger.warning(
+                "attach_combatant_sheet_slots: SeedNode:%s missing — skip %s",
+                label,
+                entity_id,
+            )
+            return 0
+
+    _clear_sheet_edges(graph, entity_id)
+    slots = 0
+    hp = parsed.get("hp")
+    if hp is not None and str(hp).strip() != "":
+        hp_id = _opaque_id("sheet:hp:", entity_id)
+        _merge_sheet_node(
+            graph,
+            labels="HitPoints",
+            node_id=hp_id,
+            props={"value": hp},
+            seed_label="HitPoints",
+            passage_id=passage_id,
+        )
+        _link(graph, entity_id, "HAS_HIT_POINTS", hp_id)
+        slots += 1
+
+    for i, atk in enumerate(parsed.get("attacks") or []):
+        name = (atk.get("name") or "").strip()
+        dmg = atk.get("damage")
+        if not name:
+            continue
+        atk_id = _opaque_id("sheet:atk:", entity_id, str(i), name)
+        _merge_sheet_node(
+            graph,
+            labels="AttackProfile",
+            node_id=atk_id,
+            props={"name": name, "damage": dmg},
+            seed_label="AttackProfile",
+            passage_id=passage_id,
+        )
+        _link(graph, entity_id, "HAS_ATTACK", atk_id)
+        slots += 1
+    return slots

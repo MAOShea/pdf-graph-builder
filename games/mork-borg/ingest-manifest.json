@@ -391,6 +391,24 @@
           }
         }
       ],
+      "row_typing": {
+        "instance_of": "Beast",
+        "entity_kind": "beast",
+        "name": {
+          "column": "result",
+          "strategy": "text_before_paren"
+        },
+        "match_when": [
+          {
+            "column": "d12",
+            "in": [3, 4]
+          }
+        ],
+        "sheet_from": {
+          "column": "result",
+          "strategy": "paren_hp_attack"
+        }
+      },
       "pdf_extract": {
         "status": "verified",
         "header_patterns": [
@@ -406,7 +424,7 @@
         "max_rows": 12,
         "multi_table_page": true
       },
-      "note": "Slice 2f. Second untitled p.22 d12 (life elixir … tent), joined to the first list by the word and. Display title is contracted."
+      "note": "Slice 2f. Second untitled p.22 d12 (life elixir … tent), joined to the first list by the word and. Display title is contracted. Heterogeneous faces: row_typing only d12=3 vicious dog / d12=4 monkeys → Beast (DESIGN §4.7); elixir/hook stay LookupTable faces only."
     },
     {
       "name": "WeaponTable",
@@ -927,6 +945,20 @@
           }
         }
       ],
+      "row_typing": {
+        "instance_of": "Beast",
+        "entity_kind": "beast",
+        "name": {
+          "column": "item",
+          "strategy": "plain"
+        },
+        "props": {
+          "silver": {
+            "column": "silver",
+            "strategy": "plain"
+          }
+        }
+      },
       "pdf_extract": {
         "status": "verified",
         "mode": "aligned_columns",
@@ -943,7 +975,7 @@
         "max_rows": 5,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Two-column beast list (item / silver). Last catalog on the equipment span."
+      "note": "Slice 2g. Two-column beast list (item / silver). Last catalog on the equipment span. row_typing → INSTANCE_OF Beast (shop animals; distinct identities from starting vicious dog — DESIGN §4.7)."
     },
     {
       "name": "CorpsePlunderTable",
