@@ -664,6 +664,20 @@
           }
         }
       ],
+      "row_typing": {
+        "instance_of": "Item",
+        "entity_kind": "item",
+        "name": {
+          "column": "item",
+          "strategy": "plain"
+        },
+        "props": {
+          "silver": {
+            "column": "silver",
+            "strategy": "plain"
+          }
+        }
+      },
       "pdf_extract": {
         "status": "verified",
         "mode": "aligned_columns",
@@ -682,7 +696,7 @@
         "max_rows": 45,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, RepairArmorTable, WeaponShopTable, BeastsTable."
+      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, RepairArmorTable, WeaponShopTable, BeastsTable. row_typing → INSTANCE_OF Item (misc gear leaf; DESIGN §4.7)."
     },
     {
       "name": "ServicesTable",
