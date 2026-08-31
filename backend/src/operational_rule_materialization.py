@@ -648,11 +648,19 @@ def _merge_operational_rule(graph, file_name: str, spine: dict[str, Any], stats:
         },
     )
 
-    # Refresh FOR / HAS_ATOM / THEN / ELSE for this spine id (idempotent re-runs).
+    # Refresh FOR / HAS_ATOM / THEN / ELSE / inbound HAS_DEFAULT for this spine id.
     execute_graph_query(
         graph,
         """
         MATCH (i:IngestNode:If {id: $if_id})-[r:FOR|THEN|ELSE]->()
+        DELETE r
+        """,
+        {"if_id": if_id},
+    )
+    execute_graph_query(
+        graph,
+        """
+        MATCH ()-[r:HAS_DEFAULT]->(i:IngestNode:If {id: $if_id})
         DELETE r
         """,
         {"if_id": if_id},
@@ -677,6 +685,25 @@ def _merge_operational_rule(graph, file_name: str, spine: dict[str, Any], stats:
             """,
             {"if_id": if_id, "proc": proc},
         )
+
+    if spine.get("procedure_owns_default"):
+        for proc in procedures:
+            rows = execute_graph_query(
+                graph,
+                """
+                MATCH (i:IngestNode:If {id: $if_id})
+                MATCH (proc:SeedNode) WHERE $proc IN labels(proc)
+                MERGE (proc)-[:HAS_DEFAULT]->(i)
+                RETURN 1 AS ok
+                """,
+                {"if_id": if_id, "proc": proc},
+            )
+            if rows:
+                stats["has_default_links"] = stats.get("has_default_links", 0) + 1
+            else:
+                stats["warnings"].append(
+                    f"HAS_DEFAULT: {proc} → {if_id} (missing SeedNode or If)"
+                )
 
     for aid in atom_ids:
         execute_graph_query(
@@ -866,6 +893,7 @@ def materialize_operational_rules(
         "d3_overrides_emitted": 0,
         "d3_supersedes_links": 0,
         "declared_supersedes_links": 0,
+        "has_default_links": 0,
         "retired_legacy_ifs": 0,
         "warnings": [],
     }

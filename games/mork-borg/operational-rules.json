@@ -1,9 +1,9 @@
 {
   "id": "mork-borg-operational-rules",
   "game": "mork-borg",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "status": "draft",
-  "description": "Altitude-D: If operational rules (branched) + procedure_options (Rest menu→effect, no BoolExpression). D1 Violence; D2 Crit/fumble/infection If; Rest catch-breath/sleep/starve as ProcedureOption; D3 creature DR; Morale/Advancement/Power/Creation/Omens/Outcast/Tests/… If how-tos. Closed vocabulary only.",
+  "description": "Altitude-D: If operational rules (branched) + procedure_options (Rest menu). PC3: all D-bucket how-tos procedure_owns_default (HAS_DEFAULT); O/B stay If-only. Closed vocabulary only.",
   "verified_against": "MÖRK BORG BARE BONES EDITION.pdf",
   "verified_date": "2026-08-21",
   "creature_dr_overrides": {
@@ -126,6 +126,7 @@
     {
       "id": "if:melee-hit-default",
       "for_procedure": "MeleeAttack",
+      "procedure_owns_default": true,
       "combinator": "LEAF",
       "atom": {
         "kind": "compare_dr",
@@ -149,7 +150,7 @@
           "Test Strength"
         ]
       },
-      "notes": "Test Strength DR12"
+      "notes": "Test Strength DR12. PC2: procedure_owns_default → MeleeAttack-[:HAS_DEFAULT]->this If."
     },
     {
       "id": "if:ranged-hit-default",
@@ -177,7 +178,8 @@
           "Test Presence"
         ]
       },
-      "notes": "Test Presence DR12"
+      "notes": "Test Presence DR12",
+      "procedure_owns_default": true
     },
     {
       "id": "if:defence-default",
@@ -205,7 +207,8 @@
           "Test Agility"
         ]
       },
-      "notes": "Test Agility DR12"
+      "notes": "Test Agility DR12",
+      "procedure_owns_default": true
     },
     {
       "id": "if:crit-attack",
@@ -373,7 +376,8 @@
           "demoralized"
         ]
       },
-      "notes": "FOR MoraleCheck. Compare 2d6 > creature Morale (COMPARED_TO SeedNode:Morale; threshold from sheet HAS_MORALE at runtime)."
+      "notes": "FOR MoraleCheck. Compare 2d6 > creature Morale (COMPARED_TO SeedNode:Morale; threshold from sheet HAS_MORALE at runtime).",
+      "procedure_owns_default": true
     },
     {
       "id": "if:morale-flee-or-surrender",
@@ -442,7 +446,8 @@
           "maximum HP"
         ]
       },
-      "notes": "Slice 2d / Getting Better More HP. FOR Advancement (procedure); sheet SeedNode:HitPoints stays HAS_HIT_POINTS / COMPARED_TO only. Threshold is the PC's current max from the situation, not a seed constant."
+      "notes": "Slice 2d / Getting Better More HP. FOR Advancement (procedure); sheet SeedNode:HitPoints stays HAS_HIT_POINTS / COMPARED_TO only. Threshold is the PC's current max from the situation, not a seed constant.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:ability-change-default",
@@ -473,7 +478,8 @@
           "maximum of +6"
         ]
       },
-      "notes": "Slice 2d / Getting Better Ability changes default. FOR Advancement; COMPARED_TO AbilityScore (situation value, not a seed threshold). Cap +6 is the THEN outcome, not a Compare threshold."
+      "notes": "Slice 2d / Getting Better Ability changes default. FOR Advancement; COMPARED_TO AbilityScore (situation value, not a seed threshold). Cap +6 is the THEN outcome, not a Compare threshold.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:ability-change-low",
@@ -543,7 +549,8 @@
           "every morning"
         ]
       },
-      "notes": "Slice 2e W1. Formula lives on the Outcome — not a Compare (Compare is yes/no). FOR Power; procedure APPLIES_TO Presence. Do not encode 1+3=4 in Python."
+      "notes": "Slice 2e W1. Formula lives on the Outcome — not a Compare (Compare is yes/no). FOR Power; procedure APPLIES_TO Presence. Do not encode 1+3=4 in Python.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:power-scroll-read",
@@ -622,7 +629,8 @@
           "Randomize your starting equipment"
         ]
       },
-      "notes": "Slice 2f K1. Numbered Bare Bones list as THEN Outcomes (book wording). Optional class / pp.38–42 / Omens stay off this If — they are Optional rules in the same passage (citation only). No Compare. No ELSE."
+      "notes": "Slice 2f K1. Numbered Bare Bones list as THEN Outcomes (book wording). Optional class / pp.38–42 / Omens stay off this If — they are Optional rules in the same passage (citation only). No Compare. No ELSE.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:omen-optional-rule",
@@ -678,7 +686,8 @@
           "begins with d2"
         ]
       },
-      "notes": "Slice 3b N1–N3. Optional luck pool as THEN (book wording). No Compare. No ELSE. Class-specific omen dice stay in optional-class prose. Not Rest (D2). Not Power. Not Arcane Catastrophes."
+      "notes": "Slice 3b N1–N3. Optional luck pool as THEN (book wording). No Compare. No ELSE. Class-specific omen dice stay in optional-class prose. Not Rest (D2). Not Power. Not Arcane Catastrophes.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:outcast-followers",
@@ -714,7 +723,8 @@
           "highest Presence"
         ]
       },
-      "notes": "Slice 3u OC1–OC3. Hire/stay how-to as THEN (book wording). No Compare. No ELSE. Not 2c MoraleCheck. Not SupportingCharacter. Not 3q–3t generator tables."
+      "notes": "Slice 3u OC1–OC3. Hire/stay how-to as THEN (book wording). No Compare. No ELSE. Not 2c MoraleCheck. Not SupportingCharacter. Not 3q–3t generator tables.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:tests-d20-vs-dr",
@@ -745,7 +755,8 @@
           "just roll a d20"
         ]
       },
-      "notes": "Coverage 1 TS1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR AbilityTest. Not melee/ranged/defence. DRTable is unique-row DT1, not packed here."
+      "notes": "Coverage 1 TS1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR AbilityTest. Not melee/ranged/defence. DRTable is unique-row DT1, not packed here.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:carrying-capacity",
@@ -776,7 +787,8 @@
           "twice Strength"
         ]
       },
-      "notes": "Coverage 1 CA1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR AbilityTest. Not a table."
+      "notes": "Coverage 1 CA1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR AbilityTest. Not a table.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:broken-zero-hp",
@@ -807,7 +819,8 @@
           "Negative HP"
         ]
       },
-      "notes": "Coverage 1 HP1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR HitPoints sheet. BrokenTable d4 is unique-row BK1. Not 3c Broken bodies. Not D2 rest."
+      "notes": "Coverage 1 HP1. How-to as THEN (book wording). No Compare. No ELSE. Not FOR HitPoints sheet. BrokenTable d4 is unique-row BK1. Not 3c Broken bodies. Not D2 rest.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:abilities-heading",
@@ -858,7 +871,8 @@
           "drop the lowest"
         ]
       },
-      "notes": "Coverage 1 AB1–AB2. Uses-list + generation how-to as THEN (book wording). No Compare. No ELSE. Not FOR Agility (would pack on C3). AbilitiesTable unique-row AB3. Not Tests."
+      "notes": "Coverage 1 AB1–AB2. Uses-list + generation how-to as THEN (book wording). No Compare. No ELSE. Not FOR Agility (would pack on C3). AbilitiesTable unique-row AB3. Not Tests.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:calendar-dawn-misery",
@@ -894,7 +908,8 @@
           "will not befall"
         ]
       },
-      "notes": "Coverage 2 leftover CAL1–CAL2. Dawn how-to as THEN (book wording). No Compare. No ELSE. Not FOR Misery. Do not pack d66 psalm rows or AgonyEndTable durations. AgonyEndTable unique-row T2."
+      "notes": "Coverage 2 leftover CAL1–CAL2. Dawn how-to as THEN (book wording). No Compare. No ELSE. Not FOR Misery. Do not pack d66 psalm rows or AgonyEndTable durations. AgonyEndTable unique-row T2.",
+      "procedure_owns_default": true
     },
     {
       "id": "if:repair-armor",
@@ -920,7 +935,8 @@
           "higher than its original"
         ]
       },
-      "notes": "2g B7. How-to as THEN (book footnote). No Compare. No ELSE. Not FOR Armor. Do not pack the two price rows. RepairArmorTable unique-row B5/B6."
+      "notes": "2g B7. How-to as THEN (book footnote). No Compare. No ELSE. Not FOR Armor. Do not pack the two price rows. RepairArmorTable unique-row B5/B6.",
+      "procedure_owns_default": true
     }
   ]
 }

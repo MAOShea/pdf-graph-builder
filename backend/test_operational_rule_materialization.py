@@ -15,7 +15,7 @@ def test_load_d1_and_d2_operational_rules():
     options = contract.get("procedure_options") or []
     opt_by_id = {o["id"]: o for o in options}
 
-    assert contract.get("version") == "0.5.0"
+    assert contract.get("version") == "0.5.2"
     assert len(spines) == 23
     assert len(options) == 3
     assert {
@@ -217,6 +217,45 @@ def test_proc_default_if_map():
     assert _PROC_DEFAULT_IF["MeleeAttack"] == "if:melee-hit-default"
     assert _PROC_DEFAULT_IF["RangedAttack"] == "if:ranged-hit-default"
     assert _PROC_DEFAULT_IF["DefenseRoll"] == "if:defence-default"
+
+
+def test_melee_default_owns_on_procedure_flag():
+    from src.operational_rule_materialization import load_operational_rules
+
+    load_operational_rules.cache_clear()
+    spines = load_operational_rules("mork-borg").get("operational_rules") or []
+    by_id = {s["id"]: s for s in spines}
+    d_bucket = {
+        "if:melee-hit-default",
+        "if:ranged-hit-default",
+        "if:defence-default",
+        "if:tests-d20-vs-dr",
+        "if:carrying-capacity",
+        "if:broken-zero-hp",
+        "if:abilities-heading",
+        "if:calendar-dawn-misery",
+        "if:repair-armor",
+        "if:create-pc-bare-bones",
+        "if:omen-optional-rule",
+        "if:outcast-followers",
+        "if:power-daily-uses",
+        "if:improve-hp",
+        "if:ability-change-default",
+        "if:morale-demoralized",
+    }
+    o_b = {
+        "if:ability-change-low",
+        "if:crit-attack",
+        "if:fumble-defence",
+        "if:infection-blocks-rest",
+        "if:morale-trigger",
+        "if:morale-flee-or-surrender",
+        "if:power-scroll-read",
+    }
+    for sid in d_bucket:
+        assert by_id[sid].get("procedure_owns_default") is True, sid
+    for sid in o_b:
+        assert not by_id[sid].get("procedure_owns_default"), sid
 
 
 def test_operational_rules_for_section_omens_preview():
