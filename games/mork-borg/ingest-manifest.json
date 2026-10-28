@@ -714,7 +714,10 @@
         "max_rows": 45,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, RepairArmorTable, WeaponShopTable, BeastsTable. row_typing → INSTANCE_OF Item (misc gear leaf; DESIGN §4.7)."
+      "used_by": [
+        "Merchandise"
+      ],
+      "note": "Slice 2g. Untitled 3-column shop list (item / silver / notes). get_text() stacks cells; aligned_columns uses word x-cuts. Stop before the improvised-weapons prose. Sibling lists: ServicesTable, RepairArmorTable, WeaponShopTable, BeastsTable. row_typing → INSTANCE_OF Item (misc gear leaf; DESIGN §4.7). used_by Merchandise (OQ-SEED-10)."
     },
     {
       "name": "ServicesTable",
@@ -765,7 +768,10 @@
         "max_rows": 6,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Two-column service list (item / silver). Stop before Repair Armor* (RepairArmorTable is a sibling, not extra Services rows)."
+      "used_by": [
+        "Merchandise"
+      ],
+      "note": "Slice 2g. Two-column service list (item / silver). Stop before Repair Armor* (RepairArmorTable is a sibling, not extra Services rows). used_by Merchandise (OQ-SEED-10)."
     },
     {
       "name": "RepairArmorTable",
@@ -817,8 +823,10 @@
         "prefer_page": 25,
         "multi_table_page": true
       },
-      "used_by": [],
-      "note": "Slice 2g. Two priced rows (tier 1 to 2 / 25s, tier 2 to 3 / 40s). Asterisk footnote is If FOR Repair THEN (if:repair-armor), not notes on both rows, not a third HAS_ENTRY, not folded into ServicesTable. Do not used_by Repair. Armor tier here is the book's light/medium/heavy steps (ArmorTable), not seed Tiers 0–5."
+      "used_by": [
+        "Merchandise"
+      ],
+      "note": "Slice 2g. Two priced rows (tier 1 to 2 / 25s, tier 2 to 3 / 40s). Asterisk footnote is If FOR Repair THEN (if:repair-armor), not notes on both rows, not a third HAS_ENTRY, not folded into ServicesTable. Do not used_by Repair (dumps both price rows on how-to). used_by Merchandise (OQ-SEED-10). Armor tier here is the book's light/medium/heavy steps (ArmorTable), not seed Tiers 0–5."
     },
     {
       "name": "WeaponShopTable",
@@ -910,7 +918,10 @@
         "max_rows": 19,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Shop list on p.26: damage die / item / silver. Distinct from p.23 WeaponTable (creation d10). Ammo rows have empty damage (name column indented). Stop before Beasts. row_typing merges Weapon identity with WeaponTable by normalized name."
+      "used_by": [
+        "Merchandise"
+      ],
+      "note": "Slice 2g. Shop list on p.26: damage die / item / silver. Distinct from p.23 WeaponTable (creation d10). Ammo rows have empty damage (name column indented). Stop before Beasts. row_typing merges Weapon identity with WeaponTable by normalized name. used_by Merchandise (OQ-SEED-10)."
     },
     {
       "name": "BeastsTable",
@@ -975,7 +986,10 @@
         "max_rows": 5,
         "multi_table_page": true
       },
-      "note": "Slice 2g. Two-column beast list (item / silver). Last catalog on the equipment span. row_typing → INSTANCE_OF Beast (shop animals; distinct identities from starting vicious dog — DESIGN §4.7)."
+      "used_by": [
+        "Merchandise"
+      ],
+      "note": "Slice 2g. Two-column beast list (item / silver). Last catalog on the equipment span. row_typing → INSTANCE_OF Beast (shop animals; distinct identities from starting vicious dog — DESIGN §4.7). used_by Merchandise (OQ-SEED-10)."
     },
     {
       "name": "CorpsePlunderTable",

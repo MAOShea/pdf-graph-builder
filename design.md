@@ -32,6 +32,8 @@ Primary product capability today:
 
 Companion **AI-DM-Assistant (ADA)** owns seeds/bootstrap/retrieval; **pdf-graph-builder** owns Tier-5 contracts and materialization. Share Neo4j Desktop + Ollama on one machine if needed, but use **separate databases** so `Document` / chunk schemas do not collide.
 
+**Ontology / KG sense layers (K1–K3), Merchandise / shop-price owner:** SoT is ADA [DESIGN.md §4.8](../AI-DM-Assistant/DESIGN.md#48-kg-sense-layers-k1k3-and-merchandise) — do not duplicate that essay here. When implementing, pgb only adds manifest `used_by` (and related Tier-5 wiring) under that seed.
+
 ---
 
 ## What Graph Builder does (upstream product)
